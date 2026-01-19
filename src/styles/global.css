@@ -1,0 +1,9 @@
+/* global styles */
+:root {
+  --bg: #fffdfa;
+  --muted: #666;
+  --accent: #8b5e3c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: var(--bg); color: #222; }
+a { text-decoration: none; color: inherit; }
