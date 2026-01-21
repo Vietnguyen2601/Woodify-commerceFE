@@ -1,0 +1,143 @@
+.featured-categories {
+  padding: 32px 60px;
+}
+
+.featured-categories__title {
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #000;
+  text-align: center;
+  margin: 0 0 32px 0;
+}
+
+.featured-categories__grid {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+}
+
+.featured-categories__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+}
+
+.featured-categories__icon-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.featured-categories__icon-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--color-brand-wood);
+  background: transparent;
+}
+
+.featured-categories__icon {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.featured-categories__icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.featured-categories__name {
+  font-family: 'Arimo', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000;
+  text-align: center;
+}
+
+.featured-categories__item:hover .featured-categories__icon {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.featured-categories__item:hover .featured-categories__icon {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .featured-categories {
+    padding: 48px 40px;
+  }
+  
+  .featured-categories__grid {
+    gap: 48px;
+  }
+}
+
+@media (max-width: 900px) {
+  .featured-categories__grid {
+    flex-wrap: wrap;
+    gap: 32px;
+  }
+  
+  .featured-categories__icon-wrapper {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .featured-categories__icon {
+    width: 100px;
+    height: 100px;
+    top: -3px;
+  }
+  
+  .featured-categories__icon svg {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .featured-categories {
+    padding: 32px 20px;
+  }
+  
+  .featured-categories__title {
+    font-size: 28px;
+  }
+  
+  .featured-categories__grid {
+    gap: 24px;
+  }
+  
+  .featured-categories__icon-wrapper {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .featured-categories__icon {
+    width: 80px;
+    height: 80px;
+    top: -2px;
+  }
+  
+  .featured-categories__icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .featured-categories__name {
+    font-size: 14px;
+  }
+}

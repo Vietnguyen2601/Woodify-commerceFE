@@ -1,0 +1,119 @@
+.product-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.10), 0 2px 4px -2px rgba(0, 0, 0, 0.10);
+  overflow: hidden;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.12);
+}
+
+.product-card__image-container {
+  height: 200px;
+  overflow: hidden;
+}
+
+.product-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-card__image {
+  transform: scale(1.05);
+}
+
+.product-card__content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-card__name {
+  font-family: 'Arimo', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #333;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.product-card__prices {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.product-card__price {
+  font-family: 'Arimo', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--color-brand-wood);
+  line-height: 1.55;
+}
+
+.product-card__original-price {
+  font-family: 'Arimo', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #999;
+  text-decoration: line-through;
+  line-height: 1.43;
+}
+
+.product-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.product-card__stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.product-card__stars svg {
+  width: 16px;
+  height: 16px;
+}
+
+.product-card__rating-value {
+  font-family: 'Arimo', sans-serif;
+  font-size: 12px;
+  color: #666;
+  margin-left: 4px;
+}
+
+.product-card__sold {
+  font-family: 'Arimo', sans-serif;
+  font-size: 12px;
+  color: #999;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .product-card__image-container {
+    height: 200px;
+  }
+  
+  .product-card__content {
+    padding: 16px;
+  }
+  
+  .product-card__name {
+    font-size: 14px;
+  }
+  
+  .product-card__price {
+    font-size: 16px;
+  }
+}

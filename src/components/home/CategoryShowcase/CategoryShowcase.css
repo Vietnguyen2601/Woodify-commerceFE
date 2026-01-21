@@ -1,0 +1,123 @@
+.category-showcase {
+  padding: 32px 60px;
+}
+
+.category-showcase__header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.category-showcase__title {
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #000;
+  margin: 0 0 16px 0;
+}
+
+.category-showcase__subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #000;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.category-showcase__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.category-showcase__card {
+  position: relative;
+  height: 350px;
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.category-showcase__card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(25, 33, 61, 0.50) 0%, #6C5B50 100%);
+  z-index: 1;
+}
+
+.category-showcase__card-image {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+}
+
+.category-showcase__card-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 35px;
+  z-index: 2;
+}
+
+.category-showcase__card-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.category-showcase__card-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  color: #fff;
+  margin: 0 0 16px 0;
+  line-height: 1.33;
+}
+
+.category-showcase__card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-brand-wood);
+  transition: opacity 0.2s ease;
+}
+
+.category-showcase__card-link svg {
+  width: 22px;
+  height: 22px;
+}
+
+.category-showcase__card:hover .category-showcase__card-link {
+  opacity: 0.8;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .category-showcase {
+    padding: 48px 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .category-showcase {
+    padding: 32px 20px;
+  }
+  
+  .category-showcase__title {
+    font-size: 28px;
+  }
+  
+  .category-showcase__grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-showcase__card {
+    height: 400px;
+  }
+}

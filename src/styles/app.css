@@ -15,6 +15,7 @@ body {
 	font-family: 'Space Grotesk', sans-serif;
 	background: var(--wood-cream);
 	color: var(--wood-dark);
+	overflow-x: hidden;
 }
 
 .home {

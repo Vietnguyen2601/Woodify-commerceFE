@@ -1,0 +1,90 @@
+/**
+ * Color Design Tokens
+ * Uses CSS custom properties for theming support
+ */
+
+:root {
+  /* Primary - Warm Earth Tones (Wood theme) */
+  --color-primary-50: #fdf8f6;
+  --color-primary-100: #f9ede8;
+  --color-primary-200: #f3d9cf;
+  --color-primary-300: #e8bba8;
+  --color-primary-400: #da9578;
+  --color-primary-500: #c87852;
+  --color-primary-600: #b5613b;
+  --color-primary-700: #974f31;
+  --color-primary-800: #7c432c;
+  --color-primary-900: #663a28;
+  --color-primary-950: #371c12;
+
+  /* Neutral - Warm Gray */
+  --color-neutral-50: #fafaf9;
+  --color-neutral-100: #f5f5f4;
+  --color-neutral-200: #e7e5e4;
+  --color-neutral-300: #d6d3d1;
+  --color-neutral-400: #a8a29e;
+  --color-neutral-500: #78716c;
+  --color-neutral-600: #57534e;
+  --color-neutral-700: #44403c;
+  --color-neutral-800: #292524;
+  --color-neutral-900: #1c1917;
+  --color-neutral-950: #0c0a09;
+
+  /* Woodify Brand Colors (from Figma) */
+  --color-brand-wood: #BE9C73;
+  --color-brand-wood-light: #D4B896;
+  --color-brand-accent: #DB814C;
+  --color-brand-accent-hover: #C46E3D;
+  --color-brand-bg: #E3DCC8;
+  --color-brand-dark: #6C5B50;
+  --color-brand-footer: #000000;
+  --color-brand-gray: #6D758F;
+  --color-brand-gray-light: #B4B9C9;
+
+  /* Semantic Colors */
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+
+  /* Background & Surface */
+  --color-bg-primary: var(--color-neutral-50);
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: var(--color-neutral-100);
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Text Colors */
+  --color-text-primary: var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-600);
+  --color-text-tertiary: var(--color-neutral-400);
+  --color-text-inverse: #ffffff;
+  --color-text-link: var(--color-primary-600);
+
+  /* Border Colors */
+  --color-border: var(--color-neutral-200);
+  --color-border-focus: var(--color-primary-500);
+  --color-border-error: var(--color-error-500);
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-primary: var(--color-neutral-950);
+    --color-bg-secondary: var(--color-neutral-900);
+    --color-bg-tertiary: var(--color-neutral-800);
+    --color-surface: var(--color-neutral-900);
+    --color-surface-elevated: var(--color-neutral-800);
+
+    --color-text-primary: var(--color-neutral-50);
+    --color-text-secondary: var(--color-neutral-300);
+    --color-text-tertiary: var(--color-neutral-500);
+
+    --color-border: var(--color-neutral-700);
+  }
+}
