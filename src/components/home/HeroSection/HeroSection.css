@@ -1,0 +1,148 @@
+.hero {
+  position: relative;
+  width: 100%;
+  height: 500px;
+}
+
+.hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero__content {
+  position: absolute;
+  left: 60px;
+  top: 140px;
+}
+
+.hero__box {
+  width: 300px;
+  padding: 24px 28px;
+  background: rgba(219, 129, 76, 0.50);
+  border-radius: 14px;
+}
+
+.hero__title {
+  font-family: 'Inria Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 4px 3px 3px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+  margin: 0 0 12px 0;
+}
+
+.hero__subtitle {
+  font-family: 'Inria Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 300;
+  color: #fff;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.hero__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 110px;
+  height: 32px;
+  margin-top: 8px;
+  margin-left: 95px;
+  background: var(--color-brand-accent);
+  border-radius: 12px;
+  color: #fff;
+  font-family: 'Inria Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.hero__cta:hover {
+  background: var(--color-brand-accent-hover);
+}
+
+.hero__indicators {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 19px;
+}
+
+.hero__indicator {
+  position: relative;
+  width: 167px;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.20);
+  border-radius: 10px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.hero__indicator-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.56);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.hero__indicator--active .hero__indicator-fill {
+  width: 76%;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .hero__content {
+    left: 40px;
+  }
+  
+  .hero__indicators {
+    gap: 12px;
+  }
+  
+  .hero__indicator {
+    width: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    height: 500px;
+  }
+  
+  .hero__content {
+    left: 20px;
+    top: 150px;
+  }
+  
+  .hero__box {
+    width: 280px;
+    padding: 20px 24px;
+  }
+  
+  .hero__title {
+    font-size: 24px;
+  }
+  
+  .hero__subtitle {
+    font-size: 16px;
+  }
+  
+  .hero__cta {
+    margin-left: 80px;
+  }
+  
+  .hero__indicator {
+    width: 60px;
+  }
+}

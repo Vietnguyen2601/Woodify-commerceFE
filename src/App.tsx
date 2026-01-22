@@ -15,8 +15,8 @@ import './styles/app.css'
 export default function App() {
   const location = useLocation()
   const isProfileRoute = location.pathname.startsWith('/profile')
-  const isFullBleedRoute = ['/profile', '/seller', '/admin'].some((prefix) =>
-    location.pathname.startsWith(prefix)
+  const isFullBleedRoute = ['/', '/profile', '/seller', '/admin'].some((prefix) =>
+    location.pathname === '/' ? location.pathname === prefix : location.pathname.startsWith(prefix)
   )
 
   return (
@@ -50,7 +50,7 @@ export default function App() {
         </Routes>
       </main>
 
-      {!isProfileRoute && (
+      {!isProfileRoute && location.pathname !== '/' && (
         <footer className='footer'>
           © {new Date().getFullYear()} Wood Marketplace
         </footer>

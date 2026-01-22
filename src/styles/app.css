@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+/* Legacy app styles - fonts moved to index.html */
+
 
 :root {
 	--wood-dark: #241c15;
@@ -15,6 +15,7 @@ body {
 	font-family: 'Space Grotesk', sans-serif;
 	background: var(--wood-cream);
 	color: var(--wood-dark);
+	overflow-x: hidden;
 }
 
 .home {
