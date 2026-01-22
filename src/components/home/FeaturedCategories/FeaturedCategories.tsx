@@ -1,8 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import './FeaturedCategories.css'
 
-const categories = [
+const categoryList = [
   {
     id: 'chairs',
     name: 'Bàn Ghế',
@@ -63,23 +62,27 @@ const categories = [
 
 export default function FeaturedCategories() {
   return (
-    <section className="featured-categories">
-      <h2 className="featured-categories__title">Danh mục nổi bật</h2>
+    <section className="py-8 px-[60px] md:px-10 sm:px-5">
+      <h2 className="font-['Inter'] text-[28px] font-extrabold text-black text-center mb-8">
+        Danh mục nổi bật
+      </h2>
       
-      <div className="featured-categories__grid">
-        {categories.map((category) => (
+      <div className="flex justify-center gap-[60px] lg:gap-12 md:gap-8 md:flex-wrap sm:gap-6">
+        {categoryList.map((category) => (
           <Link 
             key={category.id}
             to={`/catalog?category=${category.id}`}
-            className="featured-categories__item"
+            className="flex flex-col items-center gap-4 no-underline group"
           >
-            <div className="featured-categories__icon-wrapper">
-              <div className="featured-categories__icon-bg" />
-              <div className="featured-categories__icon">
+            <div className="relative w-[100px] h-[100px] sm:w-20 sm:h-20">
+              <div className="absolute inset-0 rounded-full border-[3px] border-[#BE9C73] bg-transparent" />
+              <div className="absolute -top-[3px] left-0 w-[100px] h-[100px] sm:w-20 sm:h-20 sm:-top-[2px] flex items-center justify-center rounded-full bg-white transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-lg">
                 {category.icon}
               </div>
             </div>
-            <span className="featured-categories__name">{category.name}</span>
+            <span className="font-['Arimo'] text-sm font-normal text-black text-center">
+              {category.name}
+            </span>
           </Link>
         ))}
       </div>

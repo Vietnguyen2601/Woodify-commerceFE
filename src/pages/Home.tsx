@@ -5,7 +5,6 @@ import CategoryShowcase from '../components/home/CategoryShowcase'
 import FeaturedCategories from '../components/home/FeaturedCategories'
 import ProductCard from '../components/home/ProductCard'
 import Footer from '../components/layout/Footer'
-import '../styles/home.css'
 
 const bestSellerProducts = [
   {
@@ -75,7 +74,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="home-page">
+      <div className="w-full max-w-[1200px] mx-auto min-h-screen bg-[#E3DCC8] shadow-[0_4px_20px_rgba(0,0,0,0.1)] relative overflow-x-hidden">
         <Header cartItemCount={0} />
         
         <HeroSection 
@@ -84,15 +83,17 @@ export default function Home() {
           onSlideChange={setActiveSlide}
         />
 
-        <main className="home-page__content">
+        <main className="pt-0">
           <CategoryShowcase />
           
           <FeaturedCategories />
 
-          <section className="home-page__bestsellers">
-            <h2 className="home-page__section-title">Sản phẩm bán chạy</h2>
+          <section className="py-10 px-[60px] lg:py-8 lg:px-10 sm:py-6 sm:px-4">
+            <h2 className="font-['Inter'] text-[28px] font-extrabold text-black text-center m-0 mb-8 sm:text-[22px] sm:mb-6">
+              Sản phẩm bán chạy
+            </h2>
             
-            <div className="home-page__products-grid">
+            <div className="grid grid-cols-3 gap-6 lg:gap-5 md:grid-cols-2 sm:grid-cols-1">
               {bestSellerProducts.map(product => (
                 <ProductCard key={product.id} {...product} />
               ))}
@@ -100,7 +101,7 @@ export default function Home() {
           </section>
         </main>
       </div>
-      <div className="footer-wrapper">
+      <div className="bg-black w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mb-6 pb-6">
         <Footer />
       </div>
     </>
