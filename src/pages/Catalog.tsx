@@ -1,6 +1,5 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import NavBar from '../components/NavBar'
 import ProductionCard, { type ProductionCardProduct } from '../components/ProductionCard'
 import { products } from '../data/mockProducts'
 
@@ -78,9 +77,6 @@ export default function Catalog() {
 
   return (
     <div className='catalog-page'>
-      <header className='catalog__top'>
-        <NavBar />
-      </header>
 
       <main className='catalog__layout'>
         <aside className='catalog__sidebar'>

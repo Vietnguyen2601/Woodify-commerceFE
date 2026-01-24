@@ -205,29 +205,6 @@ export default function Cart() {
 
   return (
     <div className='cart-page'>
-      <header className='cart-topbar'>
-        <div className='cart-topbar__logo'>
-          <Link to='/'>Shopi<span>ee</span></Link>
-          <span className='cart-topbar__title'>Giỏ Hàng</span>
-        </div>
-        <div className='cart-topbar__search'>
-          <input type='text' placeholder='Tìm kiếm sản phẩm, shop hoặc voucher' />
-          <button>Tìm kiếm</button>
-        </div>
-        <div className='cart-topbar__actions'>
-          <button className='cart-icon-btn' aria-label='Thông báo'>
-            <span>🔔</span>
-          </button>
-          <button className='cart-icon-btn' aria-label='Hỗ trợ'>
-            <span>💬</span>
-          </button>
-          <button className='cart-icon-btn' aria-label='Chọn ngôn ngữ'>VI ▾</button>
-          <Link to='/profile' className='cart-account'>
-            <div className='cart-account__avatar'>NL</div>
-            <div className='cart-account__name'>Ngọc Linh</div>
-          </Link>
-        </div>
-      </header>
 
       <main className='cart-main'>
         <section className='cart-table-wrapper'>
@@ -326,15 +303,15 @@ export default function Cart() {
             ))}
           </div>
 
-          <section className='cart-shopee-voucher'>
+          <section className='cart-voucher'>
             <div>
-              <h3>Shopee Voucher</h3>
+              <h3>Voucher</h3>
               <p>Chọn ngay mã giảm giá để tiết kiệm hơn</p>
             </div>
             <button className='cart-link strong'>Chọn hoặc nhập mã ▸</button>
             <label className='cart-checkbox cart-xu-option'>
               <input type='checkbox' disabled />
-              <span>Dùng Shopee Xu (Hiện chưa khả dụng)</span>
+              <span>Dùng Xu (Hiện chưa khả dụng)</span>
             </label>
           </section>
         </section>

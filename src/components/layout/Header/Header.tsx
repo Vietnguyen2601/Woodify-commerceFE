@@ -36,6 +36,13 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
           <Link to="/support" className="header__nav-link">Hỗ trợ</Link>
         </nav>
 
+        <div className="header__links">
+          <Link to="/seller" className="header__link">Kênh người bán</Link>
+          <Link to="/register?seller=1" className="header__link">Trở thành người bán</Link>
+          <Link to="/login" className="header__link">Đăng nhập</Link>
+          <Link to="/register" className="header__link header__link--primary">Đăng ký</Link>
+        </div>
+
         <div className="header__actions">
           <Link to="/cart" className="header__cart">
             <svg width="36" height="32" viewBox="0 0 36 32" fill="none">

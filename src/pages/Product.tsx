@@ -1,6 +1,5 @@
 import React from 'react'
 import { Link, useParams } from 'react-router-dom'
-import NavBar from '../components/NavBar'
 import { products } from '../data/mockProducts'
 import { useCart } from '../store/cartStore'
 
@@ -135,9 +134,6 @@ export default function Product() {
 
   return (
     <div className='product-page'>
-      <header className='product-page__top'>
-        <NavBar />
-      </header>
 
       <main className='product-page__content'>
         <section className='product-hero'>

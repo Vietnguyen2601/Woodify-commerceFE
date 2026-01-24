@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route, Link, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Catalog from './pages/Catalog'
 import Product from './pages/Product'
@@ -10,17 +10,22 @@ import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
 import SellerDashboard from './pages/seller/SellerDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import Header from './components/layout/Header/Header'
+import { useCart } from './store/cartStore'
 import './styles/app.css'
 
 export default function App() {
   const location = useLocation()
+  const cartItemCount = useCart((state) => state.items.reduce((sum, item) => sum + item.qty, 0))
   const isProfileRoute = location.pathname.startsWith('/profile')
-  const isFullBleedRoute = ['/', '/profile', '/seller', '/admin'].some((prefix) =>
-    location.pathname === '/' ? location.pathname === prefix : location.pathname.startsWith(prefix)
-  )
+  const isSellerRoute = location.pathname.startsWith('/seller')
+  const isAdminRoute = location.pathname.startsWith('/admin')
+  const showUserHeader = !isSellerRoute && !isAdminRoute
+  const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
 
   return (
     <div className='app'>
+      {showUserHeader && <Header cartItemCount={cartItemCount} />}
       {/* {!isProfileRoute && (
         <header className='topbar'>
           <div className='brand'><Link to='/'>WoodMarketplace</Link></div>
