@@ -5,6 +5,7 @@ import Catalog from './pages/Catalog'
 import Product from './pages/Product'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
+import { Payment } from './pages/Payment'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
@@ -13,6 +14,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import Header from './components/layout/Header/Header'
 import { useCart } from './store/cartStore'
 import './styles/app.css'
+import './styles/payment.css'
 
 export default function App() {
   const location = useLocation()
@@ -45,6 +47,7 @@ export default function App() {
           <Route path='/product/:id' element={<Product />} />
           <Route path='/cart' element={<Cart />} />
           <Route path='/checkout' element={<Checkout />} />
+          <Route path='/payment' element={<Payment />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />
