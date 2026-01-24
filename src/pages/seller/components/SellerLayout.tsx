@@ -9,7 +9,7 @@ export default function SellerLayout() {
         <div className='seller-header__brand'>
           <div>
             <p className='seller-header__eyebrow'>Woodify Seller Center</p>
-            <h1>Kênh người bán Shopee style</h1>
+            <h1>Kênh người bán style</h1>
           </div>
           <span className='seller-header__badge'>Beta</span>
         </div>
