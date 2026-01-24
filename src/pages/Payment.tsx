@@ -109,10 +109,10 @@ export const Payment: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 w-full">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            {/* Left Section - Cart & Forms (65% / 3 of 5 cols) */}
-            <div className="lg:col-span-3 space-y-6">
+        <div className="max-w-6xl mx-auto px-12 py-8">
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+            {/* Left Section - Cart & Forms (60%) */}
+            <div className="w-full lg:w-3/5 space-y-6">
               {/* Cart Items Section */}
               <div className="bg-white rounded-lg p-6">
                 <h2 className="text-lg font-bold text-[#333333] mb-4 font-inria-sans">
@@ -137,8 +137,8 @@ export const Payment: React.FC = () => {
               <PaymentMethods register={register} formState={formState} />
             </div>
 
-            {/* Right Section - Order Summary (35% / 2 of 5 cols) */}
-            <div className="lg:col-span-2">
+            {/* Right Section - Order Summary (40%) */}
+            <div className="md:col-span-2 sticky top-0 h-fit">
               <OrderSummary
                 summary={orderSummary}
                 onApplyDiscount={handleApplyDiscount}
