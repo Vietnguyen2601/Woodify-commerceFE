@@ -55,11 +55,6 @@ export default function App() {
         </Routes>
       </main>
 
-      {!isProfileRoute && location.pathname !== '/' && (
-        <footer className='footer'>
-          © {new Date().getFullYear()} Wood Marketplace
-        </footer>
-      )}
     </div>
   )
 }

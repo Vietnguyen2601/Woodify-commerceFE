@@ -19,6 +19,9 @@ import ShopProfile from './shop/ShopProfile'
 import ShopDecoration from './shop/ShopDecoration'
 import ShopSettings from './shop/ShopSettings'
 import Complaints from './shop/Complaints'
+import FeedbackRating from './support/FeedbackRating'
+import ChatManagement from './support/ChatManagement'
+import ShopRatingManagement from './support/ShopRatingManagement'
 
 export default function SellerDashboard() {
   return (
@@ -48,6 +51,11 @@ export default function SellerDashboard() {
         <Route path='shop/decoration' element={<ShopDecoration />} />
         <Route path='shop/settings' element={<ShopSettings />} />
         <Route path='shop/complaints' element={<Complaints />} />
+
+        <Route path='support' element={<FeedbackRating />} />
+        <Route path='support/feedback' element={<FeedbackRating />} />
+        <Route path='support/chat-management' element={<ChatManagement />} />
+        <Route path='support/shop-rating' element={<ShopRatingManagement />} />
 
         <Route path='*' element={<Navigate to='/seller' replace />} />
       </Route>
