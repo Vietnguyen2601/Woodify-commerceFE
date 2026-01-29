@@ -19,6 +19,7 @@ export const ROUTES = {
 
   // Profile routes
   PROFILE: '/profile',
+  PROFILE_ACCOUNT: '/profile/account',
   PROFILE_ORDERS: '/profile/orders',
   PROFILE_SETTINGS: '/profile/settings',
   PROFILE_WALLET: '/profile/wallet',
