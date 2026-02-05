@@ -9,7 +9,7 @@ export default function SellerLayout() {
         <SellerSidebar />
 
         <div className='flex flex-1 flex-col'>
-          <header className='border-b border-amber-800/20 bg-white px-6 py-4 shadow-sm'>
+          <header className='border-b border-amber-800/20 bg-white px-6 py-4 shadow-sm md:px-8 lg:px-10'>
             <div className='flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
               <div className='flex items-center gap-4'>
                 <div className='h-14 w-14 rounded-2xl border border-amber-900/20 bg-stone-50' aria-hidden='true' />
@@ -57,9 +57,11 @@ export default function SellerLayout() {
             </div>
           </header>
 
-          <main className='flex-1 overflow-y-auto bg-stone-50 px-6 py-6'>
-            <div className='mx-auto w-full max-w-6xl space-y-6'>
-              <Outlet />
+          <main className='flex-1 overflow-y-auto bg-stone-50'>
+            <div className='w-full px-8 pb-10 pt-8 md:px-10 lg:px-12'>
+              <div className='w-full space-y-6'>
+                <Outlet />
+              </div>
             </div>
           </main>
         </div>
