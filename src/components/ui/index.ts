@@ -7,3 +7,6 @@ export type { InputProps } from './Input'
 
 export { Badge } from './Badge'
 export type { BadgeProps } from './Badge'
+
+export { Icon } from './Icon/Icon'
+export type { IconProps, IconName } from './Icon/Icon'
