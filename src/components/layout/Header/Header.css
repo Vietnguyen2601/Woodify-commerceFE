@@ -1,292 +1,114 @@
-.header {
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Arbutus+Slab:wght@400&display=swap');
+
+header {
   position: sticky;
   top: 0;
-  width: 100%;
   z-index: 100;
-  background: #cda171;
-  color: #fff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #C7A57A;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.header__texture {
-  display: none;
+/* Font families */
+.font-poppins {
+  font-family: 'Poppins', sans-serif;
 }
 
-.header__inner {
-  position: relative;
-  z-index: 1;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 4px 24px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.font-arbutus {
+  font-family: 'Arbutus Slab', sans-serif;
 }
 
-.header__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 32px;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-family: 'Arbutus Slab', 'Space Grotesk', sans-serif;
-}
-
-.header__top-links {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.header__top-link {
-  color: rgba(255, 255, 255, 0.85);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.header__top-link:hover,
-.header__top-link:focus-visible {
-  color: #fff;
-}
-
-.header__top-link--button {
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  padding: 0;
-}
-
-.header__top-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header__language {
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  cursor: pointer;
-  padding: 0;
-}
-
-.header__divider {
-  height: 1px;
-  width: 100%;
-  background: rgba(0, 0, 0, 0.08);
-}
-
-.header__main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 56px;
-  flex-wrap: nowrap;
-}
-
-.header__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: inherit;
-}
-
-.header__brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header__brand-mark img {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  object-fit: cover;
-}
-
-.header__brand-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.header__brand-title {
-  font-size: 20px;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-  font-family: 'Poppins', 'Space Grotesk', sans-serif;
-}
-
-.header__brand-caption {
-  display: none;
-}
-
-.header__nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  flex: 1;
-}
-
-.header__nav-link {
-  color: rgba(255, 255, 255, 0.85);
-  text-decoration: none;
-  font-size: 18px;
-  font-family: 'Poppins', 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  text-align: center;
-  padding-bottom: 2px;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease;
-}
-
-.header__nav-link:hover,
-.header__nav-link:focus-visible {
-  color: #fff;
-}
-
-.header__nav-link--active {
-  color: #fff;
-  border-bottom-color: rgba(255, 255, 255, 0.7);
-}
-
-.header__controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header__icon-button {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.header__icon-button:hover,
-.header__icon-button:focus-visible {
-  color: #fff;
-  background: rgba(0, 0, 0, 0.12);
-}
-
-.header__icon-button svg {
-  display: block;
-}
-
-.header__badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: #e63946;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Arimo', 'Space Grotesk', sans-serif;
-}
-
-.header__badge--cart {
-  background: #ff7043;
-}
-
-.header__cart {
-  text-decoration: none;
-  color: inherit;
-}
-
-.header__auth {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'Arbutus Slab', 'Space Grotesk', sans-serif;
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.header__auth a {
-  color: #fff;
-  text-decoration: none;
-}
-
-.header__auth a:hover {
-  text-decoration: underline;
-}
-
-.header__auth-divider {
-  opacity: 0.8;
-}
-
-@media (max-width: 1100px) {
-  .header__inner {
-    padding: 4px 16px 8px;
+/* Responsive utilities */
+@media (max-width: 1280px) {
+  header {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
 }
 
-@media (max-width: 900px) {
-  .header__top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .header__main {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .header__nav {
-    width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .header__controls {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 600px) {
-  .header__brand {
-    width: 100%;
-  }
-
-  .header__nav-link {
+@media (max-width: 1024px) {
+  header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
     font-size: 14px;
   }
 
-  .header__controls {
-    gap: 8px;
+  header nav {
+    gap: 12px;
+    font-size: 16px;
   }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+  }
+
+  header nav {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  header .flex-1 {
+    width: 100%;
+  }
+
+  header .ml-12 {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    font-size: 12px;
+  }
+
+  header nav {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+/* Search animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Search input styling */
+input[placeholder="Tìm kiếm sản phẩm..."] {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease-out;
+}
+
+input[placeholder="Tìm kiếm sản phẩm..."]:focus {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background-color: #ffffff !important;
+  transform: scale(1.02);
+}
+
+/* Search button hover effect */
+header button[aria-label="Tìm kiếm sản phẩm"] {
+  transition: all 0.3s ease;
+}
+
+header button[aria-label="Tìm kiếm sản phẩm"]:hover {
+  transform: scale(1.15);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
