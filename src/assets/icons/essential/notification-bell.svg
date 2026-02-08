@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title>Notification Bell</title>
+  <desc>Bell icon for alerts</desc>
+  <path d="M6 17H18L17 15V11C17 7.686 14.314 5 11 5C7.686 5 5 7.686 5 11V15L4 17H6Z" />
+  <path d="M9 17C9 18.657 10.343 20 12 20C13.657 20 15 18.657 15 17" />
+</svg>

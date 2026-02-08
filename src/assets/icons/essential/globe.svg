@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title>Globe</title>
+  <desc>Language and region selector icon</desc>
+  <circle cx="12" cy="12" r="8" />
+  <path d="M4 12H20" />
+  <path d="M12 4C14.5 6.5 15.8 9.5 15.8 12C15.8 14.5 14.5 17.5 12 20C9.5 17.5 8.2 14.5 8.2 12C8.2 9.5 9.5 6.5 12 4Z" />
+  <path d="M6 7.5C7.9 8.3 9.9 8.75 12 8.75C14.1 8.75 16.1 8.3 18 7.5" />
+  <path d="M18 16.5C16.1 15.7 14.1 15.25 12 15.25C9.9 15.25 7.9 15.7 6 16.5" />
+</svg>
