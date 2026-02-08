@@ -10,6 +10,12 @@ const ADMIN_ACCOUNT = {
   name: 'Head of Operations'
 }
 
+const CUSTOMER_ACCOUNT = {
+  email: 'customer@woodmarket.com',
+  password: 'Customer#2026',
+  name: 'Premium Member'
+}
+
 const STRENGTH_PALETTE = [
   { label: 'Rất yếu', color: '#C84545' },
   { label: 'Trung bình', color: '#E6A151' },
@@ -120,6 +126,13 @@ export default function Login() {
     setFormState('idle')
   }
 
+  function handlePrefillCustomer() {
+    setEmail(CUSTOMER_ACCOUNT.email)
+    setPassword(CUSTOMER_ACCOUNT.password)
+    setErrors({})
+    setFormState('idle')
+  }
+
   return (
     <div className='auth-shell'>
       <div className='auth-layer'>
@@ -222,6 +235,17 @@ export default function Login() {
                 <p className='auth-sample-card__meta'>Mật khẩu: {ADMIN_ACCOUNT.password}</p>
               </div>
               <button type='button' onClick={handlePrefillAdmin} className='auth-btn tertiary'>
+                Điền nhanh
+              </button>
+            </div>
+
+            <div className='auth-sample-card'>
+              <div>
+                <p className='auth-sample-card__title'>Tài khoản Khách hàng mẫu</p>
+                <p className='auth-sample-card__meta'>Email: {CUSTOMER_ACCOUNT.email}</p>
+                <p className='auth-sample-card__meta'>Mật khẩu: {CUSTOMER_ACCOUNT.password}</p>
+              </div>
+              <button type='button' onClick={handlePrefillCustomer} className='auth-btn tertiary'>
                 Điền nhanh
               </button>
             </div>

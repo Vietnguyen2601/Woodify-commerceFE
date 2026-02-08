@@ -12,6 +12,7 @@ import Profile from './pages/Profile'
 import SellerDashboard from './pages/seller/SellerDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import Header from './components/layout/Header/Header'
+import Footer from './components/layout/Footer'
 import { useCart } from './store/cartStore'
 import './styles/app.css'
 import './styles/payment.css'
@@ -23,6 +24,7 @@ export default function App() {
   const isSellerRoute = location.pathname.startsWith('/seller')
   const isAdminRoute = location.pathname.startsWith('/admin')
   const showUserHeader = !isSellerRoute && !isAdminRoute
+  const showFooter = !isSellerRoute && !isAdminRoute
   const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
 
   return (
@@ -58,11 +60,7 @@ export default function App() {
         </Routes>
       </main>
 
-      {!isProfileRoute && location.pathname !== '/' && (
-        <footer className='footer'>
-          © {new Date().getFullYear()} Wood Marketplace
-        </footer>
-      )}
+      {showFooter && <Footer />}
     </div>
   )
 }

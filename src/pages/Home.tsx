@@ -1,10 +1,8 @@
 import React from 'react'
-import Header from '../components/layout/Header'
 import HeroSection from '../components/home/HeroSection'
 import CategoryShowcase from '../components/home/CategoryShowcase'
 import FeaturedCategories from '../components/home/FeaturedCategories'
 import ProductCard from '../components/home/ProductCard'
-import Footer from '../components/layout/Footer'
 
 const bestSellerProducts = [
   {
@@ -75,8 +73,6 @@ export default function Home() {
   return (
     <>
       <div className="w-full max-w-[1200px] mx-auto min-h-screen bg-[#E3DCC8] shadow-[0_4px_20px_rgba(0,0,0,0.1)] relative overflow-x-hidden">
-        <Header cartItemCount={0} />
-        
         <HeroSection 
           activeSlide={activeSlide}
           totalSlides={5}
@@ -100,9 +96,6 @@ export default function Home() {
             </div>
           </section>
         </main>
-      </div>
-      <div className="bg-black w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mb-6 pb-6">
-        <Footer />
       </div>
     </>
   )
