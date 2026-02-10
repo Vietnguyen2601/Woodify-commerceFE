@@ -18,15 +18,10 @@ const AuthHero: React.FC = () => (
     <div>
       <div className='auth-logo'>
         <span>WM</span>
-        WoodMarket
+        Woodify
       </div>
       <h1>Chào mừng nghệ nhân và người yêu gỗ</h1>
-      <p>
-        Tạo tài khoản để quản lý đơn hàng, theo dõi Shopee Xu và cập nhật ưu đãi dành riêng cho cộng đồng
-        yêu đồ gỗ thủ công.
-      </p>
     </div>
-    <p className='auth-subtitle'>Luồng đăng ký 3 bước với OTP bảo mật, tuân thủ tiêu chuẩn accessibility.</p>
   </div>
 )
 
@@ -67,6 +62,14 @@ export default function Register() {
     }
   }, [step])
 
+  useEffect(() => {
+    if (step !== 4) return
+    const redirectId = window.setTimeout(() => {
+      nav('/')
+    }, 2000)
+    return () => window.clearTimeout(redirectId)
+  }, [step, nav])
+
   const maskedEmail = useMemo(() => {
     if (!email) return ''
     const [name, domain] = email.split('@')
@@ -83,30 +86,30 @@ export default function Register() {
   const strengthLabel = ['Yếu', 'Trung bình', 'Mạnh'][strengthIndex]
 
   function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!EMAIL_PATTERN.test(email)) {
-      setEmailError('Email không hợp lệ')
-      return
-    }
-    setEmailError('')
-    setIsSendingCode(true)
-    import('@/services/auth.service').then(({ authService }) => {
-      authService.sendOtp({ email })
-        .then(() => {
-          setIsSendingCode(false)
-          setEmailExists(false)
-          setStep(2)
-        })
-        .catch((err) => {
-          setIsSendingCode(false)
-          if (err?.message?.toLowerCase().includes('exists')) {
-            setEmailExists(true)
-            setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
-          } else {
-            setEmailError(err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.')
-          }
-        })
-    })
+    // event.preventDefault()
+    // if (!EMAIL_PATTERN.test(email)) {
+    //   setEmailError('Email không hợp lệ')
+    //   return
+    // }
+    // setEmailError('')
+    // setIsSendingCode(true)
+    // import('@/services/auth.service').then(({ authService }) => {
+    //   authService.sendOtp({ email })
+    //     .then(() => {
+    //       setIsSendingCode(false)
+    //       setEmailExists(false)
+    //       setStep(2)
+    //     })
+    //     .catch((err) => {
+    //       setIsSendingCode(false)
+    //       if (err?.message?.toLowerCase().includes('exists')) {
+    //         setEmailExists(true)
+    //         setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
+    //       } else {
+    //         setEmailError(err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.')
+    //       }
+    //     })
+    // })
   }
 
   function handleEmailChange(value: string) {
@@ -275,7 +278,6 @@ export default function Register() {
                         {emailError}
                       </span>
                     )}
-                    <p className='step-notes'>Chúng tôi sẽ gửi mã 6 chữ số tới email của bạn.</p>
                   </div>
 
                   <button className='auth-btn primary' type='submit' disabled={isSendingCode}>
@@ -353,11 +355,6 @@ export default function Register() {
                     </button>
                   </div>
 
-                  <p className='step-notes'>
-                    Không nhận được email? Kiểm tra hộp Spam hoặc liên hệ hỗ trợ.{' '}
-                    Mẹo demo: nhập 123456 nếu chưa kết nối dịch vụ gửi OTP.
-                  </p>
-
                   <button className='auth-btn primary' type='submit'>
                     Xác minh &amp; tiếp tục
                   </button>
@@ -383,14 +380,14 @@ export default function Register() {
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                     />
-                    <div className='strength-meter'>
+                    {/* <div className='strength-meter'>
                       <div className='strength-bar'>
                         <span style={{ width: `${(normalizedStrength / 3) * 100}%`, background: strengthColor }} />
                       </div>
                       <span className='strength-label' style={{ color: strengthColor }}>
                         {password ? strengthLabel : 'Chưa nhập' }
                       </span>
-                    </div>
+                    </div> */}
                   </div>
 
                   <div className='auth-form-group'>
@@ -448,9 +445,6 @@ export default function Register() {
               <div className='step-panel success-card' key='step-4'>
                 <h3>Chào mừng đến với WoodMarket</h3>
                 <p>Đăng ký thành công. Chúng tôi đã tự động đăng nhập để bạn bắt đầu mua sắm ngay.</p>
-                <button className='auth-btn primary' type='button' onClick={goShopping}>
-                  Bắt đầu mua sắm
-                </button>
                 <p className='auth-subtitle'>Gợi ý: hoàn thiện hồ sơ để nhận khuyến mãi cá nhân hóa.</p>
               </div>
             )}
