@@ -90,17 +90,23 @@ export default function Register() {
     }
     setEmailError('')
     setIsSendingCode(true)
-
-    window.setTimeout(() => {
-      setIsSendingCode(false)
-      if (email.toLowerCase() === 'demo@woodmarket.com') {
-        setEmailExists(true)
-        setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
-        return
-      }
-      setEmailExists(false)
-      setStep(2)
-    }, 900)
+    import('@/services/auth.service').then(({ authService }) => {
+      authService.sendOtp({ email })
+        .then(() => {
+          setIsSendingCode(false)
+          setEmailExists(false)
+          setStep(2)
+        })
+        .catch((err) => {
+          setIsSendingCode(false)
+          if (err?.message?.toLowerCase().includes('exists')) {
+            setEmailExists(true)
+            setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
+          } else {
+            setEmailError(err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.')
+          }
+        })
+    })
   }
 
   function handleEmailChange(value: string) {
@@ -110,6 +116,12 @@ export default function Register() {
   }
 
   function handleOtpChange(index: number, value: string) {
+    if (/^\d{6}$/.test(value)) {
+      const arr = value.split('')
+      setOtpDigits(arr)
+      otpRefs.current[OTP_LENGTH - 1]?.focus()
+      return
+    }
     if (!/^\d?$/.test(value)) return
     const next = [...otpDigits]
     next[index] = value
@@ -134,21 +146,25 @@ export default function Register() {
       setOtpError('Vui lòng nhập đủ mã xác minh')
       return
     }
-    const maybeCode = otpDigits.join('')
-    if (maybeCode !== '123456') {
-      setOtpAttempts((prev) => {
-        const next = prev + 1
-        if (next >= 3) {
-          setOtpError('Bạn đã thử quá 3 lần. Vui lòng đợi 2 phút hoặc liên hệ hỗ trợ.')
-        } else {
-          setOtpError('Mã xác minh không đúng. Vui lòng thử lại.')
-        }
-        return next
-      })
-      return
-    }
+    const code = otpDigits.join('')
     setOtpError('')
-    setStep(3)
+    setOtpAttempts(0)
+    // Gọi API verify-otp
+    import('@/services/auth.service').then(({ authService }) => {
+      authService.verifyOtp({ email, otp: code })
+        .then((res) => {
+          if (res.data && res.data.success) {
+            setStep(3)
+          } else {
+            setOtpError('Mã xác minh không đúng. Vui lòng thử lại.')
+            setOtpAttempts((prev) => prev + 1)
+          }
+        })
+        .catch((err) => {
+          setOtpError(err?.message || 'Mã xác minh không đúng hoặc đã hết hạn.')
+          setOtpAttempts((prev) => prev + 1)
+        })
+    })
   }
 
   function handleResend() {
@@ -174,11 +190,28 @@ export default function Register() {
     }
     setShowTermsError(false)
     setRegisterState('loading')
-    window.setTimeout(() => {
-      setRegisterState('success')
-      localStorage.setItem('auth_token', 'mock-token')
-      setStep(4)
-    }, 1200)
+    import('@/services/auth.service').then(({ authService }) => {
+      authService.registerWithOtp({
+        email,
+        password,
+        confirmPassword,
+        username: email.split('@')[0]
+      })
+        .then((res) => {
+          if (res.data && res.data.success) {
+            setRegisterState('success')
+            setStep(4)
+            // Nếu muốn tự động đăng nhập, có thể gọi login tại đây
+          } else {
+            setRegisterState('idle')
+            // Hiển thị lỗi nếu cần
+          }
+        })
+        .catch((err) => {
+          setRegisterState('idle')
+          // Có thể show lỗi chi tiết hơn nếu muốn
+        })
+    })
   }
 
   function goShopping() {
@@ -287,6 +320,14 @@ export default function Register() {
                         aria-label={`Ký tự thứ ${index + 1}`}
                         onChange={(event) => handleOtpChange(index, event.target.value)}
                         onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                        onPaste={(event) => {
+                          const pasted = event.clipboardData.getData('text')
+                          if (/^\d{6}$/.test(pasted)) {
+                            setOtpDigits(pasted.split(''))
+                            otpRefs.current[OTP_LENGTH - 1]?.focus()
+                            event.preventDefault()
+                          }
+                        }}
                       />
                     ))}
                   </div>
