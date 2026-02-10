@@ -1,6 +1,18 @@
 import { api } from './api/client'
+import { identityServiceClient } from './api/identityClient'
 import { API_ENDPOINTS } from '@/constants'
-import type { User, LoginCredentials, RegisterData, AuthTokens } from '@/types'
+import type {
+  User,
+  LoginCredentials,
+  RegisterData,
+  AuthTokens,
+  SendOtpRequest,
+  SendOtpResponse,
+  VerifyOtpRequest,
+  VerifyOtpResponse,
+  RegisterWithOtpRequest,
+  RegisterWithOtpResponse,
+} from '@/types'
 
 export interface LoginResponse {
   user: User
@@ -19,15 +31,15 @@ export const authService = {
   /**
    * Login with email and password
    */
-  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-    return api.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials)
-  },
+    login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
+      return identityServiceClient.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials)
+    },
 
   /**
-   * Register new user
+   * Register new user (default, non-OTP)
    */
   register: async (data: RegisterData): Promise<RegisterResponse> => {
-    return api.post<RegisterResponse>(API_ENDPOINTS.AUTH.REGISTER, data)
+    return identityServiceClient.post<RegisterResponse>(API_ENDPOINTS.IDENTITY.REGISTER, data)
   },
 
   /**
@@ -49,5 +61,37 @@ export const authService = {
    */
   refreshToken: async (refreshToken: string): Promise<AuthTokens> => {
     return api.post<AuthTokens>(API_ENDPOINTS.AUTH.REFRESH, { refreshToken })
+  },
+
+  /**
+   * Send OTP to email for email verification
+   */
+  sendOtp: async (request: SendOtpRequest): Promise<SendOtpResponse> => {
+    return identityServiceClient.post<SendOtpResponse>(
+      API_ENDPOINTS.IDENTITY.SEND_OTP,
+      request
+    )
+  },
+
+  /**
+   * Verify OTP code
+   */
+  verifyOtp: async (request: VerifyOtpRequest): Promise<VerifyOtpResponse> => {
+    return identityServiceClient.post<VerifyOtpResponse>(
+      API_ENDPOINTS.IDENTITY.VERIFY_OTP,
+      request
+    )
+  },
+
+  /**
+   * Register new user with OTP verification
+   */
+  registerWithOtp: async (
+    request: RegisterWithOtpRequest
+  ): Promise<RegisterWithOtpResponse> => {
+    return identityServiceClient.post<RegisterWithOtpResponse>(
+      API_ENDPOINTS.IDENTITY.REGISTER,
+      request
+    )
   },
 }

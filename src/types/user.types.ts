@@ -27,6 +27,40 @@ export interface RegisterData {
   phone?: string
 }
 
+/**
+ * OTP & Email Verification Types
+ */
+export interface SendOtpRequest {
+  email: string
+}
+
+export interface SendOtpResponse {
+  message: string
+  expiresIn: number
+}
+
+export interface VerifyOtpRequest {
+  email: string
+  otp: string
+}
+
+export interface VerifyOtpResponse {
+  message: string
+  verified: boolean
+}
+
+export interface RegisterWithOtpRequest {
+  email: string
+  password: string
+  confirmPassword: string
+  username: string
+}
+
+export interface RegisterWithOtpResponse {
+  user: User
+  tokens: AuthTokens
+}
+
 export interface AuthTokens {
   accessToken: string
   refreshToken: string
