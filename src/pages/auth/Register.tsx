@@ -17,16 +17,11 @@ const AuthHero: React.FC = () => (
   <div className='auth-hero' aria-hidden='true'>
     <div>
       <div className='auth-logo'>
-        <span>WM</span>
-        WoodMarket
+        <span>LOGO</span>
+        Woodify
       </div>
       <h1>Chào mừng nghệ nhân và người yêu gỗ</h1>
-      <p>
-        Tạo tài khoản để quản lý đơn hàng, theo dõi Shopee Xu và cập nhật ưu đãi dành riêng cho cộng đồng
-        yêu đồ gỗ thủ công.
-      </p>
     </div>
-    <p className='auth-subtitle'>Luồng đăng ký 3 bước với OTP bảo mật, tuân thủ tiêu chuẩn accessibility.</p>
   </div>
 )
 
@@ -66,6 +61,11 @@ export default function Register() {
       }, 120)
     }
   }, [step])
+
+  useEffect(() => {
+    if (step !== 4) return
+    nav('/')
+  }, [step, nav])
 
   const maskedEmail = useMemo(() => {
     if (!email) return ''
@@ -242,7 +242,6 @@ export default function Register() {
                         {emailError}
                       </span>
                     )}
-                    <p className='step-notes'>Chúng tôi sẽ gửi mã 6 chữ số tới email của bạn.</p>
                   </div>
 
                   <button className='auth-btn primary' type='submit' disabled={isSendingCode}>
@@ -287,6 +286,14 @@ export default function Register() {
                         aria-label={`Ký tự thứ ${index + 1}`}
                         onChange={(event) => handleOtpChange(index, event.target.value)}
                         onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                        onPaste={(event) => {
+                          const pasted = event.clipboardData.getData('text')
+                          if (/^\d{6}$/.test(pasted)) {
+                            setOtpDigits(pasted.split(''))
+                            otpRefs.current[OTP_LENGTH - 1]?.focus()
+                            event.preventDefault()
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -312,11 +319,6 @@ export default function Register() {
                     </button>
                   </div>
 
-                  <p className='step-notes'>
-                    Không nhận được email? Kiểm tra hộp Spam hoặc liên hệ hỗ trợ.{' '}
-                    Mẹo demo: nhập 123456 nếu chưa kết nối dịch vụ gửi OTP.
-                  </p>
-
                   <button className='auth-btn primary' type='submit'>
                     Xác minh &amp; tiếp tục
                   </button>
@@ -328,7 +330,6 @@ export default function Register() {
               <div className='step-panel' key='step-3'>
                 <form onSubmit={handleRegister}>
                   <h3>Tạo mật khẩu</h3>
-                  <p className='auth-subtitle'>Chọn mật khẩu mạnh để bảo vệ tài khoản</p>
 
                   <div className='auth-form-group'>
                     <label className='auth-label' htmlFor='register-password'>
@@ -342,58 +343,56 @@ export default function Register() {
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                     />
-                    <div className='strength-meter'>
-                      <div className='strength-bar'>
-                        <span style={{ width: `${(normalizedStrength / 3) * 100}%`, background: strengthColor }} />
-                      </div>
-                      <span className='strength-label' style={{ color: strengthColor }}>
-                        {password ? strengthLabel : 'Chưa nhập' }
-                      </span>
+
+                  </div>
+
+                  <div className='password-row'>
+                    <div className='auth-form-group'>
+                      <label className='auth-label' htmlFor='register-password-confirm'>
+                        Xác nhận mật khẩu
+                      </label>
+                      <input
+                        id='register-password-confirm'
+                        type='password'
+                        className='auth-input'
+                        placeholder='Nhập lại mật khẩu'
+                        value={confirmPassword}
+                        aria-invalid={Boolean(confirmPassword) && confirmPassword !== password}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                      />
+                      {confirmPassword && confirmPassword !== password && (
+                        <span className='auth-error-text'>Mật khẩu và xác nhận không khớp</span>
+                      )}
+                    </div>
+
+                    <div className='password-checklist' aria-live='polite'>
+                      {checklist.map((item) => (
+                        <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
+                          {passwordState[item.key] ? '✓' : '•'} {item.label}
+                        </span>
+                      ))}
                     </div>
                   </div>
 
-                  <div className='auth-form-group'>
-                    <label className='auth-label' htmlFor='register-password-confirm'>
-                      Xác nhận mật khẩu
-                    </label>
+                  <label className="auth-checkbox">
                     <input
-                      id='register-password-confirm'
-                      type='password'
-                      className='auth-input'
-                      placeholder='Nhập lại mật khẩu'
-                      value={confirmPassword}
-                      aria-invalid={Boolean(confirmPassword) && confirmPassword !== password}
-                      onChange={(event) => setConfirmPassword(event.target.value)}
-                    />
-                    {confirmPassword && confirmPassword !== password && (
-                      <span className='auth-error-text'>Mật khẩu và xác nhận không khớp</span>
-                    )}
-                  </div>
-
-                  <div className='password-checklist' aria-live='polite'>
-                    {checklist.map((item) => (
-                      <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
-                        {passwordState[item.key] ? '✓' : '•'} {item.label}
-                      </span>
-                    ))}
-                  </div>
-
-                  <label className='auth-checkbox' style={{ marginTop: 12 }}>
-                    <input
-                      type='checkbox'
+                      type="checkbox"
                       checked={acceptTerms}
                       onChange={(event) => {
-                        setAcceptTerms(event.target.checked)
-                        if (event.target.checked) setShowTermsError(false)
+                        setAcceptTerms(event.target.checked);
+                        if (event.target.checked) setShowTermsError(false);
                       }}
                     />
-                    Tôi đồng ý với{' '}
-                    <a className='auth-link' href='/terms'>Điều khoản</a>{' '}
-                    &amp;{' '}
-                    <a className='auth-link' href='/privacy'>Chính sách Bảo mật</a>
+                    <span className="auth-checkbox-text">
+                      Tôi đồng ý với{' '}
+                      <a className="auth-link" href="/terms">Điều khoản</a>{' '}
+                      &amp;{' '}
+                      <a className="auth-link" href="/privacy">Chính sách Bảo mật</a>
+                    </span>
                   </label>
+
                   {showTermsError && !acceptTerms && (
-                    <span className='auth-error-text'>Vui lòng đồng ý Điều khoản</span>
+                    <span className="auth-error-text">Vui lòng đồng ý Điều khoản</span>
                   )}
 
                   <button className='auth-btn primary' type='submit' disabled={!canSubmitPassword || registerState === 'loading'}>
@@ -405,7 +404,7 @@ export default function Register() {
 
             {step === 4 && (
               <div className='step-panel success-card' key='step-4'>
-                <h3>Chào mừng đến với WoodMarket</h3>
+                <h3>Chào mừng đến với Woodify</h3>
                 <p>Đăng ký thành công. Chúng tôi đã tự động đăng nhập để bạn bắt đầu mua sắm ngay.</p>
                 <button className='auth-btn primary' type='button' onClick={goShopping}>
                   Bắt đầu mua sắm

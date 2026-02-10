@@ -32,17 +32,13 @@ const AuthHero: React.FC = () => (
   <div className='auth-hero' aria-hidden='true'>
     <div>
       <div className='auth-logo'>
-        <span>WM</span>
-        WoodMarket
+        Woodify
       </div>
       <h1>Đăng nhập để tiếp tục khám phá gỗ tinh tuyển</h1>
       <p>
         Tận hưởng không gian mua sắm ấm áp, chọn lựa sản phẩm thủ công bền vững và quản lý đơn hàng
         chỉ trong vài thao tác.
       </p>
-    </div>
-    <div>
-      <p className='auth-subtitle'>An tâm với bảo mật nhiều lớp, OTP và chính sách quyền riêng tư minh bạch.</p>
     </div>
   </div>
 )
@@ -128,7 +124,7 @@ export default function Login() {
         <section className='auth-card' role='form' aria-live='polite'>
           <div>
             <h2>Đăng nhập</h2>
-            <p className='auth-subtitle'>Chào mừng trở lại với WoodMarket</p>
+            <p className='auth-subtitle'>Chào mừng trở lại với Woodify</p>
           </div>
 
           {formState === 'error' && bannerMessage && <div className='auth-alert'>{bannerMessage}</div>}
@@ -163,7 +159,6 @@ export default function Login() {
               <label className='auth-label' htmlFor='login-password'>
                 Mật khẩu
               </label>
-              <div className='password-field'>
                 <input
                   id='login-password'
                   type={showPassword ? 'text' : 'password'}
@@ -177,28 +172,12 @@ export default function Login() {
                     if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }))
                   }}
                 />
-                <button
-                  type='button'
-                  className='password-toggle'
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? 'Ẩn' : 'Hiện'}
-                </button>
-              </div>
+                
               {errors.password && (
                 <span id='login-password-error' className='auth-error-text' role='status'>
                   {errors.password}
                 </span>
               )}
-              <div className='strength-meter' aria-live='polite'>
-                <div className='strength-bar'>
-                  <span style={{ width: strength.percent, background: strengthMeta?.color }} />
-                </div>
-                <span className='strength-label' style={{ color: strengthMeta?.color }}>
-                  {password ? strengthMeta?.label : 'Nhập mật khẩu'}
-                </span>
-              </div>
             </div>
 
             <div className='auth-inline'>
@@ -210,23 +189,9 @@ export default function Login() {
                 />
                 Ghi nhớ tôi
               </label>
-              <Link to='/forgot-password' className='auth-link'>
-                Quên mật khẩu?
-              </Link>
             </div>
 
-            <div className='auth-sample-card'>
-              <div>
-                <p className='auth-sample-card__title'>Tài khoản Admin mẫu</p>
-                <p className='auth-sample-card__meta'>Email: {ADMIN_ACCOUNT.email}</p>
-                <p className='auth-sample-card__meta'>Mật khẩu: {ADMIN_ACCOUNT.password}</p>
-              </div>
-              <button type='button' onClick={handlePrefillAdmin} className='auth-btn tertiary'>
-                Điền nhanh
-              </button>
-            </div>
-
-            <button className='auth-btn primary' type='submit' disabled={formState === 'loading'}>
+            <button className='auth-btn primary auth-btn-full' type='submit' disabled={formState === 'loading'}>
               {formState === 'loading' ? 'Đang xác thực...' : 'Đăng nhập'}
             </button>
           </form>
@@ -256,6 +221,9 @@ export default function Login() {
           <p className='auth-subtitle'>
             Bạn chưa có tài khoản? <Link to='/register' className='auth-link'>Đăng ký</Link>
           </p>
+          <Link to='/forgot-password' className='auth-link'>
+            Quên mật khẩu?
+          </Link>
         </section>
       </div>
     </div>

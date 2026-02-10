@@ -75,7 +75,7 @@
   font-weight: 700;
   font-size: 20px;
   letter-spacing: 0.04em;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10px;
 }
@@ -118,6 +118,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-bottom: 16px;
 }
 
 .auth-label {
@@ -148,23 +149,30 @@
 .auth-inline {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .auth-checkbox {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: center;   /* <-- điểm mấu chốt */
   gap: 8px;
+  width: 100%;
   font-size: 14px;
   color: var(--text-secondary);
+  cursor: pointer;       /* thêm cho thân thiện */
 }
 
-.auth-checkbox input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--wood-accent);
+.auth-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.auth-checkbox-text {
+  line-height: 1.4;     /* giúp text dễ đọc hơn khi wrap */
 }
 
 .auth-link {
@@ -192,6 +200,10 @@ button.auth-link[disabled] {
   font-weight: 600;
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.auth-btn-full {
+  width: 100%;
 }
 
 .auth-btn:disabled {
@@ -278,13 +290,14 @@ button.auth-link[disabled] {
 
 .password-field {
   position: relative;
+  width: 100%;
 }
 
 .password-toggle {
   position: absolute;
   right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 8px;
+  transform: none;
   background: none;
   border: none;
   cursor: pointer;
@@ -407,6 +420,24 @@ button.auth-link[disabled] {
 }
 
 .success-card h3 {
+
+.password-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.password-row .auth-form-group {
+  flex: 1;
+  min-width: 220px;
+}
+
+@media (max-width: 768px) {
+  .password-row {
+    flex-direction: column;
+  }
+}
   font-size: 24px;
   margin-bottom: 12px;
 }
