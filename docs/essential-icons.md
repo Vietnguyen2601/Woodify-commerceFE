@@ -4,7 +4,7 @@ Modern outline icon pack optimized for the home page and header navigation.
 
 ## Contents
 
-- 22 production-ready SVGs in `src/assets/icons/essential`
+- 27 production-ready SVGs in `src/assets/icons/essential`
 - Reusable React component at `src/components/ui/Icon/Icon.tsx`
 - Badge utility styles in `src/styles/icon-badge.css`
 
@@ -22,7 +22,12 @@ Modern outline icon pack optimized for the home page and header navigation.
 | notification-bell | Idle bell                    |
 | notification-dot  | Bell with unread dot         |
 | phone             | Hotline/contact phone        |
+| mail              | Email envelope               |
 | globe             | Locale/language selector     |
+| map-pin           | Boutique/showroom location   |
+| facebook          | Facebook social icon         |
+| instagram         | Instagram social icon        |
+| tiktok            | TikTok social icon           |
 | logo-placeholder  | Geometric brand mark         |
 | truck             | Fast shipping                |
 | shield-check      | Secure payment/guarantee     |
@@ -51,7 +56,7 @@ export function HeaderSearchButton() {
 
 **Props**
 
-- `name`: one of the 22 icon names above
+- `name`: one of the 27 icon names above
 - `size`: defaults to 24 (use 16/20/32/48 as needed)
 - `strokeWidth`: defaults to 2 for outline icons
 - `decorative`: set to `true` for purely ornamental icons
