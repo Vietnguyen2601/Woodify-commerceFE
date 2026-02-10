@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { ROUTES } from '../../../constants/routes'
+import woodifyLogo from '../../../assets/logo/Woodify.jpg'
+import { Icon } from '../../ui'
 import './Header.css'
 
 interface HeaderProps {
@@ -46,20 +48,14 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
         <div className="flex items-center gap-3 lg:gap-4">
           {/* Social Icons */}
           <div className="hidden lg:flex items-center gap-3">
-            <a href="#" className="hover:opacity-80 transition">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" />
-              </svg>
+            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên Facebook">
+              <Icon name="facebook" size={20} strokeWidth={1.8} decorative className="text-white" />
             </a>
-            <a href="#" className="hover:opacity-80 transition">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8z" />
-              </svg>
+            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên Instagram">
+              <Icon name="instagram" size={20} strokeWidth={1.8} decorative className="text-white" />
             </a>
-            <a href="#" className="hover:opacity-80 transition">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8z" />
-              </svg>
+            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên TikTok">
+              <Icon name="tiktok" size={20} strokeWidth={1.8} decorative className="text-white" />
             </a>
           </div>
 
@@ -68,9 +64,18 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
           <Link to="/support" className="hidden md:block hover:opacity-80 transition font-arbutus text-xs">
             LIÊN HỆ
           </Link>
-          <button type="button" className="hidden md:block hover:opacity-80 transition font-arbutus text-xs">
-            TIẾNG VIỆT
-          </button>
+          
+          <div className="hidden md:flex items-center text-white font-arbutus text-xs" aria-label="Ngôn ngữ">
+            <Icon name="globe" size={18} strokeWidth={1.8} decorative className="text-white" />
+            <select
+              className="bg-transparent border-0 text-white font-arbutus text-xs pl-1 focus:outline-none appearance-none"
+              defaultValue="vi"
+              aria-label="Chọn ngôn ngữ"
+            >
+              <option value="vi" className="text-gray-800">TIẾNG VIỆT</option>
+              <option value="en" className="text-gray-800">ENGLISH</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -81,11 +86,12 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
       <div className="px-4 md:px-8 lg:px-20 py-1.5 md:py-2 flex items-center justify-between gap-4 md:gap-5" style={{backgroundColor: '#C7A57A'}}>
         {/* Brand */}
         <Link to={ROUTES.HOME} className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          <div className="bg-white rounded-lg flex-shrink-0">
+          <div className="bg-white rounded-lg flex-shrink-0 overflow-hidden" style={{ width: '64px', height: '64px' }}>
             <img
-              src="https://placehold.co/66x66"
-              alt="Woodify"
-              className="w-8 md:w-10 lg:w-12 h-8 md:h-10 lg:h-12 rounded object-cover"
+              src={woodifyLogo}
+              alt="Logo Woodify"
+              className="w-full h-full object-cover"
+              loading="lazy"
             />
           </div>
           <span className="text-white text-xl md:text-2xl lg:text-3xl font-bold font-poppins whitespace-nowrap">WOODIFY</span>

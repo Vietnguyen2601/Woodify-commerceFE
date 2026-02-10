@@ -1,4 +1,5 @@
 import React from 'react'
+import woodifyLogo from '../../../assets/logo/Woodify.jpg'
 import './Footer.css'
 
 const productCategories = [
@@ -29,7 +30,7 @@ export default function Footer() {
       <div className="footer__inner">
         <div className="footer__brand">
           <div className="footer__logo-mark" aria-hidden="true">
-            W
+            <img src={woodifyLogo} alt="Woodify logo" loading="lazy" />
           </div>
           <span className="footer__brand-name">WOODIFY</span>
         </div>

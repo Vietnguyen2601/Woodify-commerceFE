@@ -68,6 +68,31 @@ const iconPaths = {
       <path d="M18 16.5C16.1 15.7 14.1 15.25 12 15.25C9.9 15.25 7.9 15.7 6 16.5" />
     </>
   ),
+  'mail': (
+    <>
+      <rect x="4" y="6" width="16" height="12" rx="2" />
+      <path d="M5 8L12 13L19 8" />
+    </>
+  ),
+  'map-pin': (
+    <>
+      <path d="M12 3C8.686 3 6 5.686 6 9C6 13.5 12 21 12 21C12 21 18 13.5 18 9C18 5.686 15.314 3 12 3Z" />
+      <circle cx="12" cy="9" r="2" />
+    </>
+  ),
+  'facebook': (
+    <path d="M15 3H13C10.791 3 9 4.791 9 7V9H7V12H9V21H12V12H14.5L15 9H12V7C12 6.448 12.448 6 13 6H15V3Z" />
+  ),
+  'instagram': (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="5" />
+      <circle cx="12" cy="12" r="3.5" />
+      <circle cx="17.5" cy="6.5" r="1" />
+    </>
+  ),
+  'tiktok': (
+    <path d="M15 4V8.5C15 10.985 17.015 13 19.5 13H20V10.5C18.76 10.5 17.58 10.11 16.62 9.43C15.63 8.72 15 7.7 15 6.5V4H12V14.25C12 15.77 10.77 17 9.25 17C7.73 17 6.5 15.77 6.5 14.25C6.5 12.73 7.73 11.5 9.25 11.5C9.62 11.5 9.98 11.56 10.32 11.67V9C7.45 9 5.12 11.33 5.12 14.2C5.12 17.07 7.45 19.4 10.32 19.4C13.19 19.4 15.52 17.07 15.52 14.2V9.05C16.67 10.02 18.19 10.62 19.78 10.62H20V7.9C18.81 7.9 17.67 7.45 16.81 6.64C15.88 5.78 15.33 4.65 15 3.5V4Z" />
+  ),
   'logo-placeholder': (
     <>
       <rect x="5" y="5" width="14" height="14" rx="3" />
@@ -152,6 +177,11 @@ const defaultTitles: Record<IconName, string> = {
   'notification-dot': 'Notifications unread',
   'phone': 'Phone contact',
   'globe': 'Language selector',
+  'mail': 'Email contact',
+  'map-pin': 'Showroom location',
+  'facebook': 'Facebook',
+  'instagram': 'Instagram',
+  'tiktok': 'TikTok',
   'logo-placeholder': 'Brand mark',
   'truck': 'Fast delivery',
   'shield-check': 'Secure guarantee',

@@ -1,8 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;600;700&display=swap');
+
 .footer {
   width: 100%;
   background: #fff;
   color: #8b5e34;
   padding: 32px 16px 24px;
+  font-family: 'Roboto Slab', 'Inter', serif;
 }
 
 .footer__inner {
@@ -17,15 +20,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-family: 'Roboto Slab', 'Inter', serif;
   font-size: 20px;
   font-weight: 600;
   color: #8b5e34;
 }
 
 .footer__logo-mark {
-  width: 38px;
-  height: 38px;
+  width: 80px;
+  height: 80px;
   border-radius: 10px;
   background: rgba(139, 94, 52, 0.1);
   display: flex;
@@ -34,6 +37,14 @@
   font-weight: 600;
   font-size: 18px;
   letter-spacing: 0.08em;
+  overflow: hidden;
+}
+
+.footer__logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
 }
 
 .footer__brand-name {
@@ -46,17 +57,24 @@
   gap: 24px;
 }
 
+.footer__column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
 .footer__column h4 {
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-family: 'Roboto Slab', 'Inter', serif;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 700;
   margin-bottom: 12px;
   color: #8b5e34;
 }
 
 .footer__column p,
 .footer__column li {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Roboto Slab', 'Inter', serif;
   font-size: 14px;
   line-height: 1.45;
   color: rgba(95, 60, 32, 0.9);
@@ -70,6 +88,14 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.footer__bottom {
+  text-align: center;
+  font-family: 'Roboto Slab', 'Inter', serif;
+  font-size: 13px;
+  color: rgba(95, 60, 32, 0.85);
+  margin-top: 16px;
 }
 
 @media (max-width: 992px) {
