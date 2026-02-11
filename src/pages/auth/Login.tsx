@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import AuthPageHeader from '../../components/layout/Header/AuthPageHeader'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -126,7 +125,6 @@ export default function Login() {
 
   return (
     <>
-      <AuthPageHeader actionLabel='Đăng nhập' />
       <div className='auth-shell'>
         <div className='auth-layer'>
           <AuthHero />
