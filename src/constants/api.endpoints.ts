@@ -3,6 +3,7 @@
  */
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+export const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL
 
 export const API_ENDPOINTS = {
   // Auth
@@ -12,6 +13,13 @@ export const API_ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',
     ME: '/auth/me',
+  },
+
+  // Identity Service (OTP & Email Verification)
+  IDENTITY: {
+    SEND_OTP: '/auth/send-otp',
+    VERIFY_OTP: '/auth/verify-otp',
+    REGISTER: '/auth/register',
   },
 
   // Products

@@ -10,6 +10,12 @@ const ADMIN_ACCOUNT = {
   name: 'Head of Operations'
 }
 
+const CUSTOMER_ACCOUNT = {
+  email: 'customer@woodmarket.com',
+  password: 'Customer#2026',
+  name: 'Premium Member'
+}
+
 const STRENGTH_PALETTE = [
   { label: 'Rất yếu', color: '#C84545' },
   { label: 'Trung bình', color: '#E6A151' },
@@ -78,40 +84,43 @@ export default function Login() {
 
     setFormState('loading')
     setBannerMessage('')
-
-    window.setTimeout(() => {
-      const normalizedEmail = email.trim().toLowerCase()
-      const isAdminAccount =
-        normalizedEmail === ADMIN_ACCOUNT.email && password === ADMIN_ACCOUNT.password
-
-      localStorage.setItem('auth_token', 'mock-token')
-      if (rememberMe) {
-        localStorage.setItem('remember_me', 'true')
-      } else {
-        localStorage.removeItem('remember_me')
-      }
-
-      localStorage.setItem('user_role', isAdminAccount ? 'admin' : 'user')
-      if (isAdminAccount) {
-        localStorage.setItem(
-          'admin_profile',
-          JSON.stringify({
-            name: ADMIN_ACCOUNT.name,
-            lastLogin: new Date().toISOString()
-          })
-        )
-      } else {
-        localStorage.removeItem('admin_profile')
-      }
-
-      nav(isAdminAccount ? '/admin' : '/')
-      setFormState('idle')
-    }, 750)
+    import('@/services/auth.service').then(({ authService }) => {
+      authService.login({ email, password })
+        .then((res) => {
+          if (res.data && res.data.success && res.data.token) {
+            localStorage.setItem('auth_token', res.data.token)
+            localStorage.setItem('user_role', 'user')
+            localStorage.setItem('user_email', res.data.email)
+            localStorage.setItem('user_name', res.data.username)
+            if (rememberMe) {
+              localStorage.setItem('remember_me', 'true')
+            } else {
+              localStorage.removeItem('remember_me')
+            }
+            nav('/')
+            setFormState('idle')
+          } else {
+            setFormState('error')
+            setBannerMessage(res.data?.message || 'Sai email hoặc mật khẩu.')
+          }
+        })
+        .catch((err) => {
+          setFormState('error')
+          setBannerMessage(err?.message || 'Sai email hoặc mật khẩu.')
+        })
+    })
   }
 
   function handlePrefillAdmin() {
     setEmail(ADMIN_ACCOUNT.email)
     setPassword(ADMIN_ACCOUNT.password)
+    setErrors({})
+    setFormState('idle')
+  }
+
+  function handlePrefillCustomer() {
+    setEmail(CUSTOMER_ACCOUNT.email)
+    setPassword(CUSTOMER_ACCOUNT.password)
     setErrors({})
     setFormState('idle')
   }
@@ -191,7 +200,18 @@ export default function Login() {
               </label>
             </div>
 
-            <button className='auth-btn primary auth-btn-full' type='submit' disabled={formState === 'loading'}>
+            <div className='auth-sample-card'>
+              <div>
+                <p className='auth-sample-card__title'>Tài khoản Khách hàng mẫu</p>
+                <p className='auth-sample-card__meta'>Email: {CUSTOMER_ACCOUNT.email}</p>
+                <p className='auth-sample-card__meta'>Mật khẩu: {CUSTOMER_ACCOUNT.password}</p>
+              </div>
+              <button type='button' onClick={handlePrefillCustomer} className='auth-btn tertiary'>
+                Điền nhanh
+              </button>
+            </div>
+
+            <button className='auth-btn primary' type='submit' disabled={formState === 'loading'}>
               {formState === 'loading' ? 'Đang xác thực...' : 'Đăng nhập'}
             </button>
           </form>

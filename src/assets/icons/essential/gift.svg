@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title>Gift</title>
+  <desc>Present box for promotions</desc>
+  <rect x="4" y="10" width="16" height="10" rx="2" />
+  <path d="M4 10H20" />
+  <path d="M12 4C10.895 4 10 4.895 10 6C10 7.105 10.895 8 12 8C13.105 8 14 7.105 14 6C14 4.895 13.105 4 12 4Z" />
+  <path d="M12 8V20" />
+  <path d="M7 6C7 4.895 7.895 4 9 4C10.105 4 11 4.895 11 6C11 7.105 10.105 8 9 8C7.895 8 7 7.105 7 6Z" />
+  <path d="M17 6C17 4.895 16.105 4 15 4C13.895 4 13 4.895 13 6C13 7.105 13.895 8 15 8C16.105 8 17 7.105 17 6Z" />
+</svg>

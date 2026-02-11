@@ -1,70 +1,193 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
+import { ROUTES } from '../../../constants/routes'
+import woodifyLogo from '../../../assets/logo/Woodify.jpg'
+import { Icon } from '../../ui'
 import './Header.css'
 
 interface HeaderProps {
   cartItemCount?: number
 }
 
-export default function Header({ cartItemCount = 0 }: HeaderProps) {
-  return (
-    <header className="header">
-      <div className="header__navbar">
-        <div className="header__bg" />
-        
-        <Link to="/" className="header__logo">
-          <img 
-            src="https://api.builder.io/api/v1/image/assets/TEMP/1ae9c86ac8c0e73a011be25d98d2876cb00643eb?width=132" 
-            alt="Woodify Logo" 
-          />
-        </Link>
+type NavItem = {
+  label: string
+  to: string
+}
 
-        <div className="header__search">
-          <div className="header__search-bar">
-            <svg className="header__search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M16.6 18L10.3 11.7C9.8 12.1 9.225 12.4167 8.575 12.65C7.925 12.8833 7.23333 13 6.5 13C4.68333 13 3.14583 12.3708 1.8875 11.1125C0.629167 9.85417 0 8.31667 0 6.5C0 4.68333 0.629167 3.14583 1.8875 1.8875C3.14583 0.629167 4.68333 0 6.5 0C8.31667 0 9.85417 0.629167 11.1125 1.8875C12.3708 3.14583 13 4.68333 13 6.5C13 7.23333 12.8833 7.925 12.65 8.575C12.4167 9.225 12.1 9.8 11.7 10.3L18 16.6L16.6 18ZM6.5 11C7.75 11 8.8125 10.5625 9.6875 9.6875C10.5625 8.8125 11 7.75 11 6.5C11 5.25 10.5625 4.1875 9.6875 3.3125C8.8125 2.4375 7.75 2 6.5 2C5.25 2 4.1875 2.4375 3.3125 3.3125C2.4375 4.1875 2 5.25 2 6.5C2 7.75 2.4375 8.8125 3.3125 9.6875C4.1875 10.5625 5.25 11 6.5 11Z" fill="currentColor"/>
-            </svg>
-            <input type="text" placeholder="Tìm kiếm..." className="header__search-input" />
+const mainNavigation: NavItem[] = [
+  { label: 'Trang chủ', to: ROUTES.HOME },
+  { label: 'Sản phẩm', to: ROUTES.CATALOG },
+  { label: 'Khuyến mãi', to: ROUTES.CATALOG },
+  { label: 'Chăm Sóc Khách Hàng', to: '/support' },
+]
+
+export default function Header({ cartItemCount = 0 }: HeaderProps) {
+  const notificationCount = 3
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
+
+  return (
+    <header className="sticky top-0 z-50 w-full" style={{backgroundColor: '#C7A57A'}}>
+      {/* Top Bar - Hidden on Mobile */}
+      <div className="hidden md:flex px-4 md:px-12 lg:px-20 py-1 items-center justify-between text-white text-xs" style={{backgroundColor: '#C7A57A'}}>
+        <div className="hidden md:flex items-center gap-5 lg:gap-8 font-arbutus text-xs md:text-xs flex-1 justify-center ml-12 lg:ml-16">
+          <Link to={ROUTES.PROFILE_ORDERS} className="hover:opacity-80 transition">
+            THÔNG BÁO
+          </Link>
+          <Link to={ROUTES.CATALOG} className="hover:opacity-80 transition">
+            ĐẶT HÀNG THEO YÊU CẦU
+          </Link>
+          <Link to={ROUTES.SELLER} className="hover:opacity-80 transition">
+            KÊNH NGƯỜI BÁN
+          </Link>
+          <button type="button" className="hover:opacity-80 transition">
+            TẢI ỨNG DỤNG
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 lg:gap-4">
+          {/* Social Icons */}
+          <div className="hidden lg:flex items-center gap-3">
+            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên Facebook">
+              <Icon name="facebook" size={20} strokeWidth={1.8} decorative className="text-white" />
+            </a>
+            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên Instagram">
+              <Icon name="instagram" size={20} strokeWidth={1.8} decorative className="text-white" />
+            </a>
+            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên TikTok">
+              <Icon name="tiktok" size={20} strokeWidth={1.8} decorative className="text-white" />
+            </a>
+          </div>
+
+          <span className="hidden lg:block w-px h-3 bg-white opacity-40"></span>
+
+          <Link to="/support" className="hidden md:block hover:opacity-80 transition font-arbutus text-xs">
+            LIÊN HỆ
+          </Link>
+          
+          <div className="hidden md:flex items-center text-white font-arbutus text-xs" aria-label="Ngôn ngữ">
+            <Icon name="globe" size={18} strokeWidth={1.8} decorative className="text-white" />
+            <select
+              className="bg-transparent border-0 text-white font-arbutus text-xs pl-1 focus:outline-none appearance-none"
+              defaultValue="vi"
+              aria-label="Chọn ngôn ngữ"
+            >
+              <option value="vi" className="text-gray-800">TIẾNG VIỆT</option>
+              <option value="en" className="text-gray-800">ENGLISH</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        <nav className="header__nav">
-          <Link to="/catalog" className="header__nav-link">Sản phẩm</Link>
-          <Link to="/workshops" className="header__nav-link">Workshops</Link>
-          <Link to="/ai-generator" className="header__nav-link">AI Generator</Link>
-          <Link to="/community" className="header__nav-link">Cộng đồng</Link>
-          <Link to="/support" className="header__nav-link">Hỗ trợ</Link>
-        </nav>
+      {/* Divider */}
+      <div className="h-px bg-white opacity-50 w-full hidden md:block"></div>
 
-        <div className="header__links">
-          <Link to="/seller" className="header__link">Kênh người bán</Link>
-          <Link to="/register?seller=1" className="header__link">Trở thành người bán</Link>
-          <Link to="/login" className="header__link">Đăng nhập</Link>
-          <Link to="/register" className="header__link header__link--primary">Đăng ký</Link>
+      {/* Main Header */}
+      <div className="px-4 md:px-8 lg:px-20 py-1.5 md:py-2 flex items-center justify-between gap-4 md:gap-5" style={{backgroundColor: '#C7A57A'}}>
+        {/* Brand */}
+        <Link to={ROUTES.HOME} className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <div className="bg-white rounded-lg flex-shrink-0 overflow-hidden" style={{ width: '64px', height: '64px' }}>
+            <img
+              src={woodifyLogo}
+              alt="Logo Woodify"
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+          <span className="text-white text-xl md:text-2xl lg:text-3xl font-bold font-poppins whitespace-nowrap">WOODIFY</span>
+        </Link>
+
+        {/* Navigation - Hidden on Mobile */}
+        <div className="hidden lg:flex flex-1 justify-center overflow-hidden">
+          {isSearching ? (
+            <input
+              key="search-input"
+              type="text"
+              placeholder="Tìm kiếm sản phẩm..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              autoFocus
+              className="w-full px-4 py-2 rounded bg-white bg-opacity-90 text-gray-800 placeholder-gray-500 outline-none"
+              style={{
+                animation: 'slideIn 0.3s ease-out forwards'
+              }}
+            />
+          ) : (
+            <nav
+              key="navigation"
+              className="flex items-center gap-12 lg:gap-14 transition-all duration-300"
+              style={{
+                animation: 'slideOut 0.3s ease-in forwards'
+              }}
+              aria-label="Main navigation"
+            >
+              {mainNavigation.map((item) => (
+                <NavLink
+                  key={item.label}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `text-white text-base md:text-lg lg:text-xl font-bold font-poppins transition-opacity duration-300 ${
+                      isActive ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          )}
         </div>
 
-        <div className="header__actions">
-          <Link to="/cart" className="header__cart">
-            <svg width="36" height="32" viewBox="0 0 36 32" fill="none">
-              <path d="M7.45415 22.7766C6.77086 22.7766 6.18591 22.5536 5.69932 22.1075C5.21273 21.6615 4.96944 21.1253 4.96944 20.4989C4.96944 19.8726 5.21273 19.3364 5.69932 18.8903C6.18591 18.4443 6.77086 18.2213 7.45415 18.2213C8.13745 18.2213 8.72239 18.4443 9.20898 18.8903C9.69557 19.3364 9.93887 19.8726 9.93887 20.4989C9.93887 21.1253 9.69557 21.6615 9.20898 22.1075C8.72239 22.5536 8.13745 22.7766 7.45415 22.7766ZM19.8777 22.7766C19.1944 22.7766 18.6095 22.5536 18.1229 22.1075C17.6363 21.6615 17.393 21.1253 17.393 20.4989C17.393 19.8726 17.6363 19.3364 18.1229 18.8903C18.6095 18.4443 19.1944 18.2213 19.8777 18.2213C20.561 18.2213 21.146 18.4443 21.6326 18.8903C22.1192 19.3364 22.3625 19.8726 22.3625 20.4989C22.3625 21.1253 22.1192 21.6615 21.6326 22.1075C21.146 22.5536 20.561 22.7766 19.8777 22.7766ZM6.39815 4.55532L9.37981 10.2495H18.0763L21.4928 4.55532H6.39815ZM5.21791 2.27766H23.5427C24.0189 2.27766 24.3813 2.47221 24.6298 2.86131C24.8782 3.25041 24.8886 3.64425 24.6608 4.04284L20.2504 11.3313C20.0227 11.711 19.7173 12.0052 19.3342 12.2139C18.9511 12.4227 18.5319 12.5271 18.0763 12.5271H8.82075L7.45415 14.8048H22.3625V17.0824H7.45415C6.52238 17.0824 5.81838 16.7076 5.34214 15.9578C4.86591 15.2081 4.8452 14.4631 5.28002 13.7229L6.95721 10.9328L2.48472 2.27766H0V0H4.03767L5.21791 2.27766Z" fill="white"/>
+        {/* Controls */}
+        <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
+          {/* Search */}
+          <button
+            type="button"
+            aria-label="Tìm kiếm sản phẩm"
+            onClick={() => {
+              setIsSearching(!isSearching)
+              if (isSearching) setSearchValue('')
+            }}
+            className="p-1 md:p-1.5 text-white hover:opacity-100 transition-all duration-300"
+          >
+            {isSearching ? (
+              <svg width="16" height="16" className="w-4 md:w-4 lg:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            ) : (
+              <svg width="16" height="16" className="w-4 md:w-4 lg:w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M19.6 18.1L14 12.6c1.1-1.4 1.7-3.1 1.7-4.9 0-4.5-3.6-8.1-8.1-8.1S-1.5 3.3-1.5 7.8s3.6 8.1 8.1 8.1c1.8 0 3.5-.6 4.9-1.7l5.6 5.6 1.8-1.8zM7.6 13.6c-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8 5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Cart */}
+          <Link
+            to={ROUTES.CART}
+            className="relative p-1 md:p-1.5 text-white hover:opacity-80 transition"
+            aria-label="Giỏ hàng"
+          >
+            <svg width="18" height="16" className="w-5 md:w-5 lg:w-6" viewBox="0 0 24 20" fill="currentColor">
+              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
             </svg>
             {cartItemCount > 0 && (
-              <span className="header__cart-badge">{cartItemCount}</span>
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 md:px-2 md:py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                {cartItemCount}
+              </span>
             )}
           </Link>
 
-          <button className="header__language">
-            <svg width="26" height="27" viewBox="0 0 26 27" fill="none">
-              <path d="M12.5 25C10.7917 25 9.17708 24.6719 7.65625 24.0156C6.13542 23.3594 4.80729 22.4635 3.67188 21.3281C2.53646 20.1927 1.64062 18.8646 0.984375 17.3438C0.328125 15.8229 0 14.2083 0 12.5C0 10.7708 0.328125 9.15104 0.984375 7.64062C1.64062 6.13021 2.53646 4.80729 3.67188 3.67188C4.80729 2.53646 6.13542 1.64062 7.65625 0.984375C9.17708 0.328125 10.7917 0 12.5 0C14.2292 0 15.849 0.328125 17.3594 0.984375C18.8698 1.64062 20.1927 2.53646 21.3281 3.67188C22.4635 4.80729 23.3594 6.13021 24.0156 7.64062C24.6719 9.15104 25 10.7708 25 12.5C25 14.2083 24.6719 15.8229 24.0156 17.3438C23.3594 18.8646 22.4635 20.1927 21.3281 21.3281C20.1927 22.4635 18.8698 23.3594 17.3594 24.0156C15.849 24.6719 14.2292 25 12.5 25Z" fill="white"/>
-            </svg>
-          </button>
-
-          <Link to="/profile" className="header__user">
-            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-              <circle cx="17" cy="17" r="17" fill="#BE9C73"/>
-              <path d="M17.7523 17C16.6601 17 15.725 16.6083 14.9472 15.825C14.1694 15.0417 13.7805 14.1 13.7805 13C13.7805 11.9 14.1694 10.9583 14.9472 10.175C15.725 9.39167 16.6601 9 17.7523 9C18.8446 9 19.7797 9.39167 20.5575 10.175C21.3353 10.9583 21.7242 11.9 21.7242 13C21.7242 14.1 21.3353 15.0417 20.5575 15.825C19.7797 16.6083 18.8446 17 17.7523 17ZM9.80859 25V22.2C9.80859 21.6333 9.9534 21.1125 10.243 20.6375C10.5326 20.1625 10.9174 19.8 11.3973 19.55C12.4234 19.0333 13.466 18.6458 14.5252 18.3875C15.5844 18.1292 16.6601 18 17.7523 18C18.8446 18 19.9203 18.1292 20.9795 18.3875C22.0387 18.6458 23.0813 19.0333 24.1073 19.55C24.5873 19.8 24.9721 20.1625 25.2617 20.6375C25.5513 21.1125 25.6961 21.6333 25.6961 22.2V25H9.80859Z" fill="black"/>
-            </svg>
-          </Link>
+          {/* Auth Links - Hidden on Mobile */}
+          <div className="hidden md:flex items-center gap-2 text-white text-xs font-arbutus border-l border-white border-opacity-40 pl-3 md:pl-4">
+            <Link to={ROUTES.REGISTER} className="hover:opacity-80 transition">
+              Đăng ký
+            </Link>
+            <span className="opacity-60">|</span>
+            <Link to={ROUTES.LOGIN} className="hover:opacity-80 transition">
+              Đăng nhập
+            </Link>
+          </div>
         </div>
       </div>
     </header>

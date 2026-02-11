@@ -5,6 +5,7 @@ import Catalog from './pages/Catalog'
 import Product from './pages/Product'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
+import { Payment } from './pages/Payment'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
@@ -12,8 +13,10 @@ import SellerDashboard from './pages/seller/SellerDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import UploadImageDemo from './pages/UploadImageDemo'
 import Header from './components/layout/Header/Header'
+import Footer from './components/layout/Footer'
 import { useCart } from './store/cartStore'
 import './styles/app.css'
+import './styles/payment.css'
 
 export default function App() {
   const location = useLocation()
@@ -22,6 +25,7 @@ export default function App() {
   const isSellerRoute = location.pathname.startsWith('/seller')
   const isAdminRoute = location.pathname.startsWith('/admin')
   const showUserHeader = !isSellerRoute && !isAdminRoute
+  const showFooter = !isSellerRoute && !isAdminRoute
   const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
 
   return (
@@ -46,6 +50,7 @@ export default function App() {
           <Route path='/product/:id' element={<Product />} />
           <Route path='/cart' element={<Cart />} />
           <Route path='/checkout' element={<Checkout />} />
+          <Route path='/payment' element={<Payment />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />
@@ -57,6 +62,7 @@ export default function App() {
         </Routes>
       </main>
 
+      {showFooter && <Footer />}
     </div>
   )
 }

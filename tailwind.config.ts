@@ -70,6 +70,8 @@ export default {
         primary: ['Inter', 'sans-serif'],
         secondary: ['Inria Sans', 'sans-serif'],
         tertiary: ['Arimo', 'sans-serif'],
+        'inria-sans': ['Inria Sans', 'sans-serif'],
+        arimo: ['Arimo', 'sans-serif'],
       },
       borderRadius: {
         '4xl': '28px',

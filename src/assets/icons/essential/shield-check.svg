@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title>Secure Guarantee</title>
+  <desc>Shield with checkmark</desc>
+  <path d="M12 3L5 6V12C5 16.418 8.134 20.364 12 21C15.866 20.364 19 16.418 19 12V6L12 3Z" />
+  <path d="M9 12L11 14L15 10" />
+</svg>
