@@ -117,7 +117,7 @@ export default function Register() {
     //     })
     // })
   }
-
+w
   function handleEmailChange(value: string) {
     setEmail(value)
     if (emailError) setEmailError('')

@@ -194,8 +194,8 @@ export default function Login() {
               )}
             </div>
 
-            <div className='auth-inline'>
-              <label className='auth-checkbox'>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+              <label className='auth-checkbox' style={{ marginBottom: 0 }}>
                 <input
                   type='checkbox'
                   checked={rememberMe}
