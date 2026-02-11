@@ -15,6 +15,25 @@ const KPI_CARDS = [
   { title: 'Đơn chờ xử lý', value: '24', trend: '6 quá SLA', status: 'negative' as const }
 ]
 
+const REVENUE_SERIES = [
+  { day: 'Jan 20', value: 12 },
+  { day: 'Jan 21', value: 28 },
+  { day: 'Jan 22', value: 22 },
+  { day: 'Jan 23', value: 38 },
+  { day: 'Jan 24', value: 45 },
+  { day: 'Jan 25', value: 30 },
+  { day: 'Jan 26', value: 50 },
+  { day: 'Jan 27', value: 58 }
+]
+
+const TOP_PRODUCTS = [
+  { name: 'Oak Dining Table', value: 60 },
+  { name: 'Walnut Bookshelf', value: 48 },
+  { name: 'Pine Coffee Table', value: 36 },
+  { name: 'Teak Chair Set', value: 32 },
+  { name: 'Mahogany Desk', value: 26 }
+]
+
 const PERFORMANCE = [
   { label: 'Hiệu quả bán hàng', value: 'Xuất sắc', detail: 'Điểm phạt 0 • Tỉ lệ giao hàng đúng hạn 97%' },
   { label: 'Trải nghiệm khách', value: 'Tốt', detail: '4.9 / 5.0 • 132 đánh giá mới' },
@@ -75,6 +94,76 @@ export default function SellerHome() {
         {KPI_CARDS.map(card => (
           <DashboardCard key={card.title} title={card.title} value={card.value} trend={card.trend} status={card.status} highlight={card.status === 'positive'} />
         ))}
+      </section>
+
+      <section className='seller-home__charts'>
+        <article className='seller-home__chart-card seller-home__chart-card--compact'>
+          <div>
+            <p className='seller-home__eyebrow'>Revenue Over Time</p>
+            <h3>Xu hướng doanh thu 8 ngày gần nhất</h3>
+            <span className='seller-home__chart-subtitle'>Last 8 days revenue trend</span>
+          </div>
+          <div className='chart-sparkline' aria-hidden='true'>
+            <div className='chart-sparkline__y-axis'>
+              {[0, 15, 30, 45, 60].map(label => (
+                <span key={label}>{label}M</span>
+              ))}
+            </div>
+            <div className='chart-sparkline__plot'>
+              <svg viewBox='0 0 100 60' preserveAspectRatio='none'>
+                <defs>
+                  <linearGradient id='revenueLine' x1='0%' y1='0%' x2='0%' y2='100%'>
+                    <stop offset='0%' stopColor='#c08457' stopOpacity='0.45' />
+                    <stop offset='100%' stopColor='#c08457' stopOpacity='0' />
+                  </linearGradient>
+                </defs>
+                <polyline
+                  points={REVENUE_SERIES.map((point, index) => {
+                    const x = (index / (REVENUE_SERIES.length - 1)) * 100
+                    const y = 60 - (point.value / 60) * 60
+                    return `${x},${y}`
+                  }).join(' ')}
+                  fill='url(#revenueLine)'
+                  stroke='#b87436'
+                  strokeWidth='1.2'
+                  strokeLinejoin='round'
+                  strokeLinecap='round'
+                />
+                {REVENUE_SERIES.map((point, index) => {
+                  const x = (index / (REVENUE_SERIES.length - 1)) * 100
+                  const y = 60 - (point.value / 60) * 60
+                  return <circle key={point.day} cx={x} cy={y} r={1.1} fill='#744420' />
+                })}
+              </svg>
+            </div>
+          </div>
+          <div className='chart-sparkline__x-axis'>
+            {REVENUE_SERIES.map(point => (
+              <span key={point.day}>{point.day}</span>
+            ))}
+          </div>
+        </article>
+
+        <article className='seller-home__chart-card'>
+          <div>
+            <p className='seller-home__eyebrow'>Top Selling Products</p>
+            <h3>Sản phẩm perform tốt nhất</h3>
+            <span className='seller-home__chart-subtitle'>Best performers this month</span>
+          </div>
+          <div className='chart-bars'>
+            {TOP_PRODUCTS.map(item => (
+              <div key={item.name} className='chart-bars__row'>
+                <div>
+                  <strong>{item.name}</strong>
+                </div>
+                <div className='chart-bars__meter'>
+                  <span style={{ width: `${item.value / 60 * 100}%` }} />
+                </div>
+                <span className='chart-bars__value'>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </article>
       </section>
 
       <section className='seller-home__performance'>
