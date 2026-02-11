@@ -226,12 +226,14 @@
 
 .auth-checkbox {
   display: flex;
-  align-items: center;   /* <-- điểm mấu chốt */
+  align-items: center;
+  justify-content: flex-start;
   gap: 8px;
-  width: 100%;
+  width: fit-content;  /* Thay đổi từ 100% sang fit-content */
   font-size: 14px;
   color: var(--text-secondary);
-  cursor: pointer;       /* thêm cho thân thiện */
+  cursor: pointer;
+  margin-bottom: 16px;
 }
 
 .auth-checkbox input[type="checkbox"] {

@@ -93,6 +93,7 @@ export default function Register() {
 
   function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
 <<<<<<< HEAD
+<<<<<<< HEAD
     event.preventDefault()
     if (!EMAIL_PATTERN.test(email)) {
       setEmailError('Email không hợp lệ')
@@ -124,6 +125,8 @@ export default function Register() {
         })
     })
 =======
+=======
+>>>>>>> b7f517f18851a17932b668230f3be3fb39bc1a28
     // event.preventDefault()
     // if (!EMAIL_PATTERN.test(email)) {
     //   setEmailError('Email không hợp lệ')
@@ -148,7 +151,10 @@ export default function Register() {
     //       }
     //     })
     // })
+<<<<<<< HEAD
 >>>>>>> 41a48981112130300332c847306ed8a263d4a7ea
+=======
+>>>>>>> b7f517f18851a17932b668230f3be3fb39bc1a28
   }
 w
   function handleEmailChange(value: string) {
