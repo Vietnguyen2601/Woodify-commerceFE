@@ -44,10 +44,6 @@ const AuthHero: React.FC = () => (
     </div>
     <div className='auth-hero-text'>
       <h1>Đăng nhập để tiếp tục khám phá gỗ tinh tuyển</h1>
-      <p>
-        Tận hưởng không gian mua sắm ấm áp, chọn lựa sản phẩm thủ công bền vững và quản lý đơn hàng
-        chỉ trong vài thao tác.
-      </p>
     </div>
   </div>
 )
@@ -194,15 +190,15 @@ export default function Login() {
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
-              <label className='auth-checkbox' style={{ marginBottom: 0 }}>
+            <div className='auth-remember-row'>
+              <label className='auth-checkbox'>
                 <input
                   type='checkbox'
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}
                 />
-                Ghi nhớ tôi
               </label>
+              <span className='auth-checkbox-text'>Ghi nhớ tôi</span>
             </div>
 
             <button className='auth-btn primary auth-btn-full' type='submit' disabled={formState === 'loading'}>
