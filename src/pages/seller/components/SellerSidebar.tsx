@@ -11,7 +11,6 @@ interface SellerNavLink {
 interface SellerNavGroup {
   id: string
   label: string
-  icon: string
   defaultOpen?: boolean
   links?: SellerNavLink[]
   placeholder?: string
@@ -21,14 +20,12 @@ const NAV_GROUPS: SellerNavGroup[] = [
   {
     id: 'overview',
     label: 'Tổng quan',
-    icon: '📊',
     defaultOpen: true,
     links: [{ label: 'Bảng điều khiển', to: '/seller' }]
   },
   {
     id: 'orders',
     label: 'Quản Lý Đơn Hàng',
-    icon: '📦',
     links: [
       { label: 'Tất cả', to: '/seller/orders' },
       { label: 'Giao hàng loạt', to: '/seller/orders/bulk-shipping' },
@@ -40,7 +37,6 @@ const NAV_GROUPS: SellerNavGroup[] = [
   {
     id: 'products',
     label: 'Quản Lý Sản Phẩm',
-    icon: '🪵',
     links: [
       { label: 'Tất cả sản phẩm', to: '/seller/products' },
       { label: 'Thêm sản phẩm', to: '/seller/products/add' },
@@ -50,19 +46,20 @@ const NAV_GROUPS: SellerNavGroup[] = [
   {
     id: 'marketing',
     label: 'Kênh Marketing',
-    icon: '📣',
     placeholder: 'Tính năng sẽ ra mắt sớm. Theo dõi Shopee Live để nhận cập nhật.'
   },
   {
     id: 'support',
     label: 'Chăm Sóc Khách Hàng',
-    icon: '💬',
-    placeholder: 'Kết nối chat, đánh giá và phản hồi trong bản phát hành kế tiếp.'
+    links: [
+      { label: 'Feedback & Rating', to: '/seller/support/feedback', description: 'Hub chat & đánh giá' },
+      { label: 'Chat Management', to: '/seller/support/chat-management' },
+      { label: 'Shop Rating Management', to: '/seller/support/shop-rating' }
+    ]
   },
   {
     id: 'finance',
     label: 'Tài Chính',
-    icon: '💰',
     links: [
       { label: 'Doanh thu', to: '/seller/finance/revenue' },
       { label: 'Số dư TK Shopee', to: '/seller/finance/wallet' },
@@ -72,7 +69,6 @@ const NAV_GROUPS: SellerNavGroup[] = [
   {
     id: 'analytics',
     label: 'Dữ Liệu',
-    icon: '📈',
     links: [
       { label: 'Phân tích bán hàng', to: '/seller/analytics/sales' },
       { label: 'Hiệu quả hoạt động', to: '/seller/analytics/performance' }
@@ -81,7 +77,6 @@ const NAV_GROUPS: SellerNavGroup[] = [
   {
     id: 'shop',
     label: 'Quản Lý Shop',
-    icon: '🏬',
     links: [
       { label: 'Hồ sơ shop', to: '/seller/shop/profile' },
       { label: 'Trang trí shop', to: '/seller/shop/decoration' },
@@ -92,7 +87,12 @@ const NAV_GROUPS: SellerNavGroup[] = [
 ]
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `seller-sidebar__link${isActive ? ' is-active' : ''}`
+  [
+    'mt-1 flex flex-col rounded-2xl border px-3 py-2 text-xs transition',
+    isActive
+      ? 'border-amber-500 bg-amber-500/20 text-white shadow-lg shadow-amber-900/30'
+      : 'border-white/5 text-stone-100/80 hover:border-white/20 hover:bg-white/5'
+  ].join(' ')
 
 const isPathActive = (currentPath: string, targetPath?: string) => {
   if (!targetPath) return false
@@ -127,56 +127,72 @@ export default function SellerSidebar() {
   }
 
   return (
-    <aside className='seller-sidebar'>
-      <div className='seller-sidebar__identity'>
-        <div>
-          <p className='seller-sidebar__eyebrow'>Kênh người bán</p>
-          <strong>Woodify Studio</strong>
-          <span>Trạng thái: <b>Xuất sắc</b></span>
-          <small>Điểm phạt gần nhất: 0 • SLA 97%</small>
+    <aside className='flex w-64 flex-col justify-between bg-stone-950 text-stone-100 shadow-2xl'>
+      <div className='space-y-6 px-4 py-6'>
+        <div className='flex items-center gap-3 rounded-3xl border border-white/10 bg-gradient-to-br from-stone-900 via-stone-900 to-stone-950 p-4'>
+          <div className='h-12 w-12 rounded-2xl border border-amber-400/40 bg-stone-900/60' aria-hidden='true' />
+          <div>
+            <p className='text-lg font-semibold tracking-wide text-white'>WOODIFY</p>
+            <p className='text-[11px] uppercase tracking-[0.2em] text-amber-200'>Seller Dashboard</p>
+          </div>
         </div>
-        <button type='button' className='seller-sidebar__status-btn'>Xem đánh giá shop</button>
+
+        <nav className='space-y-4'>
+          {NAV_GROUPS.map(group => (
+            <section key={group.id} className='rounded-3xl border border-white/5 bg-white/5 p-3'>
+              <button
+                type='button'
+                className='flex w-full items-center justify-between rounded-2xl px-2 py-2 text-left text-sm font-semibold text-white transition hover:bg-white/10'
+                onClick={() => toggleGroup(group.id)}
+              >
+                <div className='pl-1'>{group.label}</div>
+                <span className='text-xs text-white/70' aria-hidden>
+                  {openGroups[group.id] ? '▾' : '▸'}
+                </span>
+              </button>
+
+              {group.links && openGroups[group.id] && (
+                <div className='mt-2 space-y-1'>
+                  {group.links.map(link => (
+                    link.to ? (
+                      <NavLink key={link.label} to={link.to} className={navLinkClass}>
+                        <span className='font-medium'>{link.label}</span>
+                        {link.chip && <small className='text-[11px] text-amber-200'>{link.chip}</small>}
+                        {link.description && <small className='text-[11px] text-stone-300'>{link.description}</small>}
+                      </NavLink>
+                    ) : (
+                      <div
+                        key={link.label}
+                        className='mt-1 flex flex-col rounded-2xl border border-white/5 px-3 py-2 text-xs text-stone-300'
+                      >
+                        <span>{link.label}</span>
+                        {link.description && <small className='text-[11px] text-stone-400'>{link.description}</small>}
+                      </div>
+                    )
+                  ))}
+                </div>
+              )}
+
+              {group.placeholder && openGroups[group.id] && (
+                <div className='mt-3 rounded-2xl border border-dashed border-white/30 bg-white/5 px-3 py-3 text-xs text-stone-200'>
+                  <p className='text-[11px] leading-relaxed text-stone-200'>{group.placeholder}</p>
+                  <button
+                    type='button'
+                    className='mt-3 rounded-xl border border-white/30 px-3 py-1 text-[11px] font-semibold text-white transition hover:border-white hover:bg-white/10'
+                  >
+                    Nhận thông báo
+                  </button>
+                </div>
+              )}
+            </section>
+          ))}
+        </nav>
       </div>
 
-      <nav>
-        {NAV_GROUPS.map(group => (
-          <section key={group.id} className='seller-sidebar__section'>
-            <button type='button' className='seller-sidebar__section-toggle' onClick={() => toggleGroup(group.id)}>
-              <div>
-                <span className='seller-sidebar__icon'>{group.icon}</span>
-                {group.label}
-              </div>
-              <span aria-hidden>{openGroups[group.id] ? '▾' : '▸'}</span>
-            </button>
-
-            {group.links && openGroups[group.id] && (
-              <div className='seller-sidebar__links'>
-                {group.links.map(link => (
-                  link.to ? (
-                    <NavLink key={link.label} to={link.to} className={navLinkClass}>
-                      <span>{link.label}</span>
-                      {link.chip && <small>{link.chip}</small>}
-                      {link.description && <small className='seller-sidebar__hint'>{link.description}</small>}
-                    </NavLink>
-                  ) : (
-                    <div key={link.label} className='seller-sidebar__link is-disabled'>
-                      <span>{link.label}</span>
-                      <small>{link.description}</small>
-                    </div>
-                  )
-                ))}
-              </div>
-            )}
-
-            {group.placeholder && openGroups[group.id] && (
-              <div className='seller-sidebar__placeholder'>
-                <p>{group.placeholder}</p>
-                <button type='button'>Nhận thông báo</button>
-              </div>
-            )}
-          </section>
-        ))}
-      </nav>
+      <div className='border-t border-white/10 px-4 py-4 text-xs text-stone-100/70'>
+        <p className='rounded-2xl px-3 py-2 transition hover:bg-white/5'>Cài đặt</p>
+        <p className='rounded-2xl px-3 py-2 transition hover:bg-white/5'>Đăng xuất</p>
+      </div>
     </aside>
   )
 }

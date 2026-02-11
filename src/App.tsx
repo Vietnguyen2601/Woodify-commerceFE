@@ -11,6 +11,7 @@ import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
 import SellerDashboard from './pages/seller/SellerDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import UploadImageDemo from './pages/UploadImageDemo'
 import Header from './components/layout/Header/Header'
 import Footer from './components/layout/Footer'
 import { useCart } from './store/cartStore'
@@ -57,6 +58,7 @@ export default function App() {
           <Route path='/profile/*' element={<Profile />} />
           <Route path='/seller/*' element={<SellerDashboard />} />
           <Route path='/admin/*' element={<AdminDashboard />} />
+          <Route path='/upload-demo' element={<UploadImageDemo />} />
         </Routes>
       </main>
 
