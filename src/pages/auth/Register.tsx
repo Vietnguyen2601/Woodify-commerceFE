@@ -90,25 +90,31 @@ export default function Register() {
     }
     setEmailError('')
     setIsSendingCode(true)
+    
+    // Fake wait: jump to step 2 after 1 second without waiting for API
+    window.setTimeout(() => {
+      setIsSendingCode(false)
+      setEmailExists(false)
+      setStep(2)
+    }, 1000)
+    
     import('@/services/auth.service').then(({ authService }) => {
       authService.sendOtp({ email })
-        .then(() => {
-          setIsSendingCode(false)
-          setEmailExists(false)
-          setStep(2)
-        })
         .catch((err) => {
-          setIsSendingCode(false)
-          if (err?.message?.toLowerCase().includes('exists')) {
-            setEmailExists(true)
+          const errorMessage = err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.'
+          console.error('Send OTP error:', errorMessage)
+          
+          if (errorMessage.toLowerCase().includes('exists')) {
             setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
+            setEmailExists(true)
+            setStep(1)
           } else {
-            setEmailError(err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.')
+            console.warn('Lỗi hệ thống, vui lòng thử lại sau.')
           }
         })
     })
   }
-
+w
   function handleEmailChange(value: string) {
     setEmail(value)
     if (emailError) setEmailError('')
