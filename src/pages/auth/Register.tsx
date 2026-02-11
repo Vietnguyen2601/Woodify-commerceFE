@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import AuthPageHeader from '../../components/layout/Header/AuthPageHeader'
+import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -15,12 +17,16 @@ const passwordChecks = (value: string) => ({
 
 const AuthHero: React.FC = () => (
   <div className='auth-hero' aria-hidden='true'>
-    <div>
-      <div className='auth-logo'>
-        <span>LOGO</span>
-        Woodify
-      </div>
+    <div className='auth-logo'>WOODIFY</div>
+    <div className='auth-hero-logo'>
+      <img src={woodifyLogo} alt='Logo Woodify' loading='lazy' />
+    </div>
+    <div className='auth-hero-text'>
       <h1>Chào mừng nghệ nhân và người yêu gỗ</h1>
+      <p>
+        Tạo tài khoản để nhận ưu đãi độc quyền, quản lý đơn hàng nhanh chóng và kết nối cùng cộng đồng
+        yêu gỗ thủ công.
+      </p>
     </div>
   </div>
 )
@@ -64,7 +70,10 @@ export default function Register() {
 
   useEffect(() => {
     if (step !== 4) return
-    nav('/')
+    const redirectId = window.setTimeout(() => {
+      nav('/')
+    }, 2000)
+    return () => window.clearTimeout(redirectId)
   }, [step, nav])
 
   const maskedEmail = useMemo(() => {
@@ -83,30 +92,30 @@ export default function Register() {
   const strengthLabel = ['Yếu', 'Trung bình', 'Mạnh'][strengthIndex]
 
   function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!EMAIL_PATTERN.test(email)) {
-      setEmailError('Email không hợp lệ')
-      return
-    }
-    setEmailError('')
-    setIsSendingCode(true)
-    import('@/services/auth.service').then(({ authService }) => {
-      authService.sendOtp({ email })
-        .then(() => {
-          setIsSendingCode(false)
-          setEmailExists(false)
-          setStep(2)
-        })
-        .catch((err) => {
-          setIsSendingCode(false)
-          if (err?.message?.toLowerCase().includes('exists')) {
-            setEmailExists(true)
-            setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
-          } else {
-            setEmailError(err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.')
-          }
-        })
-    })
+    // event.preventDefault()
+    // if (!EMAIL_PATTERN.test(email)) {
+    //   setEmailError('Email không hợp lệ')
+    //   return
+    // }
+    // setEmailError('')
+    // setIsSendingCode(true)
+    // import('@/services/auth.service').then(({ authService }) => {
+    //   authService.sendOtp({ email })
+    //     .then(() => {
+    //       setIsSendingCode(false)
+    //       setEmailExists(false)
+    //       setStep(2)
+    //     })
+    //     .catch((err) => {
+    //       setIsSendingCode(false)
+    //       if (err?.message?.toLowerCase().includes('exists')) {
+    //         setEmailExists(true)
+    //         setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
+    //       } else {
+    //         setEmailError(err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.')
+    //       }
+    //     })
+    // })
   }
 
   function handleEmailChange(value: string) {
@@ -236,8 +245,10 @@ export default function Register() {
   const resendLimitReached = resendCount >= MAX_RESEND
 
   return (
-    <div className='auth-shell'>
-      <div className='auth-layer'>
+    <>
+      <AuthPageHeader actionLabel='Đăng ký' />
+      <div className='auth-shell'>
+        <div className='auth-layer'>
         <AuthHero />
 
         <section className='auth-card'>
@@ -439,15 +450,13 @@ export default function Register() {
               <div className='step-panel success-card' key='step-4'>
                 <h3>Chào mừng đến với Woodify</h3>
                 <p>Đăng ký thành công. Chúng tôi đã tự động đăng nhập để bạn bắt đầu mua sắm ngay.</p>
-                <button className='auth-btn primary' type='button' onClick={goShopping}>
-                  Bắt đầu mua sắm
-                </button>
                 <p className='auth-subtitle'>Gợi ý: hoàn thiện hồ sơ để nhận khuyến mãi cá nhân hóa.</p>
               </div>
             )}
           </div>
         </section>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

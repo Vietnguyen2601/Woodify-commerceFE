@@ -24,7 +24,12 @@ export default function App() {
   const isProfileRoute = location.pathname.startsWith('/profile')
   const isSellerRoute = location.pathname.startsWith('/seller')
   const isAdminRoute = location.pathname.startsWith('/admin')
-  const showUserHeader = !isSellerRoute && !isAdminRoute
+  const isAuthRoute =
+    location.pathname === '/login' ||
+    location.pathname === '/register' ||
+    location.pathname.startsWith('/auth/login') ||
+    location.pathname.startsWith('/auth/register')
+  const showUserHeader = !isSellerRoute && !isAdminRoute && !isAuthRoute
   const showFooter = !isSellerRoute && !isAdminRoute
   const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
 
