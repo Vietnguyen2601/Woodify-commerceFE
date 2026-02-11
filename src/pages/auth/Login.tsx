@@ -189,8 +189,8 @@ export default function Login() {
               )}
             </div>
 
-            <div className='auth-inline'>
-              <label className='auth-checkbox'>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+              <label className='auth-checkbox' style={{ marginBottom: 0 }}>
                 <input
                   type='checkbox'
                   checked={rememberMe}
@@ -198,22 +198,11 @@ export default function Login() {
                 />
                 Ghi nhớ tôi
               </label>
-            </div>
-
-            <div className='auth-sample-card'>
-              <div>
-                <p className='auth-sample-card__title'>Tài khoản Khách hàng mẫu</p>
-                <p className='auth-sample-card__meta'>Email: {CUSTOMER_ACCOUNT.email}</p>
-                <p className='auth-sample-card__meta'>Mật khẩu: {CUSTOMER_ACCOUNT.password}</p>
-              </div>
-              <button type='button' onClick={handlePrefillCustomer} className='auth-btn tertiary'>
-                Điền nhanh
+              
+              <button className='auth-btn primary' type='submit' disabled={formState === 'loading'}>
+                {formState === 'loading' ? 'Đang xác thực...' : 'Đăng nhập'}
               </button>
             </div>
-
-            <button className='auth-btn primary' type='submit' disabled={formState === 'loading'}>
-              {formState === 'loading' ? 'Đang xác thực...' : 'Đăng nhập'}
-            </button>
           </form>
 
           <button className='auth-btn secondary social-btn' type='button'>
