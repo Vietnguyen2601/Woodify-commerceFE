@@ -92,8 +92,6 @@ export default function Register() {
   const strengthLabel = ['Yếu', 'Trung bình', 'Mạnh'][strengthIndex]
 
   function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
-<<<<<<< HEAD
-<<<<<<< HEAD
     event.preventDefault()
     if (!EMAIL_PATTERN.test(email)) {
       setEmailError('Email không hợp lệ')
@@ -109,6 +107,7 @@ export default function Register() {
       setStep(2)
     }, 1000)
     
+    // Call API in background (don't wait for it)
     import('@/services/auth.service').then(({ authService }) => {
       authService.sendOtp({ email })
         .catch((err) => {
@@ -120,43 +119,12 @@ export default function Register() {
             setEmailExists(true)
             setStep(1)
           } else {
-            console.warn('Lỗi hệ thống, vui lòng thử lại sau.')
+            console.warn('OTP sent but API failed. User can retry from OTP screen.')
           }
         })
     })
-=======
-=======
->>>>>>> b7f517f18851a17932b668230f3be3fb39bc1a28
-    // event.preventDefault()
-    // if (!EMAIL_PATTERN.test(email)) {
-    //   setEmailError('Email không hợp lệ')
-    //   return
-    // }
-    // setEmailError('')
-    // setIsSendingCode(true)
-    // import('@/services/auth.service').then(({ authService }) => {
-    //   authService.sendOtp({ email })
-    //     .then(() => {
-    //       setIsSendingCode(false)
-    //       setEmailExists(false)
-    //       setStep(2)
-    //     })
-    //     .catch((err) => {
-    //       setIsSendingCode(false)
-    //       if (err?.message?.toLowerCase().includes('exists')) {
-    //         setEmailExists(true)
-    //         setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
-    //       } else {
-    //         setEmailError(err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.')
-    //       }
-    //     })
-    // })
-<<<<<<< HEAD
->>>>>>> 41a48981112130300332c847306ed8a263d4a7ea
-=======
->>>>>>> b7f517f18851a17932b668230f3be3fb39bc1a28
   }
-w
+
   function handleEmailChange(value: string) {
     setEmail(value)
     if (emailError) setEmailError('')
