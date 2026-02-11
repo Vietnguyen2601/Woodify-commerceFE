@@ -22,6 +22,11 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   box-sizing: border-box;
   margin: 0 calc(50% - 50vw);
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
 }
 
 .auth-page-header__inner {
@@ -61,6 +66,9 @@
     url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=60') center/cover;
   padding: 40px clamp(16px, 4vw, 48px);
   box-sizing: border-box;
+  border-radius: 36px;
+  margin: 24px clamp(16px, 4vw, 48px);
+  overflow: hidden;
 }
 
 .auth-layer {

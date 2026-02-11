@@ -13,6 +13,7 @@ import SellerDashboard from './pages/seller/SellerDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import UploadImageDemo from './pages/UploadImageDemo'
 import Header from './components/layout/Header/Header'
+import AuthPageHeader from './components/layout/Header/AuthPageHeader'
 import Footer from './components/layout/Footer'
 import { useCart } from './store/cartStore'
 import './styles/app.css'
@@ -32,10 +33,12 @@ export default function App() {
   const showUserHeader = !isSellerRoute && !isAdminRoute && !isAuthRoute
   const showFooter = !isSellerRoute && !isAdminRoute
   const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
+  const authActionLabel = location.pathname.toLowerCase().includes('register') ? 'Đăng ký' : 'Đăng nhập'
 
   return (
     <div className='app'>
       {showUserHeader && <Header cartItemCount={cartItemCount} />}
+      {isAuthRoute && <AuthPageHeader actionLabel={authActionLabel} />}
       {/* {!isProfileRoute && (
         <header className='topbar'>
           <div className='brand'><Link to='/'>WoodMarketplace</Link></div>
