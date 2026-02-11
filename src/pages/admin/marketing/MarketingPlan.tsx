@@ -2,7 +2,7 @@ import React from 'react'
 
 const CAMPAIGNS = [
   {
-    name: 'Shopee Live Decor',
+    name: 'Live Decor',
     budget: '1.2 tỷ',
     window: 'Tuần 3 • Tháng 1',
     goal: 'Tăng 25% chuyển đổi livestream',

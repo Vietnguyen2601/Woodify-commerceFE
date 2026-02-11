@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import AuthPageHeader from '../../components/layout/Header/AuthPageHeader'
+import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -36,10 +38,11 @@ function evaluateStrength(value: string) {
 
 const AuthHero: React.FC = () => (
   <div className='auth-hero' aria-hidden='true'>
-    <div>
-      <div className='auth-logo'>
-        Woodify
-      </div>
+    <div className='auth-logo'>WOODIFY</div>
+    <div className='auth-hero-logo'>
+      <img src={woodifyLogo} alt='Logo Woodify' loading='lazy' />
+    </div>
+    <div className='auth-hero-text'>
       <h1>Đăng nhập để tiếp tục khám phá gỗ tinh tuyển</h1>
       <p>
         Tận hưởng không gian mua sắm ấm áp, chọn lựa sản phẩm thủ công bền vững và quản lý đơn hàng
@@ -126,11 +129,13 @@ export default function Login() {
   }
 
   return (
-    <div className='auth-shell'>
-      <div className='auth-layer'>
-        <AuthHero />
+    <>
+      <AuthPageHeader actionLabel='Đăng nhập' />
+      <div className='auth-shell'>
+        <div className='auth-layer'>
+          <AuthHero />
 
-        <section className='auth-card' role='form' aria-live='polite'>
+          <section className='auth-card' role='form' aria-live='polite'>
           <div>
             <h2>Đăng nhập</h2>
             <p className='auth-subtitle'>Chào mừng trở lại với Woodify</p>
@@ -198,11 +203,11 @@ export default function Login() {
                 />
                 Ghi nhớ tôi
               </label>
-              
-              <button className='auth-btn primary' type='submit' disabled={formState === 'loading'}>
-                {formState === 'loading' ? 'Đang xác thực...' : 'Đăng nhập'}
-              </button>
             </div>
+
+            <button className='auth-btn primary auth-btn-full' type='submit' disabled={formState === 'loading'}>
+              {formState === 'loading' ? 'Đang xác thực...' : 'Đăng nhập'}
+            </button>
           </form>
 
           <button className='auth-btn secondary social-btn' type='button'>
@@ -233,8 +238,9 @@ export default function Login() {
           <Link to='/forgot-password' className='auth-link'>
             Quên mật khẩu?
           </Link>
-        </section>
+          </section>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
