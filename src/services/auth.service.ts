@@ -14,9 +14,21 @@ import type {
   RegisterWithOtpResponse,
 } from '@/types'
 
+export interface LoginResponseData {
+  success: boolean
+  message: string
+  accountId: string
+  email: string
+  username: string
+  token: string
+  refreshToken: string
+}
+
 export interface LoginResponse {
-  user: User
-  tokens: AuthTokens
+  status: number
+  message: string
+  data: LoginResponseData
+  errors: unknown
 }
 
 export interface RegisterResponse {
@@ -32,7 +44,7 @@ export const authService = {
    * Login with email and password
    */
     login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      return identityServiceClient.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials)
+      return identityServiceClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials) as unknown as LoginResponse
     },
 
   /**
