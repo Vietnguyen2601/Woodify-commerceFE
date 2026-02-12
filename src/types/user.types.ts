@@ -54,6 +54,7 @@ export interface RegisterWithOtpRequest {
   password: string
   confirmPassword: string
   username: string
+  phone?: string
 }
 
 export interface RegisterWithOtpResponse {
