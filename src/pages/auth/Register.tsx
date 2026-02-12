@@ -167,8 +167,9 @@ export default function Register() {
     // Gọi API verify-otp
     import('@/services/auth.service').then(({ authService }) => {
       authService.verifyOtp({ email, otp: code })
-        .then((res) => {
-          if (res.data && res.data.success) {
+        .then((res: any) => {
+          console.log('[verify-otp] response:', JSON.stringify(res))
+          if (res.data?.success || res.status === 200) {
             setStep(3)
           } else {
             setOtpError('Mã xác minh không đúng. Vui lòng thử lại.')
@@ -212,8 +213,8 @@ export default function Register() {
         confirmPassword,
         username: email.split('@')[0]
       })
-        .then((res) => {
-          if (res.data && res.data.success) {
+        .then((res: any) => {
+          if (res.data?.success || res.status === 200) {
             setRegisterState('success')
             setStep(4)
             // Nếu muốn tự động đăng nhập, có thể gọi login tại đây
