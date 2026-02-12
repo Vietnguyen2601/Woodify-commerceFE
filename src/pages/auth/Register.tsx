@@ -8,6 +8,7 @@ import '../../styles/auth.css'
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const OTP_LENGTH = 6
 const MAX_RESEND = 5
+const PHONE_PATTERN = /^\d{9,11}$/
 
 const passwordChecks = (value: string) => ({
   length: value.length >= 8,
@@ -15,6 +16,33 @@ const passwordChecks = (value: string) => ({
   number: /\d/.test(value),
   special: /[^A-Za-z0-9]/.test(value),
 })
+
+const EyeIcon: React.FC = () => (
+  <svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
+    <path
+      d='M1.5 12s3.75-6.5 10.5-6.5 10.5 6.5 10.5 6.5-3.75 6.5-10.5 6.5S1.5 12 1.5 12z'
+      stroke='currentColor'
+      strokeWidth='1.5'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    />
+    <circle cx='12' cy='12' r='3' stroke='currentColor' strokeWidth='1.5' />
+  </svg>
+)
+
+const EyeOffIcon: React.FC = () => (
+  <svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
+    <path
+      d='M1.5 12s3.75-6.5 10.5-6.5 10.5 6.5 10.5 6.5-3.75 6.5-10.5 6.5S1.5 12 1.5 12z'
+      stroke='currentColor'
+      strokeWidth='1.5'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    />
+    <circle cx='12' cy='12' r='3' stroke='currentColor' strokeWidth='1.5' />
+    <path d='M4 4l16 16' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' />
+  </svg>
+)
 
 const AuthHero: React.FC = () => (
   <div className='auth-hero' aria-hidden='true'>
@@ -50,7 +78,14 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [registerState, setRegisterState] = useState<'idle' | 'loading' | 'success'>('idle')
+  const [username, setUsername] = useState('')
+  const [phone, setPhone] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
   const [showTermsError, setShowTermsError] = useState(false)
+  const [isChecklistOpen, setIsChecklistOpen] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     if (step !== 2 || timer <= 0) return
@@ -92,6 +127,10 @@ export default function Register() {
   const strengthPalette = ['#C84545', '#E6A151', '#6EA36E']
   const strengthIndex = Math.max(normalizedStrength - 1, 0)
   const strengthLabel = ['Yếu', 'Trung bình', 'Mạnh'][strengthIndex]
+  const trimmedUsername = useMemo(() => username.trim(), [username])
+  const normalizedPhone = useMemo(() => phone.replace(/\D/g, ''), [phone])
+  const isUsernameValid = trimmedUsername.length >= 3
+  const isPhoneValid = PHONE_PATTERN.test(normalizedPhone)
 
   function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -203,6 +242,20 @@ export default function Register() {
     const meetsBasics = snapshot.length && snapshot.casing && snapshot.number
     if (!meetsBasics) return
     if (password !== confirmPassword) return
+    let hasDetailsError = false
+    if (!isUsernameValid) {
+      setUsernameError('Tên người dùng tối thiểu 3 ký tự')
+      hasDetailsError = true
+    } else {
+      setUsernameError('')
+    }
+    if (!isPhoneValid) {
+      setPhoneError('Số điện thoại cần 9-11 chữ số')
+      hasDetailsError = true
+    } else {
+      setPhoneError('')
+    }
+    if (hasDetailsError) return
     if (!acceptTerms) {
       setShowTermsError(true)
       return
@@ -266,7 +319,9 @@ export default function Register() {
     confirmPassword &&
     password === confirmPassword &&
     acceptTerms &&
-    normalizedStrength >= 3
+    normalizedStrength >= 3 &&
+    isUsernameValid &&
+    isPhoneValid
 
   const resendLimitReached = resendCount >= MAX_RESEND
 
@@ -398,7 +453,71 @@ export default function Register() {
             {step === 3 && (
               <div className='step-panel' key='step-3'>
                 <form onSubmit={handleRegister}>
-                  <h3>Tạo mật khẩu</h3>
+                  <div className='password-section-header'>
+                    <h3>Tạo mật khẩu</h3>
+                    <div className='password-info-wrapper'>
+                      <button
+                        type='button'
+                        className={`password-info-trigger ${isChecklistOpen ? 'active' : ''}`}
+                        aria-label={`${isChecklistOpen ? 'Ẩn' : 'Hiển thị'} checklist mật khẩu`}
+                        aria-pressed={isChecklistOpen}
+                        aria-controls='password-checklist'
+                        onClick={() => setIsChecklistOpen((prev) => !prev)}
+                      >
+                        !
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className='auth-form-group'>
+                    <label className='auth-label' htmlFor='register-username'>
+                      Tên người dùng
+                    </label>
+                    <input
+                      id='register-username'
+                      type='text'
+                      className='auth-input'
+                      placeholder='Ví dụ: woodlover90'
+                      value={username}
+                      autoComplete='username'
+                      aria-invalid={Boolean(usernameError)}
+                      aria-describedby={usernameError ? 'register-username-error' : undefined}
+                      onChange={(event) => {
+                        setUsername(event.target.value)
+                        if (usernameError) setUsernameError('')
+                      }}
+                    />
+                    {usernameError && (
+                      <span id='register-username-error' className='auth-error-text'>
+                        {usernameError}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className='auth-form-group'>
+                    <label className='auth-label' htmlFor='register-phone'>
+                      Số điện thoại
+                    </label>
+                    <input
+                      id='register-phone'
+                      type='tel'
+                      className='auth-input'
+                      placeholder='09xx xxx xxx'
+                      value={phone}
+                      inputMode='tel'
+                      aria-invalid={Boolean(phoneError)}
+                      aria-describedby={phoneError ? 'register-phone-error' : undefined}
+                      onChange={(event) => {
+                        setPhone(event.target.value)
+                        if (phoneError) setPhoneError('')
+                      }}
+                    />
+                    {phoneError && (
+                      <span id='register-phone-error' className='auth-error-text'>
+                        {phoneError}
+                      </span>
+                    )}
+                  </div>
 
                   <div className='auth-form-group'>
                     <label className='auth-label' htmlFor='register-password'>
@@ -434,31 +553,36 @@ export default function Register() {
                       )}
                     </div>
 
-                    <div className='password-checklist' aria-live='polite'>
-                      {checklist.map((item) => (
-                        <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
-                          {passwordState[item.key] ? '✓' : '•'} {item.label}
-                        </span>
-                      ))}
-                    </div>
+                    {isChecklistOpen && (
+                      <div className='password-checklist' id='password-checklist' aria-live='polite'>
+                        {checklist.map((item) => (
+                          <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
+                            {passwordState[item.key] ? '✓' : '•'} {item.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <label className="auth-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={acceptTerms}
-                      onChange={(event) => {
-                        setAcceptTerms(event.target.checked);
-                        if (event.target.checked) setShowTermsError(false);
-                      }}
-                    />
+                  <div className='auth-remember-row'>
+                    <label className="auth-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={acceptTerms}
+                        onChange={(event) => {
+                          setAcceptTerms(event.target.checked);
+                          if (event.target.checked) setShowTermsError(false);
+                        }}
+                      />
+                    </label>
                     <span className="auth-checkbox-text">
-                      Tôi đồng ý với{' '}
-                      <a className="auth-link" href="/terms">Điều khoản</a>{' '}
-                      &amp;{' '}
-                      <a className="auth-link" href="/privacy">Chính sách Bảo mật</a>
+                        Tôi đồng ý với{' '}
+                        <a className="auth-link" href="/terms">Điều khoản</a>{' '}
+                        &amp;{' '}
+                        <a className="auth-link" href="/privacy">Chính sách Bảo mật</a>
                     </span>
-                  </label>
+                  </div>
+                  
 
                   {showTermsError && !acceptTerms && (
                     <span className="auth-error-text">Vui lòng đồng ý Điều khoản</span>

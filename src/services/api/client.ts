@@ -30,6 +30,13 @@ const createApiClient = (): AxiosInstance => {
   client.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
+      // Handle network error (backend not available)
+      if (!error.response) {
+        const networkError: any = new Error('Lỗi hệ thống, vui lòng thử lại sau')
+        networkError.isNetworkError = true
+        return Promise.reject(networkError)
+      }
+
       const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
 
       // Handle 401 Unauthorized - try refresh token
