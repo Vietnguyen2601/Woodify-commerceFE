@@ -17,6 +17,15 @@ const createIdentityServiceClient = (): AxiosInstance => {
   client.interceptors.response.use(
     (response) => response.data,
     (error: AxiosError) => {
+      // Handle network error (backend not available)
+      if (!error.response) {
+        return Promise.reject({
+          status: 0,
+          message: 'Lỗi hệ thống, vui lòng thử lại sau',
+          data: null,
+        })
+      }
+
       const message =
         (error.response?.data as any)?.message ||
         error.message ||
