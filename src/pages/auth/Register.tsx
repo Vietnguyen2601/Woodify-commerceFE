@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/services'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -32,6 +34,7 @@ const AuthHero: React.FC = () => (
 
 export default function Register() {
   const nav = useNavigate()
+  const queryClient = useQueryClient()
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -206,26 +209,42 @@ export default function Register() {
     }
     setShowTermsError(false)
     setRegisterState('loading')
+    const username = email.split('@')[0]
     import('@/services/auth.service').then(({ authService }) => {
       authService.registerWithOtp({
         email,
         password,
         confirmPassword,
-        username: email.split('@')[0]
+        username,
       })
         .then((res: any) => {
           if (res.data?.success || res.status === 200) {
+            // Auto-login: store token & user data
+            if (res.data?.token) {
+              localStorage.setItem('auth_token', res.data.token)
+            }
+            if (res.data?.refreshToken) {
+              localStorage.setItem('refresh_token', res.data.refreshToken)
+            }
+            localStorage.setItem('user_email', email)
+            localStorage.setItem('user_name', res.data?.username || username)
+            localStorage.setItem('user_role', 'user')
+
+            // Update React Query cache so Header shows username
+            queryClient.setQueryData(queryKeys.user(), {
+              accountId: res.data?.accountId || '',
+              email,
+              username: res.data?.username || username,
+            })
+
             setRegisterState('success')
             setStep(4)
-            // Nếu muốn tự động đăng nhập, có thể gọi login tại đây
           } else {
             setRegisterState('idle')
-            // Hiển thị lỗi nếu cần
           }
         })
         .catch((err) => {
           setRegisterState('idle')
-          // Có thể show lỗi chi tiết hơn nếu muốn
         })
     })
   }

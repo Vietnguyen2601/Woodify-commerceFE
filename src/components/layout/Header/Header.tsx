@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../../constants/routes'
 import woodifyLogo from '../../../assets/logo/Woodify.jpg'
 import { Icon } from '../../ui'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import './Header.css'
 
 interface HeaderProps {
@@ -22,6 +23,8 @@ const mainNavigation: NavItem[] = [
 ]
 
 export default function Header({ cartItemCount = 0 }: HeaderProps) {
+  const { user, isAuthenticated, logout } = useAuth()
+  const navigate = useNavigate()
   const notificationCount = 3
   const [isSearching, setIsSearching] = useState(false)
   const [searchValue, setSearchValue] = useState('')
@@ -30,7 +33,7 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
     <header className="sticky top-0 z-50 w-full" style={{backgroundColor: '#C7A57A'}}>
       {/* Top Bar - Hidden on Mobile */}
       <div className="hidden md:flex px-4 md:px-12 lg:px-20 py-1 items-center justify-between text-white text-xs" style={{backgroundColor: '#C7A57A'}}>
-        <div className="hidden md:flex items-center gap-5 lg:gap-8 font-arbutus text-xs md:text-xs flex-1 justify-center ml-12 lg:ml-16">
+        <div className="hidden md:flex items-center gap-4 lg:gap-6 font-arbutus text-xs md:text-xs flex-1 justify-center ml-12 lg:ml-16">
           <Link to={ROUTES.PROFILE_ORDERS} className="hover:opacity-80 transition">
             THÔNG BÁO
           </Link>
@@ -40,9 +43,9 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
           <Link to={ROUTES.SELLER} className="hover:opacity-80 transition">
             KÊNH NGƯỜI BÁN
           </Link>
-          <button type="button" className="hover:opacity-80 transition">
+          <Link to="#" className="hover:opacity-80 transition">
             TẢI ỨNG DỤNG
-          </button>
+          </Link>
         </div>
 
         <div className="flex items-center gap-3 lg:gap-4">
@@ -115,7 +118,7 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
           ) : (
             <nav
               key="navigation"
-              className="flex items-center gap-12 lg:gap-14 transition-all duration-300"
+              className="flex items-center gap-6 lg:gap-8 whitespace-nowrap transition-all duration-300"
               style={{
                 animation: 'slideOut 0.3s ease-in forwards'
               }}
@@ -179,14 +182,39 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
           </Link>
 
           {/* Auth Links - Hidden on Mobile */}
-          <div className="hidden md:flex items-center gap-2 text-white text-xs font-arbutus border-l border-white border-opacity-40 pl-3 md:pl-4">
-            <Link to={ROUTES.REGISTER} className="hover:opacity-80 transition">
-              Đăng ký
-            </Link>
-            <span className="opacity-60">|</span>
-            <Link to={ROUTES.LOGIN} className="hover:opacity-80 transition">
-              Đăng nhập
-            </Link>
+          <div className="hidden md:flex items-center gap-2 text-white text-xs font-arbutus border-l border-white border-opacity-40 pl-4 whitespace-nowrap">
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  to={ROUTES.PROFILE}
+                  className="hover:opacity-80 transition flex items-center gap-1.5"
+                >
+                  <Icon name="user" size={16} strokeWidth={1.8} decorative className="text-white flex-shrink-0" />
+                  <span className="font-medium max-w-[100px] truncate">{user.username}</span>
+                </Link>
+                <span className="opacity-60">|</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logout()
+                    navigate(ROUTES.HOME)
+                  }}
+                  className="hover:opacity-80 transition"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link to={ROUTES.REGISTER} className="hover:opacity-80 transition">
+                  Đăng ký
+                </Link>
+                <span className="opacity-60">|</span>
+                <Link to={ROUTES.LOGIN} className="hover:opacity-80 transition">
+                  Đăng nhập
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

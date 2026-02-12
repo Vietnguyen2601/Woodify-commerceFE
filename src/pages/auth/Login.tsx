@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/services'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -49,6 +51,7 @@ const AuthHero: React.FC = () => (
 
 export default function Login() {
   const nav = useNavigate()
+  const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
@@ -95,6 +98,14 @@ export default function Login() {
             } else {
               localStorage.removeItem('remember_me')
             }
+
+            // Update React Query cache so Header shows username immediately
+            queryClient.setQueryData(queryKeys.user(), {
+              accountId: res.data.accountId,
+              email: res.data.email,
+              username: res.data.username,
+            })
+
             nav('/')
             setFormState('idle')
           } else {
