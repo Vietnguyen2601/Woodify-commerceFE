@@ -59,15 +59,16 @@
 .auth-shell {
   min-height: 100vh;
   width: 100%;
+  max-width: 1280px;
+  margin: 24px auto;
   display: flex;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at top, rgba(247, 243, 238, 0.9), #efe5db),
     url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=60') center/cover;
-  padding: 40px clamp(16px, 4vw, 48px);
+  padding: clamp(28px, 4vw, 52px);
   box-sizing: border-box;
   border-radius: 36px;
-  margin: 24px clamp(16px, 4vw, 48px);
   overflow: hidden;
 }
 
@@ -76,8 +77,8 @@
   margin: 0 auto;
   background: rgba(247, 243, 238, 0.95);
   border-radius: 28px;
-  padding: clamp(24px, 4vw, 48px);
-  box-shadow: var(--shadow-soft);
+  width: min(1280px, calc(100% - clamp(32px, 8vw, 96px)));
+  margin: clamp(16px, 4vw, 48px) auto;
   display: grid;
   gap: 40px;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
@@ -131,15 +132,15 @@
 }
 
 .auth-hero-logo {
-  width: 240px;
-  height: 240px;
-  border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  background: rgba(247, 243, 238, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.25);
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .auth-logo {
@@ -149,10 +150,10 @@
 }
 
 .auth-hero-logo img {
-  width: 72%;
-  height: 72%;
+  width: 220px;
+  height: 220px;
   object-fit: contain;
-  border-radius: 32px;
+  border-radius: 24px;
   filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
 }
 
@@ -178,27 +179,29 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: nowrap;
 }
 
 .auth-remember-row .auth-checkbox {
   margin-bottom: 0;
 }
 
-.auth-label {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.auth-input {
-  padding: 14px 16px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border-color);
-  background: #fff;
-  font-size: 15px;
-  color: var(--text-primary);
-  transition: border var(--transition), box-shadow var(--transition);
+.auth-shell {
+  min-height: 100vh;
+  width: min(1200px, 100%);
+  margin: clamp(16px, 4vw, 48px) auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, rgba(247, 243, 238, 0.9), #efe5db),
+    url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=60') center/cover;
+  padding: clamp(28px, 4vw, 48px);
+  box-sizing: border-box;
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(33, 20, 10, 0.18);
 }
 
 .auth-input:focus {
@@ -498,6 +501,89 @@ button.auth-link[disabled] {
 .password-row .auth-form-group {
   flex: 1;
   min-width: 220px;
+}
+
+.password-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+
+.password-info-trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--wood-accent);
+  background: var(--wood-accent);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+}
+
+.password-info-trigger:hover,
+.password-info-trigger:focus-visible {
+  box-shadow: 0 0 0 3px rgba(122, 75, 42, 0.25);
+  background: #5f371a;
+  border-color: #5f371a;
+}
+
+.password-info-trigger.active {
+  background: #5f371a;
+  border-color: #5f371a;
+}
+
+
+.password-field input {
+  padding-right: 72px;
+}
+
+.password-field .password-info-trigger {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-width: 1px;
+}
+
+.password-visibility-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(122, 75, 42, 0.25);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--wood-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), box-shadow var(--transition), color var(--transition);
+}
+
+.password-visibility-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.password-visibility-toggle:hover,
+.password-visibility-toggle:focus-visible {
+  background: #fdf7f1;
+  box-shadow: 0 0 0 3px rgba(122, 75, 42, 0.18);
+  outline: none;
 }
 
 @media (max-width: 768px) {
