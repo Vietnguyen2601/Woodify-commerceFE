@@ -27,7 +27,7 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
   const [searchValue, setSearchValue] = useState('')
 
   return (
-    <header className="sticky top-0 z-50 w-full" style={{backgroundColor: '#C7A57A'}}>
+    <header className="site-header sticky top-0 z-50 w-full" style={{backgroundColor: '#C7A57A'}}>
       {/* Top Bar - Hidden on Mobile */}
       <div className="hidden md:flex px-4 md:px-12 lg:px-20 py-1 items-center justify-between text-white text-xs" style={{backgroundColor: '#C7A57A'}}>
         <div className="hidden md:flex items-center gap-5 lg:gap-8 font-arbutus text-xs md:text-xs flex-1 justify-center ml-12 lg:ml-16">

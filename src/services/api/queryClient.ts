@@ -85,4 +85,10 @@ export const queryKeys = {
     users: () => 
       [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'users'] as const,
   },
+
+  // Categories
+  categories: {
+    all: () => [APP_CONFIG.QUERY_KEYS.CATEGORIES] as const,
+    children: (parentId: string) => [APP_CONFIG.QUERY_KEYS.CATEGORIES, 'children', parentId] as const,
+  },
 } as const

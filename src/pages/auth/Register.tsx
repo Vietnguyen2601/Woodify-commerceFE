@@ -80,7 +80,6 @@ export default function Register() {
   const [usernameError, setUsernameError] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [showTermsError, setShowTermsError] = useState(false)
-  const [isChecklistOpen, setIsChecklistOpen] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -436,18 +435,46 @@ export default function Register() {
                 <form onSubmit={handleRegister}>
                   <div className='password-section-header'>
                     <h3>Tạo mật khẩu</h3>
-                    <div className='password-info-wrapper'>
-                      <button
-                        type='button'
-                        className={`password-info-trigger ${isChecklistOpen ? 'active' : ''}`}
-                        aria-label={`${isChecklistOpen ? 'Ẩn' : 'Hiển thị'} checklist mật khẩu`}
-                        aria-pressed={isChecklistOpen}
-                        aria-controls='password-checklist'
-                        onClick={() => setIsChecklistOpen((prev) => !prev)}
-                      >
-                        !
-                      </button>
-                    </div>
+                  </div>
+
+                  <div className='password-checklist' id='password-checklist' aria-live='polite'>
+                    {checklist.map((item) => (
+                      <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
+                        {passwordState[item.key] ? '✓' : '•'} {item.label}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className='auth-form-group'>
+                    <label className='auth-label' htmlFor='register-password'>
+                      Mật khẩu
+                    </label>
+                    <input
+                      id='register-password'
+                      type='password'
+                      className='auth-input'
+                      placeholder='Tạo mật khẩu (ít nhất 8 ký tự)'
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  </div>
+
+                  <div className='auth-form-group'>
+                    <label className='auth-label' htmlFor='register-password-confirm'>
+                      Xác nhận mật khẩu
+                    </label>
+                    <input
+                      id='register-password-confirm'
+                      type='password'
+                      className='auth-input'
+                      placeholder='Nhập lại mật khẩu'
+                      value={confirmPassword}
+                      aria-invalid={Boolean(confirmPassword) && confirmPassword !== password}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                    />
+                    {confirmPassword && confirmPassword !== password && (
+                      <span className='auth-error-text'>Mật khẩu và xác nhận không khớp</span>
+                    )}
                   </div>
 
                   <div className='auth-form-group'>
@@ -497,51 +524,6 @@ export default function Register() {
                       <span id='register-phone-error' className='auth-error-text'>
                         {phoneError}
                       </span>
-                    )}
-                  </div>
-
-                  <div className='auth-form-group'>
-                    <label className='auth-label' htmlFor='register-password'>
-                      Mật khẩu
-                    </label>
-                    <input
-                      id='register-password'
-                      type='password'
-                      className='auth-input'
-                      placeholder='Tạo mật khẩu (ít nhất 8 ký tự)'
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                    />
-
-                  </div>
-
-                  <div className='password-row'>
-                    <div className='auth-form-group'>
-                      <label className='auth-label' htmlFor='register-password-confirm'>
-                        Xác nhận mật khẩu
-                      </label>
-                      <input
-                        id='register-password-confirm'
-                        type='password'
-                        className='auth-input'
-                        placeholder='Nhập lại mật khẩu'
-                        value={confirmPassword}
-                        aria-invalid={Boolean(confirmPassword) && confirmPassword !== password}
-                        onChange={(event) => setConfirmPassword(event.target.value)}
-                      />
-                      {confirmPassword && confirmPassword !== password && (
-                        <span className='auth-error-text'>Mật khẩu và xác nhận không khớp</span>
-                      )}
-                    </div>
-
-                    {isChecklistOpen && (
-                      <div className='password-checklist' id='password-checklist' aria-live='polite'>
-                        {checklist.map((item) => (
-                          <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
-                            {passwordState[item.key] ? '✓' : '•'} {item.label}
-                          </span>
-                        ))}
-                      </div>
                     )}
                   </div>
 

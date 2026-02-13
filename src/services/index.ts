@@ -1,6 +1,8 @@
 // Barrel export for services
 export { api, apiClient } from './api/client'
+export { productApi, productServiceClient } from './api/productClient'
 export { queryClient, queryKeys } from './api/queryClient'
 export { authService } from './auth.service'
 export { productService } from './product.service'
 export { orderService } from './order.service'
+export { categoryService } from './category.service'

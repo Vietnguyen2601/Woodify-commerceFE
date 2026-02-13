@@ -62,17 +62,17 @@ const categoryList = [
 
 export default function FeaturedCategories() {
   return (
-    <section className="py-8 px-[60px] md:px-10 sm:px-5">
-      <h2 className="font-['Inter'] text-[28px] font-extrabold text-black text-center mb-8">
+    <section className="py-12 px-4 md:px-8 lg:px-16">
+      <h2 className="font-['Inter'] text-[28px] font-extrabold text-black text-center mb-12">
         Danh mục nổi bật
       </h2>
       
-      <div className="flex justify-center gap-[60px] lg:gap-12 md:gap-8 md:flex-wrap sm:gap-6">
+      <div className="flex justify-center items-start gap-8 lg:gap-16 md:gap-10 sm:gap-8 flex-wrap">
         {categoryList.map((category) => (
           <Link 
             key={category.id}
             to={`/catalog?category=${category.id}`}
-            className="flex flex-col items-center gap-4 no-underline group"
+            className="flex flex-col items-center gap-4 no-underline group w-[120px] sm:w-[100px]"
           >
             <div className="relative w-[100px] h-[100px] sm:w-20 sm:h-20">
               <div className="absolute inset-0 rounded-full border-[3px] border-[#BE9C73] bg-transparent" />
@@ -80,7 +80,7 @@ export default function FeaturedCategories() {
                 {category.icon}
               </div>
             </div>
-            <span className="font-['Arimo'] text-sm font-normal text-black text-center">
+            <span className="font-['Arimo'] text-sm font-normal text-black text-center leading-tight">
               {category.name}
             </span>
           </Link>

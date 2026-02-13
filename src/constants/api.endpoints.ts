@@ -4,6 +4,7 @@
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 export const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL
+export const PRODUCT_SERVICE_URL = import.meta.env.VITE_PRODUCT_SERVICE_URL
 
 export const API_ENDPOINTS = {
   // Auth
@@ -65,6 +66,13 @@ export const API_ENDPOINTS = {
     USERS: '/admin/users',
     ORDERS: '/admin/orders',
     CATEGORIES: '/admin/categories',
+  },
+
+  // Categories
+  CATEGORIES: {
+    CREATE: '/Categories/CreateCategory',
+    GET_ALL: '/Categories/GetAllCategories',
+    GET_SUB_CATEGORIES: (parentId: string) => `/Categories/GetSubCategories/${parentId}`,
   },
 
   // User
