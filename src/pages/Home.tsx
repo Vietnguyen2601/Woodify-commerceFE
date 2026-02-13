@@ -1,6 +1,5 @@
 import React from 'react'
 import HeroSection from '../components/home/HeroSection'
-import CategoryShowcase from '../components/home/CategoryShowcase'
 import FeaturedCategories from '../components/home/FeaturedCategories'
 import ProductCard from '../components/home/ProductCard'
 
@@ -40,11 +39,15 @@ const bestSellerProducts = [
     rating: 4.6,
     soldCount: 90,
     image: 'https://api.builder.io/api/v1/image/assets/TEMP/9aab162ca8024a2ec4cc5921588be408d63802cc?width=704'
-  },
+  }
+]
+
+const specialOfferProducts = [
   {
     id: '5',
     name: 'Tủ Gỗ Cao Cấp',
     price: 8500000,
+    originalPrice: 10200000,
     rating: 4.9,
     soldCount: 75,
     image: 'https://api.builder.io/api/v1/image/assets/TEMP/e8cfe9b919e7a17eb0525e495b471ff6ed38629a?width=704'
@@ -57,6 +60,24 @@ const bestSellerProducts = [
     rating: 4.7,
     soldCount: 65,
     image: 'https://api.builder.io/api/v1/image/assets/TEMP/369d702115de7b45039a91da86b50057525cfb24?width=704'
+  },
+  {
+    id: '7',
+    name: 'Bàn Làm Việc Hiện Đại',
+    price: 3500000,
+    originalPrice: 4800000,
+    rating: 4.6,
+    soldCount: 110,
+    image: 'https://api.builder.io/api/v1/image/assets/TEMP/2b187d7da259323f608b11efa987b977ee1bdd99?width=704'
+  },
+  {
+    id: '8',
+    name: 'Đèn Trang Trí Vintage',
+    price: 1800000,
+    originalPrice: 2500000,
+    rating: 4.8,
+    soldCount: 125,
+    image: 'https://api.builder.io/api/v1/image/assets/TEMP/9aab162ca8024a2ec4cc5921588be408d63802cc?width=704'
   }
 ]
 
@@ -80,8 +101,6 @@ export default function Home() {
         />
 
         <main className="pt-0">
-          <CategoryShowcase />
-          
           <FeaturedCategories />
 
           <section className="py-10 px-[60px] lg:py-8 lg:px-10 sm:py-6 sm:px-4">
@@ -89,8 +108,20 @@ export default function Home() {
               Sản phẩm bán chạy
             </h2>
             
-            <div className="grid grid-cols-3 gap-6 lg:gap-5 md:grid-cols-2 sm:grid-cols-1">
+            <div className="grid grid-cols-4 gap-5 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1">
               {bestSellerProducts.map(product => (
+                <ProductCard key={product.id} {...product} />
+              ))}
+            </div>
+          </section>
+
+          <section className="py-10 px-[60px] lg:py-8 lg:px-10 sm:py-6 sm:px-4">
+            <h2 className="font-['Inter'] text-[28px] font-extrabold text-black text-center m-0 mb-8 sm:text-[22px] sm:mb-6">
+              Ưu đãi đặc biệt
+            </h2>
+            
+            <div className="grid grid-cols-4 gap-5 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1">
+              {specialOfferProducts.map(product => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>
