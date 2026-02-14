@@ -57,6 +57,8 @@ export const API_ENDPOINTS = {
     ANALYTICS: '/seller/analytics',
     LISTINGS: '/seller/listings',
     INVENTORY: '/seller/inventory',
+    REGISTER: '/seller/register',
+    SHOP_NAME_CHECK: (name: string) => `/seller/shops/check-name?name=${encodeURIComponent(name)}`,
   },
 
   // Admin
@@ -73,6 +75,14 @@ export const API_ENDPOINTS = {
     CREATE: '/Categories/CreateCategory',
     GET_ALL: '/Categories/GetAllCategories',
     GET_SUB_CATEGORIES: (parentId: string) => `/Categories/GetSubCategories/${parentId}`,
+    GET_BY_NAME: (name: string) => `/Categories/GetCategoryByName/${encodeURIComponent(name)}`,
+  },
+
+  // Locations
+  LOCATION: {
+    PROVINCES: '/locations/provinces',
+    DISTRICTS: (provinceCode: string) => `/locations/provinces/${provinceCode}/districts`,
+    WARDS: (districtCode: string) => `/locations/districts/${districtCode}/wards`,
   },
 
   // User

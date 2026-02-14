@@ -30,3 +30,10 @@ export interface CategoryListApiResponse {
   data: CategoryDTO[]
   errors: unknown
 }
+
+export interface CategorySearchApiResponse {
+  status: number
+  message: string
+  data: CategoryDTO | CategoryDTO[] | null
+  errors: unknown
+}
