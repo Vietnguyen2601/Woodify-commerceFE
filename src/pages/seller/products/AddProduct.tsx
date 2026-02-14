@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { CategoryTreeSelect } from '@/components/forms/CategoryTreeSelect'
+import type { CategoryDTO } from '@/types'
 
 const sectionWrapper = 'rounded-xl border border-yellow-800/20 bg-white shadow-[0px_1px_3px_rgba(0,0,0,0.08)]'
 
@@ -129,6 +131,8 @@ function StepIndicator({
 }
 
 function ProductMasterCard() {
+  const [selectedCategory, setSelectedCategory] = useState<CategoryDTO | null>(null)
+
   return (
     <div className={`${sectionWrapper}`}>
       <div className='border-b border-yellow-800/20 px-5 py-4'>
@@ -146,12 +150,13 @@ function ProductMasterCard() {
           <span className={subtleLabel}>
             Category <span className='text-rose-600'>*</span>
           </span>
-          <select className={`${inputBase} appearance-none`}>
-            <option value=''>Select a category</option>
-            <option value='tables'>Tables</option>
-            <option value='storage'>Storage</option>
-            <option value='seating'>Seating</option>
-          </select>
+          <CategoryTreeSelect
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            placeholder='Search or browse categories'
+          />
+          <input type='hidden' name='categoryId' value={selectedCategory?.categoryId ?? ''} />
+          <p className={helperText}>Choose the most specific leaf category to match marketplace taxonomy.</p>
         </label>
         <label className='block space-y-1'>
           <span className={subtleLabel}>Product Description</span>
