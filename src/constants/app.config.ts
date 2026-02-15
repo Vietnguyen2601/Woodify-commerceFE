@@ -27,6 +27,8 @@ export const APP_CONFIG = {
     ORDER: 'order',
     SELLER_DASHBOARD: 'seller-dashboard',
     ADMIN_DASHBOARD: 'admin-dashboard',
+    CATEGORIES: 'categories',
+    LOCATION: 'location',
   },
 
   // Stale times for React Query (in ms)
@@ -35,5 +37,7 @@ export const APP_CONFIG = {
     PRODUCTS: 2 * 60 * 1000,   // 2 minutes
     CART: 30 * 1000,           // 30 seconds
     ORDERS: 60 * 1000,         // 1 minute
+    CATEGORIES: 5 * 60 * 1000,  // 5 minutes
+    LOCATION: 10 * 60 * 1000,   // 10 minutes
   },
 } as const

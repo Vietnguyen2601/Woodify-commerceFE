@@ -85,4 +85,18 @@ export const queryKeys = {
     users: () => 
       [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'users'] as const,
   },
+
+  // Categories
+  categories: {
+    all: () => [APP_CONFIG.QUERY_KEYS.CATEGORIES] as const,
+    children: (parentId: string) => [APP_CONFIG.QUERY_KEYS.CATEGORIES, 'children', parentId] as const,
+  },
+
+  // Location
+  location: {
+    all: () => [APP_CONFIG.QUERY_KEYS.LOCATION] as const,
+    provinces: () => [APP_CONFIG.QUERY_KEYS.LOCATION, 'provinces'] as const,
+    districts: (provinceCode: string) => [APP_CONFIG.QUERY_KEYS.LOCATION, 'districts', provinceCode] as const,
+    wards: (districtCode: string) => [APP_CONFIG.QUERY_KEYS.LOCATION, 'wards', districtCode] as const,
+  },
 } as const

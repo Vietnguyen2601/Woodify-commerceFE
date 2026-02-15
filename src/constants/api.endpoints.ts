@@ -4,6 +4,7 @@
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 export const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL
+export const PRODUCT_SERVICE_URL = import.meta.env.VITE_PRODUCT_SERVICE_URL
 
 export const API_ENDPOINTS = {
   // Auth
@@ -56,6 +57,8 @@ export const API_ENDPOINTS = {
     ANALYTICS: '/seller/analytics',
     LISTINGS: '/seller/listings',
     INVENTORY: '/seller/inventory',
+    REGISTER: '/seller/register',
+    SHOP_NAME_CHECK: (name: string) => `/seller/shops/check-name?name=${encodeURIComponent(name)}`,
   },
 
   // Admin
@@ -65,6 +68,21 @@ export const API_ENDPOINTS = {
     USERS: '/admin/users',
     ORDERS: '/admin/orders',
     CATEGORIES: '/admin/categories',
+  },
+
+  // Categories
+  CATEGORIES: {
+    CREATE: '/Categories/CreateCategory',
+    GET_ALL: '/Categories/GetAllCategories',
+    GET_SUB_CATEGORIES: (parentId: string) => `/Categories/GetSubCategories/${parentId}`,
+    GET_BY_NAME: (name: string) => `/Categories/GetCategoryByName/${encodeURIComponent(name)}`,
+  },
+
+  // Locations
+  LOCATION: {
+    PROVINCES: '/locations/provinces',
+    DISTRICTS: (provinceCode: string) => `/locations/provinces/${provinceCode}/districts`,
+    WARDS: (districtCode: string) => `/locations/districts/${districtCode}/wards`,
   },
 
   // User

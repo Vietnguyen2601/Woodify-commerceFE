@@ -1,6 +1,7 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 import AdminSidebar from './AdminSidebar'
+import AdminHeader from './AdminHeader'
 import '../../../styles/admin.css'
 
 export default function AdminLayout() {
@@ -11,48 +12,33 @@ export default function AdminLayout() {
   }).format(new Date())
 
   return (
-    <div className='admin-shell'>
-      <header className='admin-header'>
-        <div className='admin-header__brand'>
-          <p className='admin-header__eyebrow'>Woodify Admin Flow</p>
-          <h1>Trung tâm điều hành hệ sinh thái</h1>
-          <small>Giám sát seller, đơn hàng, marketing và chính sách theo thời gian thực.</small>
-        </div>
-
-        <div className='admin-header__actions'>
-          <div className='admin-header__signal'>
-            <span>Uptime</span>
-            <strong>99.98%</strong>
-          </div>
-          <div className='admin-header__signal is-warning'>
-            <span>Incident</span>
-            <strong>0 mới</strong>
-          </div>
-          <div className='admin-header__signal'>
-            <span>Queues</span>
-            <strong>4 SLA</strong>
-          </div>
-          <button type='button' className='admin-btn primary'>Chế độ trực</button>
-          <button type='button' className='admin-btn ghost'>Gửi broadcast</button>
-        </div>
-      </header>
-
-      <div className='admin-body'>
+    <div className='min-h-screen bg-white text-neutral-900'>
+      <div className='flex items-start gap-6 px-6 py-6'>
         <AdminSidebar />
-        <section className='admin-content'>
-          <div className='admin-content__toolbar'>
-            <div>
-              <p className='admin-breadcrumb'>Admin • Toàn sàn TMĐT</p>
-              <strong>Ca trực ngày {todayLabel}</strong>
-            </div>
-            <div className='admin-toolbar__actions'>
-              <button type='button' className='admin-btn outline'>Tạo báo cáo nhanh</button>
-              <button type='button' className='admin-btn ghost'>Phân công nhiệm vụ</button>
-            </div>
-          </div>
+        <main className='flex-1 space-y-6'>
+          <AdminHeader />
 
-          <Outlet />
-        </section>
+          <section className='rounded-2xl border border-gray-200 bg-white shadow-sm shadow-black/5'>
+            <div className=' top-[88px] z-10 flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 bg-white px-6 py-4 rounded-t-2xl'>
+              <div>
+                <p className='text-xs font-semibold uppercase tracking-wide text-gray-400'>Admin • Toàn sàn TMĐT</p>
+                <strong className='text-lg text-gray-900'>Ca trực ngày {todayLabel}</strong>
+              </div>
+              <div className='flex flex-wrap gap-3'>
+                <button type='button' className='rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50'>
+                  Tạo báo cáo nhanh
+                </button>
+                <button type='button' className='rounded-xl border border-dashed border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50'>
+                  Phân công nhiệm vụ
+                </button>
+              </div>
+            </div>
+
+            <div className='p-6'>
+              <Outlet />
+            </div>
+          </section>
+        </main>
       </div>
     </div>
   )
