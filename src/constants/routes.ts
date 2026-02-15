@@ -27,6 +27,7 @@ export const ROUTES = {
 
   // Seller routes
   SELLER: '/seller',
+  SELLER_REGISTER: '/seller/register',
   SELLER_DASHBOARD: '/seller/dashboard',
   SELLER_ORDERS: '/seller/orders',
   SELLER_PRODUCTS: '/seller/products',

@@ -1,7 +1,10 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import HeroSection from '../components/home/HeroSection'
 import FeaturedCategories from '../components/home/FeaturedCategories'
 import ProductCard from '../components/home/ProductCard'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { ROUTES } from '@/constants'
 
 const bestSellerProducts = [
   {
@@ -83,6 +86,9 @@ const specialOfferProducts = [
 
 export default function Home() {
   const [activeSlide, setActiveSlide] = React.useState(0)
+  const { user, isLoading: isAuthLoading } = useAuth()
+
+  const showSellerInvite = !isAuthLoading && user?.role !== 'seller'
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -126,6 +132,42 @@ export default function Home() {
               ))}
             </div>
           </section>
+
+          {showSellerInvite && (
+            <section className="px-[60px] pb-12 lg:px-10 sm:px-4">
+              <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-[#1b140d] via-[#4a2e1a] to-[#b4723c] px-12 py-12 text-white shadow-[0_35px_80px_rgba(61,37,14,0.35)] lg:px-10 sm:px-6 sm:py-10">
+                <div className="absolute -right-6 -top-6 hidden h-48 w-48 rounded-full bg-white/10 blur-3xl lg:block" aria-hidden="true" />
+                <div className="max-w-2xl">
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/70">Woodify Seller Center</p>
+                  <h3 className="mt-4 text-[34px] font-extrabold leading-snug text-white sm:text-[26px]">
+                    Biến xưởng mộc của bạn thành thương hiệu nổi bật.
+                  </h3>
+                  <p className="mt-3 text-base text-white/80 sm:text-sm">
+                    Đăng ký mở shop để sử dụng công cụ quản lý đơn, báo cáo tăng trưởng và đội ngũ hỗ trợ độc quyền dành riêng cho nhà bán hàng trên Woodify.
+                  </p>
+                  <ul className="mt-6 grid grid-cols-3 gap-4 text-sm text-white/80 sm:grid-cols-1">
+                    <li className="rounded-2xl border border-white/20 px-4 py-3">Bảng điều khiển thời gian thực</li>
+                    <li className="rounded-2xl border border-white/20 px-4 py-3">Ưu đãi phí vận chuyển</li>
+                    <li className="rounded-2xl border border-white/20 px-4 py-3">Đội ngũ tư vấn 1:1</li>
+                  </ul>
+                  <div className="mt-8 flex flex-wrap gap-4">
+                    <Link
+                      to={ROUTES.SELLER_REGISTER}
+                      className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-[#2f1f12] transition hover:-translate-y-0.5 hover:bg-white/90"
+                    >
+                      Đăng ký mở shop
+                    </Link>
+                    <Link
+                      to={ROUTES.SELLER}
+                      className="inline-flex items-center rounded-full border border-white/40 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:-translate-y-0.5 hover:border-white"
+                    >
+                      Khám phá trung tâm Seller
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
         </main>
       </div>
     </>

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { authService, queryKeys } from '@/services'
 import { APP_CONFIG } from '@/constants'
-import type { LoginCredentials, RegisterData } from '@/types'
+import type { LoginCredentials, RegisterData, UserRole } from '@/types'
 
 /**
  * User info stored in localStorage after login
@@ -11,7 +11,10 @@ export interface StoredUser {
   accountId: string
   email: string
   username: string
+  role?: UserRole
 }
+
+const VALID_USER_ROLES: UserRole[] = ['customer', 'seller', 'admin']
 
 /**
  * Read user from localStorage
@@ -20,6 +23,7 @@ function getStoredUser(): StoredUser | null {
   const token = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
   const username = localStorage.getItem('user_name')
   const email = localStorage.getItem('user_email')
+  const storedRole = localStorage.getItem('user_role')
 
   if (!token || !username) return null
 
@@ -27,6 +31,7 @@ function getStoredUser(): StoredUser | null {
     accountId: '',
     email: email || '',
     username,
+    role: storedRole && VALID_USER_ROLES.includes(storedRole as UserRole) ? (storedRole as UserRole) : undefined,
   }
 }
 

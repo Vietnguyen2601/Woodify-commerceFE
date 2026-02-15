@@ -10,6 +10,7 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
 import SellerDashboard from './pages/seller/SellerDashboard'
+import SellerRegistration from './pages/seller/SellerRegistration'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import UploadImageDemo from './pages/UploadImageDemo'
 import Header from './components/layout/Header/Header'
@@ -64,6 +65,7 @@ export default function App() {
           <Route path='/auth/login' element={<Login />} />
           <Route path='/auth/register' element={<Register />} />
           <Route path='/profile/*' element={<Profile />} />
+          <Route path='/seller/register' element={<SellerRegistration />} />
           <Route path='/seller/*' element={<SellerDashboard />} />
           <Route path='/admin/*' element={<AdminDashboard />} />
           <Route path='/upload-demo' element={<UploadImageDemo />} />
