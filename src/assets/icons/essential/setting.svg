@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title>Setting</title>
+  <desc>Settings burst with axes control</desc>
+  <circle cx="12" cy="12" r="3" />
+  <path d="M12 1v6m0 6v6m-9-9h6m6 0h6m-15.364 6.364l4.243-4.243m4.242 0l4.243 4.243M6.343 6.343l4.243 4.243m4.242 0l4.243-4.243" />
+</svg>
