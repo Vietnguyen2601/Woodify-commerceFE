@@ -88,11 +88,17 @@ export default function Login() {
     import('@/services/auth.service').then(({ authService }) => {
       authService.login({ email, password })
         .then((res) => {
-          if (res.data && res.data.success && res.data.token) {
-            localStorage.setItem('auth_token', res.data.token)
+          // Check if login was successful (HTTP 200 with token)
+          if ((res.status === 200 || res.data?.success) && res.data?.token) {
+            const loginData = res.data
+            
+            // Store all necessary data in localStorage
+            localStorage.setItem('auth_token', loginData.token)
+            localStorage.setItem('account_id', loginData.accountId)
             localStorage.setItem('user_role', 'user')
-            localStorage.setItem('user_email', res.data.email)
-            localStorage.setItem('user_name', res.data.username)
+            localStorage.setItem('user_email', loginData.email)
+            localStorage.setItem('user_name', loginData.username)
+            
             if (rememberMe) {
               localStorage.setItem('remember_me', 'true')
             } else {
@@ -101,21 +107,25 @@ export default function Login() {
 
             // Update React Query cache so Header shows username immediately
             queryClient.setQueryData(queryKeys.user(), {
-              accountId: res.data.accountId,
-              email: res.data.email,
-              username: res.data.username,
+              accountId: loginData.accountId,
+              email: loginData.email,
+              username: loginData.username,
             })
 
             nav('/')
             setFormState('idle')
           } else {
             setFormState('error')
-            setBannerMessage(res.data?.message || 'Sai email hoặc mật khẩu.')
+            setBannerMessage(res.message || res.data?.message || 'Sai email hoặc mật khẩu.')
           }
         })
         .catch((err) => {
           setFormState('error')
-          setBannerMessage(err?.message || 'Sai email hoặc mật khẩu.')
+          setBannerMessage(
+            err?.response?.data?.message || 
+            err?.message || 
+            'Sai email hoặc mật khẩu.'
+          )
         })
     })
   }

@@ -1,4 +1,22 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { api } from '../services/api/client'
+import { APP_CONFIG } from '../constants/app.config'
+
+// Import Icons
+import UserIcon from '../assets/icons/essential/user.svg'
+import PackageIcon from '../assets/icons/essential/package.svg'
+import WalletIcon from '../assets/icons/essential/wallet.svg'
+import SettingIcon from '../assets/icons/essential/setting.svg'
+import PenIcon from '../assets/icons/essential/pen.svg'
+import LockIcon from '../assets/icons/essential/lock.svg'
+import ShieldCheckIcon from '../assets/icons/essential/shield-check.svg'
+import MoneyInIcon from '../assets/icons/essential/money-in.svg'
+import MoneyOutIcon from '../assets/icons/essential/money-out.svg'
+import RefreshIcon from '../assets/icons/essential/refresh.svg'
+import NotificationBellIcon from '../assets/icons/essential/notification-bell.svg'
+import GlobeIcon from '../assets/icons/essential/globe.svg'
+import TruckIcon from '../assets/icons/essential/truck.svg'
+import ChevronRightIcon from '../assets/icons/essential/chevron-right.svg'
 
 type TabType = 'profile' | 'orders' | 'wallet' | 'settings'
 type WalletTabType = 'refund' | 'history'
@@ -34,6 +52,8 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<TabType>('wallet')
   const [walletTab, setWalletTab] = useState<WalletTabType>('history')
   const [isEditing, setIsEditing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState({
     name: 'Nguyễn Văn A',
     email: 'nguyenvana@email.com',
@@ -43,11 +63,84 @@ export default function Profile() {
     address: 'G30 Lê Thị Riêng, Phường Thới An, Quận 12, TP. Hồ Chí Minh'
   })
 
+  // Fetch user account data on component mount
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        // Get accountId from localStorage
+        const accountId = localStorage.getItem('account_id')
+        
+        if (!accountId) {
+          setError('Không tìm thấy ID tài khoản')
+          setIsLoading(false)
+          return
+        }
+
+        // Call API to get account details
+        const endpoint = `/Accounts/GetAccountById/${accountId}`
+        
+        const response = await api.get(endpoint) as any
+        
+        // Extract account data - check if it's nested in response.data.data or just response.data
+        let accountData = response.data?.data
+        
+        // Fallback: if data is not nested, use response.data directly
+        if (!accountData && response.data?.accountId) {
+          accountData = response.data
+        }
+        
+        if (!accountData) {
+          setError('Dữ liệu tài khoản không hợp lệ')
+          setIsLoading(false)
+          return
+        }
+
+        // Format date from ISO to YYYY-MM-DD
+        const formatDate = (isoDate: string | null | undefined) => {
+          if (!isoDate) return ''
+          try {
+            const date = new Date(isoDate)
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+              console.warn('⚠️ Invalid date:', isoDate)
+              return ''
+            }
+            return date.toISOString().split('T')[0]
+          } catch (err) {
+            console.warn('⚠️ Error formatting date:', isoDate, err)
+            return ''
+          }
+        }
+
+        // Update userInfo with API data
+        const updatedUserInfo = {
+          name: accountData.name || '',
+          email: accountData.email || '',
+          phone: accountData.phoneNumber || '',
+          dateOfBirth: formatDate(accountData.dob),
+          gender: accountData.gender || '',
+          address: userInfo.address
+        }
+        
+        setUserInfo(updatedUserInfo)
+      } catch (err: any) {
+        setError(err.response?.data?.message || err.message || 'Không thể tải thông tin tài khoản')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAccountData()
+  }, [])
+
   const menuItems = [
-    { id: 'profile' as TabType, label: 'Thông tin cá nhân', icon: '👤' },
-    { id: 'orders' as TabType, label: 'Đơn hàng', icon: '📦' },
-    { id: 'wallet' as TabType, label: 'Ví của tôi', icon: '💳' },
-    { id: 'settings' as TabType, label: 'Cài đặt', icon: '⚙️' }
+    { id: 'profile' as TabType, label: 'Thông tin cá nhân', icon: UserIcon },
+    { id: 'orders' as TabType, label: 'Đơn hàng', icon: PackageIcon },
+    { id: 'wallet' as TabType, label: 'Ví của tôi', icon: WalletIcon },
+    { id: 'settings' as TabType, label: 'Cài đặt', icon: SettingIcon }
   ]
 
   const transactions: Transaction[] = [
@@ -135,15 +228,16 @@ export default function Profile() {
   }
 
   const getTransactionIcon = (type: string) => {
+    const iconStyle = { filter: 'brightness(0) invert(1)' }
     switch (type) {
       case 'income':
-        return '↓'
+        return <img src={MoneyInIcon} alt='Income' className='w-6 h-6' style={iconStyle} />
       case 'expense':
-        return '↑'
+        return <img src={MoneyOutIcon} alt='Expense' className='w-6 h-6' style={iconStyle} />
       case 'refund':
-        return '↻'
+        return <img src={RefreshIcon} alt='Refund' className='w-6 h-6' style={iconStyle} />
       default:
-        return '•'
+        return <img src={WalletIcon} alt='Transaction' className='w-6 h-6' style={iconStyle} />
     }
   }
 
@@ -240,7 +334,12 @@ export default function Profile() {
                   }`}
                   style={activeTab === item.id ? { fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' } : { fontFamily: 'Arimo, sans-serif' }}
                 >
-                  <span className='text-xl'>{item.icon}</span>
+                  <img 
+                    src={item.icon} 
+                    alt={item.label} 
+                    className='w-5 h-5'
+                    style={{ filter: activeTab === item.id ? 'brightness(0) invert(1)' : 'none' }}
+                  />
                   <span className='text-sm font-medium'>{item.label}</span>
                 </button>
               ))}
@@ -280,7 +379,7 @@ export default function Profile() {
                     <div className='flex gap-4'>
                       <div className='bg-white/20 backdrop-blur-sm rounded-[10px] p-4 min-w-[140px]'>
                         <div className='flex items-center gap-2 mb-2'>
-                          <span className='text-2xl'>💰</span>
+                          <img src={MoneyInIcon} alt='Money In' className='w-6 h-6' style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(13%) saturate(814%) hue-rotate(343deg) brightness(94%) contrast(91%)' }} />
                           <p className='text-xs' style={{ fontFamily: 'Arbutus Slab, serif', color: '#6C5B50', opacity: 0.8 }}>
                             Tổng nạp
                           </p>
@@ -291,7 +390,7 @@ export default function Profile() {
                       </div>
                       <div className='bg-white/20 backdrop-blur-sm rounded-[10px] p-4 min-w-[140px]'>
                         <div className='flex items-center gap-2 mb-2'>
-                          <span className='text-2xl'>💸</span>
+                          <img src={MoneyOutIcon} alt='Money Out' className='w-6 h-6' style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(13%) saturate(814%) hue-rotate(343deg) brightness(94%) contrast(91%)' }} />
                           <p className='text-xs' style={{ fontFamily: 'Arbutus Slab, serif', color: '#6C5B50', opacity: 0.8 }}>
                             Tổng chi
                           </p>
@@ -408,7 +507,7 @@ export default function Profile() {
                       className='px-6 py-3 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity shadow-md flex items-center gap-2'
                       style={{ fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' }}
                     >
-                      <span>✏️</span>
+                      <img src={PenIcon} alt='Edit' className='w-4 h-4' style={{ filter: 'brightness(0) invert(1)' }} />
                       Chỉnh sửa
                     </button>
                   )}
@@ -426,7 +525,7 @@ export default function Profile() {
                       </div>
                       {isEditing && (
                         <button className='absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border-2 hover:scale-110 transition-transform' style={{ borderColor: '#BE9C73' }}>
-                          <span className='text-sm'>📷</span>
+                          <img src={PenIcon} alt='Upload' className='w-4 h-4' style={{ filter: 'brightness(0) saturate(100%) invert(61%) sepia(21%) saturate(630%) hue-rotate(348deg) brightness(92%) contrast(88%)' }} />
                         </button>
                       )}
                     </div>
@@ -525,7 +624,7 @@ export default function Profile() {
                         />
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {new Date(userInfo.dateOfBirth).toLocaleDateString('vi-VN')}
+                          {userInfo.dateOfBirth ? new Date(userInfo.dateOfBirth).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}
                         </div>
                       )}
                     </div>
@@ -699,7 +798,7 @@ export default function Profile() {
                         <div className='flex justify-between items-center pt-4 border-t border-gray-200'>
                           <div>
                             <p className='text-sm text-gray-600 mb-1' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                              📍 Địa chỉ giao hàng:
+                              <img src={TruckIcon} alt='Truck' className='w-4 h-4 inline mr-1' /> Địa chỉ giao hàng:
                             </p>
                             <p className='text-sm font-medium text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
                               {order.shippingAddress}
@@ -724,7 +823,7 @@ export default function Profile() {
                 {/* Empty State (if needed) */}
                 {orders.length === 0 && (
                   <div className='bg-white rounded-[20px] shadow-md p-16 text-center'>
-                    <div className='text-6xl mb-4'>📦</div>
+                    <img src={PackageIcon} alt='Package' className='w-24 h-24 mx-auto mb-4 opacity-30' />
                     <h3 className='text-xl font-bold text-gray-800 mb-2' style={{ fontFamily: 'Poppins, sans-serif' }}>
                       Chưa có đơn hàng nào
                     </h3>
@@ -840,40 +939,40 @@ export default function Profile() {
                     <button className='w-full flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors group'>
                       <div className='flex items-center gap-4'>
                         <div className='w-12 h-12 rounded-full flex items-center justify-center' style={{ backgroundColor: '#FED7AA' }}>
-                          <span className='text-xl'>🔒</span>
+                          <img src={LockIcon} alt='Lock' className='w-6 h-6' style={{ filter: 'brightness(0) saturate(100%) invert(61%) sepia(21%) saturate(630%) hue-rotate(348deg) brightness(92%) contrast(88%)' }} />
                         </div>
                         <div className='text-left'>
                           <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>Đổi mật khẩu</p>
                           <p className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>Cập nhật mật khẩu của bạn</p>
                         </div>
                       </div>
-                      <span className='text-gray-400 group-hover:text-gray-600 transition-colors'>→</span>
+                      <img src={ChevronRightIcon} alt='Arrow' className='w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors' />
                     </button>
 
                     <button className='w-full flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors group'>
                       <div className='flex items-center gap-4'>
                         <div className='w-12 h-12 rounded-full flex items-center justify-center' style={{ backgroundColor: '#DCFCE7' }}>
-                          <span className='text-xl'>✓</span>
+                          <img src={ShieldCheckIcon} alt='Shield' className='w-6 h-6' style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(78%) saturate(393%) hue-rotate(93deg) brightness(95%) contrast(89%)' }} />
                         </div>
                         <div className='text-left'>
                           <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>Xác thực hai yếu tố</p>
                           <p className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>Tăng cường bảo mật tài khoản</p>
                         </div>
                       </div>
-                      <span className='text-gray-400 group-hover:text-gray-600 transition-colors'>→</span>
+                      <img src={ChevronRightIcon} alt='Arrow' className='w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors' />
                     </button>
 
                     <button className='w-full flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors group'>
                       <div className='flex items-center gap-4'>
                         <div className='w-12 h-12 rounded-full flex items-center justify-center' style={{ backgroundColor: '#BFDBFE' }}>
-                          <span className='text-xl'>🔐</span>
+                          <img src={GlobeIcon} alt='Privacy' className='w-6 h-6' style={{ filter: 'brightness(0) saturate(100%) invert(51%) sepia(93%) saturate(1745%) hue-rotate(192deg) brightness(101%) contrast(101%)' }} />
                         </div>
                         <div className='text-left'>
                           <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>Quyền riêng tư</p>
                           <p className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>Quản lý quyền riêng tư dữ liệu</p>
                         </div>
                       </div>
-                      <span className='text-gray-400 group-hover:text-gray-600 transition-colors'>→</span>
+                      <img src={ChevronRightIcon} alt='Arrow' className='w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors' />
                     </button>
                   </div>
                 </div>
@@ -895,6 +994,6 @@ export default function Profile() {
           </div>
         </div>
       </div>
-    </div>
+     </div>
   )
 }
