@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { api } from '../services/api/client'
+import { APP_CONFIG } from '../constants/app.config'
 
 // Import Icons
 import UserIcon from '../assets/icons/essential/user.svg'
@@ -50,6 +52,8 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<TabType>('wallet')
   const [walletTab, setWalletTab] = useState<WalletTabType>('history')
   const [isEditing, setIsEditing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState({
     name: 'Nguyễn Văn A',
     email: 'nguyenvana@email.com',
@@ -58,6 +62,79 @@ export default function Profile() {
     gender: 'Nam',
     address: 'G30 Lê Thị Riêng, Phường Thới An, Quận 12, TP. Hồ Chí Minh'
   })
+
+  // Fetch user account data on component mount
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        // Get accountId from localStorage
+        const accountId = localStorage.getItem('account_id')
+        
+        if (!accountId) {
+          setError('Không tìm thấy ID tài khoản')
+          setIsLoading(false)
+          return
+        }
+
+        // Call API to get account details
+        const endpoint = `/Accounts/GetAccountById/${accountId}`
+        
+        const response = await api.get(endpoint) as any
+        
+        // Extract account data - check if it's nested in response.data.data or just response.data
+        let accountData = response.data?.data
+        
+        // Fallback: if data is not nested, use response.data directly
+        if (!accountData && response.data?.accountId) {
+          accountData = response.data
+        }
+        
+        if (!accountData) {
+          setError('Dữ liệu tài khoản không hợp lệ')
+          setIsLoading(false)
+          return
+        }
+
+        // Format date from ISO to YYYY-MM-DD
+        const formatDate = (isoDate: string | null | undefined) => {
+          if (!isoDate) return ''
+          try {
+            const date = new Date(isoDate)
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+              console.warn('⚠️ Invalid date:', isoDate)
+              return ''
+            }
+            return date.toISOString().split('T')[0]
+          } catch (err) {
+            console.warn('⚠️ Error formatting date:', isoDate, err)
+            return ''
+          }
+        }
+
+        // Update userInfo with API data
+        const updatedUserInfo = {
+          name: accountData.name || '',
+          email: accountData.email || '',
+          phone: accountData.phoneNumber || '',
+          dateOfBirth: formatDate(accountData.dob),
+          gender: accountData.gender || '',
+          address: userInfo.address
+        }
+        
+        setUserInfo(updatedUserInfo)
+      } catch (err: any) {
+        setError(err.response?.data?.message || err.message || 'Không thể tải thông tin tài khoản')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAccountData()
+  }, [])
 
   const menuItems = [
     { id: 'profile' as TabType, label: 'Thông tin cá nhân', icon: UserIcon },
@@ -547,7 +624,7 @@ export default function Profile() {
                         />
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {new Date(userInfo.dateOfBirth).toLocaleDateString('vi-VN')}
+                          {userInfo.dateOfBirth ? new Date(userInfo.dateOfBirth).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}
                         </div>
                       )}
                     </div>

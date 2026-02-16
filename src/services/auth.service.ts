@@ -44,7 +44,8 @@ export const authService = {
    * Login with email and password
    */
     login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      return identityServiceClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials) as unknown as LoginResponse
+      const response = await identityServiceClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials)
+      return response as unknown as LoginResponse
     },
 
   /**
