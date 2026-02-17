@@ -14,15 +14,15 @@ export interface SellerRegistrationPayload {
 }
 
 export interface SellerAddressPayload {
-  receiverName: string
+  fullName: string
   phone: string
-  provinceCode: string
+  provinceCode: number
   provinceName: string
-  districtCode: string
+  districtCode: number
   districtName: string
-  wardCode: string
+  wardCode: number
   wardName: string
-  addressLine: string
+  detailAddress: string
   isDefault: boolean
 }
 

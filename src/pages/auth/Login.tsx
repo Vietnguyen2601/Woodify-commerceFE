@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/services'
+import { APP_CONFIG } from '@/constants'
+import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -89,10 +91,19 @@ export default function Login() {
       authService.login({ email, password })
         .then((res) => {
           if (res.data && res.data.success && res.data.token) {
-            localStorage.setItem('auth_token', res.data.token)
-            localStorage.setItem('user_role', 'user')
-            localStorage.setItem('user_email', res.data.email)
-            localStorage.setItem('user_name', res.data.username)
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, res.data.token)
+            if (res.data.refreshToken) {
+              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
+            }
+
+            const normalizedUser: StoredUser = {
+              accountId: res.data.accountId || '',
+              email: res.data.email || email,
+              username: res.data.username || res.data.email || email,
+              role: 'customer',
+            }
+
+            persistStoredUser(normalizedUser)
             if (rememberMe) {
               localStorage.setItem('remember_me', 'true')
             } else {
@@ -100,11 +111,7 @@ export default function Login() {
             }
 
             // Update React Query cache so Header shows username immediately
-            queryClient.setQueryData(queryKeys.user(), {
-              accountId: res.data.accountId,
-              email: res.data.email,
-              username: res.data.username,
-            })
+            queryClient.setQueryData(queryKeys.user(), normalizedUser)
 
             nav('/')
             setFormState('idle')

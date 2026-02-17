@@ -4,6 +4,7 @@
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 export const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL
+export const SHOP_SERVICE_URL = import.meta.env.VITE_SHOP_SERVICE_URL
 export const PRODUCT_SERVICE_URL = import.meta.env.VITE_PRODUCT_SERVICE_URL
 
 export const API_ENDPOINTS = {
@@ -59,6 +60,11 @@ export const API_ENDPOINTS = {
     INVENTORY: '/seller/inventory',
     REGISTER: '/seller/register',
     SHOP_NAME_CHECK: (name: string) => `/seller/shops/check-name?name=${encodeURIComponent(name)}`,
+  },
+
+  // Shop Management
+  SHOP: {
+    CREATE: '/Shops/CreateShop',
   },
 
   // Admin
