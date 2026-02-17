@@ -88,60 +88,47 @@ export default function Login() {
     setFormState('loading')
     setBannerMessage('')
     import('@/services/auth.service').then(({ authService }) => {
-      authService.login({ email, password })
+      authService
+        .login({ email, password })
         .then((res) => {
-          if (res.data && res.data.success && res.data.token) {
-            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, res.data.token)
-            if (res.data.refreshToken) {
-              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
+          const loginData = res.data
+          const isSuccessful = Boolean(loginData?.token && (loginData?.success || res.status === 200))
+
+          if (isSuccessful && loginData) {
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, loginData.token)
+            if (loginData.refreshToken) {
+              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, loginData.refreshToken)
             }
 
             const normalizedUser: StoredUser = {
-              accountId: res.data.accountId || '',
-              email: res.data.email || email,
-              username: res.data.username || res.data.email || email,
+              accountId: loginData.accountId || '',
+              email: loginData.email || email,
+              username: loginData.username || loginData.email || email,
               role: 'customer',
             }
 
             persistStoredUser(normalizedUser)
-          // Check if login was successful (HTTP 200 with token)
-          if ((res.status === 200 || res.data?.success) && res.data?.token) {
-            const loginData = res.data
-            
-            // Store all necessary data in localStorage
-            localStorage.setItem('auth_token', loginData.token)
-            localStorage.setItem('account_id', loginData.accountId)
-            localStorage.setItem('user_role', 'user')
-            localStorage.setItem('user_email', loginData.email)
-            localStorage.setItem('user_name', loginData.username)
-            
+
             if (rememberMe) {
               localStorage.setItem('remember_me', 'true')
             } else {
               localStorage.removeItem('remember_me')
             }
 
-            // Update React Query cache so Header shows username immediately
             queryClient.setQueryData(queryKeys.user(), normalizedUser)
-            queryClient.setQueryData(queryKeys.user(), {
-              accountId: loginData.accountId,
-              email: loginData.email,
-              username: loginData.username,
-            })
-
             nav('/')
             setFormState('idle')
           } else {
             setFormState('error')
-            setBannerMessage(res.message || res.data?.message || 'Sai email hoặc mật khẩu.')
+            setBannerMessage(res.message || loginData?.message || 'Sai email hoặc mật khẩu.')
           }
         })
         .catch((err) => {
           setFormState('error')
           setBannerMessage(
-            err?.response?.data?.message || 
-            err?.message || 
-            'Sai email hoặc mật khẩu.'
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+              (err as Error)?.message ||
+              'Sai email hoặc mật khẩu.'
           )
         })
     })
