@@ -5,5 +5,7 @@
   --accent: #8b5e3c;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: var(--bg); color: #222; }
+html { margin: 0; padding: 0; width: 100%; height: 100%; overflow-x: hidden; }
+body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: var(--bg); color: #222; }
+#root { width: 100%; margin: 0; padding: 0; }
 a { text-decoration: none; color: inherit; }

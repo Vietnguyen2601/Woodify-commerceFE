@@ -211,7 +211,6 @@ export default function Register() {
     import('@/services/auth.service').then(({ authService }) => {
       authService.verifyOtp({ email, otp: code })
         .then((res: any) => {
-          console.log('[verify-otp] response:', JSON.stringify(res))
           if (res.data?.success || res.status === 200) {
             setStep(3)
           } else {
@@ -272,7 +271,10 @@ export default function Register() {
         username,
       })
         .then((res: any) => {
-          if (res.data?.success || res.status === 200) {
+          // Check if registration was successful
+          if ((res.status === 0 || res.status === 200) && res.data?.token) {
+            const registerData = res.data
+            
             // Auto-login: store token & user data
             if (res.data?.token) {
               localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, res.data.token)
@@ -292,6 +294,23 @@ export default function Register() {
 
             // Update React Query cache so Header shows username
             queryClient.setQueryData(queryKeys.user(), normalizedUser)
+            localStorage.setItem('auth_token', registerData.token)
+            
+            if (registerData.refreshToken) {
+              localStorage.setItem('refresh_token', registerData.refreshToken)
+            }
+            
+            localStorage.setItem('account_id', registerData.accountId)
+            localStorage.setItem('user_email', email)
+            localStorage.setItem('user_name', registerData.username || username)
+            localStorage.setItem('user_role', 'user')
+
+            // Update React Query cache so Header shows username
+            queryClient.setQueryData(queryKeys.user(), {
+              accountId: registerData.accountId,
+              email,
+              username: registerData.username || username,
+            })
 
             setRegisterState('success')
             setStep(4)
