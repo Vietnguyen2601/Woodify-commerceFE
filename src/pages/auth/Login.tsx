@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/services'
+import { APP_CONFIG } from '@/constants'
+import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -88,6 +90,20 @@ export default function Login() {
     import('@/services/auth.service').then(({ authService }) => {
       authService.login({ email, password })
         .then((res) => {
+          if (res.data && res.data.success && res.data.token) {
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, res.data.token)
+            if (res.data.refreshToken) {
+              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
+            }
+
+            const normalizedUser: StoredUser = {
+              accountId: res.data.accountId || '',
+              email: res.data.email || email,
+              username: res.data.username || res.data.email || email,
+              role: 'customer',
+            }
+
+            persistStoredUser(normalizedUser)
           // Check if login was successful (HTTP 200 with token)
           if ((res.status === 200 || res.data?.success) && res.data?.token) {
             const loginData = res.data
@@ -106,6 +122,7 @@ export default function Login() {
             }
 
             // Update React Query cache so Header shows username immediately
+            queryClient.setQueryData(queryKeys.user(), normalizedUser)
             queryClient.setQueryData(queryKeys.user(), {
               accountId: loginData.accountId,
               email: loginData.email,

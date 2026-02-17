@@ -1,38 +1,24 @@
 import React from 'react'
-import { useForm, type UseFormRegisterReturn } from 'react-hook-form'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import AddressModal from '@/components/seller/AddressModal/AddressModal'
+import type { PickupAddressPayload } from '@/components/seller/AddressModal/types'
+import { useAuth } from '@/features/auth/hooks'
 import { useDebounce } from '@/hooks'
-import { locationService, queryKeys, sellerService } from '@/services'
-import type {
-  DistrictDTO,
-  ProvinceDTO,
-  SellerAddressPayload,
-  SellerRegistrationPayload,
-  WardDTO,
-} from '@/types'
+import { sellerService, shopService } from '@/services'
+import type { CreateShopPayload } from '@/types'
 
 interface RegistrationFormValues {
   shopName: string
 }
 
-interface PickupAddress extends SellerAddressPayload {}
+type PickupAddress = PickupAddressPayload
 
-interface AddressModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSave: (address: PickupAddress) => void
-  initialValue?: PickupAddress | null
-}
+const SHOP_NAME_CHECK_ENABLED = false
 
-interface AddressFormValues {
-  receiverName: string
-  phone: string
-  provinceCode: string
-  districtCode: string
-  wardCode: string
-  addressLine: string
-  isDefault: boolean
-}
+const formatPickupAddress = (address: PickupAddress) =>
+  `${address.detailAddress}, ${address.wardName}, ${address.districtName}, ${address.provinceName}`
 
 const shopNameMessages = {
   idle: 'Đặt tên thể hiện phong cách thương hiệu của bạn (3-50 ký tự).',
@@ -45,6 +31,8 @@ const shopNameMessages = {
 type ShopNameStatus = keyof typeof shopNameMessages
 
 export default function SellerRegistrationPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [selectedAddress, setSelectedAddress] = React.useState<PickupAddress | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [editingAddress, setEditingAddress] = React.useState<PickupAddress | null>(null)
@@ -72,6 +60,15 @@ export default function SellerRegistrationPage() {
   const debouncedShopName = useDebounce(shopNameValue.trim(), 400)
 
   React.useEffect(() => {
+    if (!SHOP_NAME_CHECK_ENABLED) {
+      if (!debouncedShopName || debouncedShopName.length < 3) {
+        setShopNameStatus('idle')
+      } else {
+        setShopNameStatus('available')
+      }
+      return
+    }
+
     if (!debouncedShopName) {
       setShopNameStatus('idle')
       clearErrors('shopName')
@@ -115,8 +112,8 @@ export default function SellerRegistrationPage() {
     }
   }, [debouncedShopName, clearErrors, setError])
 
-  const registrationMutation = useMutation({
-    mutationFn: (payload: SellerRegistrationPayload) => sellerService.registerSeller(payload),
+  const shopCreationMutation = useMutation({
+    mutationFn: (payload: CreateShopPayload) => shopService.createShop(payload),
   })
 
   const onSubmit = handleSubmit(async (values) => {
@@ -127,22 +124,44 @@ export default function SellerRegistrationPage() {
       return
     }
 
+    if (!user?.accountId) {
+      setSubmissionFeedback({ type: 'error', message: 'Không tìm thấy thông tin chủ shop. Vui lòng đăng nhập lại.' })
+      return
+    }
+
     setSubmissionFeedback(null)
 
+    const normalizedShopName = values.shopName.trim()
+    const shopPayload: CreateShopPayload = {
+      shopName: normalizedShopName,
+      description: `Gian hàng ${normalizedShopName}`,
+      address: formatPickupAddress(selectedAddress),
+      phoneNumber: selectedAddress.phone,
+      ownerId: user.accountId,
+    }
+
     try {
-      await registrationMutation.mutateAsync({
-        shopName: values.shopName.trim(),
-        pickupAddress: selectedAddress,
+      await shopCreationMutation.mutateAsync(shopPayload)
+      setSubmissionFeedback({
+        type: 'success',
+        message: 'Tạo shop thành công! Đang chuyển tới trang quản trị người bán...',
       })
-      setSubmissionFeedback({ type: 'success', message: 'Đăng ký thành công! Hệ thống sẽ điều hướng bạn vào trang người bán.' })
+      navigate('/seller', { replace: true })
     } catch (error) {
       console.error(error)
-      setSubmissionFeedback({ type: 'error', message: 'Đăng ký thất bại. Vui lòng thử lại sau.' })
+      setSubmissionFeedback({ type: 'error', message: 'Tạo shop thất bại. Vui lòng thử lại sau.' })
     }
   })
 
+  const requiresLogin = !user?.accountId
+
   const isContinueDisabled =
-    !selectedAddress || !isValid || shopNameStatus !== 'available' || isSubmitting || registrationMutation.isPending
+    !selectedAddress ||
+    !isValid ||
+    shopNameStatus !== 'available' ||
+    isSubmitting ||
+    shopCreationMutation.isPending ||
+    requiresLogin
 
   const openAddressModal = (address?: PickupAddress | null) => {
     setEditingAddress(address ?? null)
@@ -272,8 +291,11 @@ export default function SellerRegistrationPage() {
                     isContinueDisabled ? 'bg-stone-300' : 'bg-yellow-900 hover:bg-yellow-800'
                   }`}
                 >
-                  {registrationMutation.isPending || isSubmitting ? 'Đang xử lý...' : 'Tiếp theo'}
+                  {shopCreationMutation.isPending || isSubmitting ? 'Đang xử lý...' : 'Tạo shop'}
                 </button>
+                {requiresLogin && (
+                  <p className='text-xs font-medium text-rose-600'>Vui lòng đăng nhập lại để tiếp tục.</p>
+                )}
               </div>
             </footer>
           </form>
@@ -296,13 +318,13 @@ export default function SellerRegistrationPage() {
 }
 
 function AddressCard({ address }: { address: PickupAddress }) {
-  const fullAddress = `${address.addressLine}, ${address.wardName}, ${address.districtName}, ${address.provinceName}`
+  const fullAddress = formatPickupAddress(address)
 
   return (
     <div className='rounded-2xl border border-stone-200 bg-white p-5 shadow-sm'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div>
-          <p className='text-base font-semibold text-stone-900'>{address.receiverName}</p>
+          <p className='text-base font-semibold text-stone-900'>{address.fullName}</p>
           <p className='text-sm text-stone-600'>{address.phone}</p>
         </div>
         {address.isDefault && (
@@ -314,277 +336,3 @@ function AddressCard({ address }: { address: PickupAddress }) {
   )
 }
 
-function AddressModal({ isOpen, onClose, onSave, initialValue }: AddressModalProps) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors, isValid, isSubmitting },
-  } = useForm<AddressFormValues>({
-    mode: 'onChange',
-    defaultValues: {
-      receiverName: initialValue?.receiverName ?? '',
-      phone: initialValue?.phone ?? '',
-      provinceCode: initialValue?.provinceCode ?? '',
-      districtCode: initialValue?.districtCode ?? '',
-      wardCode: initialValue?.wardCode ?? '',
-      addressLine: initialValue?.addressLine ?? '',
-      isDefault: initialValue?.isDefault ?? true,
-    },
-  })
-
-  React.useEffect(() => {
-    reset({
-      receiverName: initialValue?.receiverName ?? '',
-      phone: initialValue?.phone ?? '',
-      provinceCode: initialValue?.provinceCode ?? '',
-      districtCode: initialValue?.districtCode ?? '',
-      wardCode: initialValue?.wardCode ?? '',
-      addressLine: initialValue?.addressLine ?? '',
-      isDefault: initialValue?.isDefault ?? true,
-    })
-  }, [initialValue, reset])
-
-  const provinceCode = watch('provinceCode')
-  const districtCode = watch('districtCode')
-
-  const prevProvinceRef = React.useRef<string>('')
-  const prevDistrictRef = React.useRef<string>('')
-
-  React.useEffect(() => {
-    if (!prevProvinceRef.current) {
-      prevProvinceRef.current = provinceCode
-      return
-    }
-    if (provinceCode && prevProvinceRef.current === provinceCode) return
-    setValue('districtCode', '')
-    setValue('wardCode', '')
-    prevProvinceRef.current = provinceCode
-  }, [provinceCode, setValue])
-
-  React.useEffect(() => {
-    if (!prevDistrictRef.current) {
-      prevDistrictRef.current = districtCode
-      return
-    }
-    if (districtCode && prevDistrictRef.current === districtCode) return
-    setValue('wardCode', '')
-    prevDistrictRef.current = districtCode
-  }, [districtCode, setValue])
-
-  const { data: provinceResponse, isLoading: provinceLoading } = useQuery({
-    queryKey: queryKeys.location.provinces(),
-    queryFn: () => locationService.getProvinces(),
-    staleTime: Infinity,
-  })
-
-  const { data: districtResponse, isLoading: districtLoading } = useQuery({
-    queryKey: queryKeys.location.districts(provinceCode || 'unknown'),
-    queryFn: () => locationService.getDistricts(provinceCode),
-    enabled: Boolean(provinceCode),
-    staleTime: Infinity,
-  })
-
-  const { data: wardResponse, isLoading: wardLoading } = useQuery({
-    queryKey: queryKeys.location.wards(districtCode || 'unknown'),
-    queryFn: () => locationService.getWards(districtCode),
-    enabled: Boolean(districtCode),
-    staleTime: Infinity,
-  })
-
-  const provinces = provinceResponse?.data ?? []
-  const districts = districtResponse?.data ?? []
-  const wards = wardResponse?.data ?? []
-
-  const onSubmitAddress = handleSubmit((values) => {
-    const province = provinces.find((item) => item.code === values.provinceCode)
-    const district = districts.find((item) => item.code === values.districtCode)
-    const ward = wards.find((item) => item.code === values.wardCode)
-
-    if (!province || !district || !ward) return
-
-    const payload: PickupAddress = {
-      receiverName: values.receiverName.trim(),
-      phone: values.phone.trim(),
-      provinceCode: province.code,
-      provinceName: province.name,
-      districtCode: district.code,
-      districtName: district.name,
-      wardCode: ward.code,
-      wardName: ward.name,
-      addressLine: values.addressLine.trim(),
-      isDefault: values.isDefault,
-    }
-
-    onSave(payload)
-  })
-
-  if (!isOpen) return null
-
-  return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 px-4 py-8'>
-      <div className='flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl'>
-        <header className='border-b border-stone-100 px-6 py-4'>
-          <div className='flex items-start justify-between'>
-            <div>
-              <p className='text-xs font-semibold uppercase tracking-[0.25em] text-stone-500'>Lấy hàng</p>
-              <h2 className='text-lg font-semibold text-stone-900'>Thêm Địa Chỉ Mới</h2>
-            </div>
-            <button
-              type='button'
-              className='rounded-full border border-stone-200 p-2 text-stone-500 hover:text-stone-900'
-              onClick={onClose}
-              aria-label='Đóng'
-            >
-              ✕
-            </button>
-          </div>
-        </header>
-
-        <form className='flex flex-1 flex-col' onSubmit={onSubmitAddress}>
-          <div className='flex-1 space-y-4 overflow-y-auto px-6 py-5'>
-            <div className='grid gap-4 md:grid-cols-2'>
-              <Field label='Họ & Tên' required error={errors.receiverName?.message}>
-                <input
-                  type='text'
-                  {...register('receiverName', { required: 'Vui lòng nhập họ tên' })}
-                  className='h-11 w-full rounded-xl border border-stone-200 px-3 text-sm outline-none focus:border-yellow-900'
-                />
-              </Field>
-              <Field label='Số điện thoại (+84)' required error={errors.phone?.message}>
-                <input
-                  type='tel'
-                  {...register('phone', {
-                    required: 'Vui lòng nhập số điện thoại',
-                    validate: (value) => (/^(\+?84|0)(3|5|7|8|9)\d{8}$/.test(value.trim()) ? true : 'Số điện thoại không hợp lệ'),
-                  })}
-                  className='h-11 w-full rounded-xl border border-stone-200 px-3 text-sm outline-none focus:border-yellow-900'
-                />
-              </Field>
-            </div>
-
-            <Field label='Tỉnh/Thành phố' required error={errors.provinceCode?.message}>
-              <Select
-                placeholder={provinceLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố'}
-                loading={provinceLoading}
-                registerProps={register('provinceCode', { required: 'Vui lòng chọn tỉnh/thành phố' })}
-              >
-                {provinces.map((province: ProvinceDTO) => (
-                  <option key={province.code} value={province.code}>
-                    {province.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <div className='grid gap-4 md:grid-cols-2'>
-              <Field label='Quận/Huyện' required error={errors.districtCode?.message}>
-                <Select
-                  placeholder={!provinceCode ? 'Chọn tỉnh trước' : districtLoading ? 'Đang tải...' : 'Chọn quận/huyện'}
-                  loading={districtLoading}
-                  disabled={!provinceCode || districtLoading}
-                  registerProps={register('districtCode', { required: 'Vui lòng chọn quận/huyện' })}
-                >
-                  {districts.map((district: DistrictDTO) => (
-                    <option key={district.code} value={district.code}>
-                      {district.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label='Phường/Xã' required error={errors.wardCode?.message}>
-                <Select
-                  placeholder={!districtCode ? 'Chọn quận trước' : wardLoading ? 'Đang tải...' : 'Chọn phường/xã'}
-                  loading={wardLoading}
-                  disabled={!districtCode || wardLoading}
-                  registerProps={register('wardCode', { required: 'Vui lòng chọn phường/xã' })}
-                >
-                  {wards.map((ward: WardDTO) => (
-                    <option key={ward.code} value={ward.code}>
-                      {ward.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <Field label='Địa chỉ chi tiết' required error={errors.addressLine?.message}>
-              <textarea
-                rows={3}
-                {...register('addressLine', { required: 'Vui lòng nhập địa chỉ chi tiết' })}
-                className='w-full rounded-xl border border-stone-200 px-3 py-2 text-sm outline-none focus:border-yellow-900'
-                placeholder='Số nhà, tên đường, mô tả bổ sung...'
-              />
-            </Field>
-
-            <label className='flex items-start gap-3 text-sm text-stone-600'>
-              <input type='checkbox' className='mt-1 h-4 w-4 rounded border-stone-300' {...register('isDefault')} />
-              <span>Đặt làm địa chỉ mặc định</span>
-            </label>
-          </div>
-
-          <div className='sticky bottom-0 flex justify-end gap-3 border-t border-stone-100 bg-white px-6 py-4'>
-            <button type='button' className='rounded-full px-5 py-2 text-sm font-semibold text-stone-500 hover:text-stone-900' onClick={onClose}>
-              Hủy
-            </button>
-            <button
-              type='submit'
-              disabled={!isValid || isSubmitting}
-              className={`rounded-full px-6 py-2 text-sm font-semibold text-white ${
-                !isValid || isSubmitting ? 'bg-stone-300' : 'bg-yellow-900 hover:bg-yellow-800'
-              }`}
-            >
-              {isSubmitting ? 'Đang lưu...' : 'Lưu'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
-  return (
-    <label className='flex flex-col gap-2 text-sm text-stone-700'>
-      <span className='text-xs font-semibold uppercase tracking-wide text-stone-500'>
-        {label}
-        {required && <span className='ml-1 text-rose-600'>*</span>}
-      </span>
-      {children}
-      {error && <span className='text-xs text-rose-600'>{error}</span>}
-    </label>
-  )
-}
-
-function Select({
-  children,
-  placeholder,
-  loading,
-  disabled,
-  registerProps,
-}: {
-  children: React.ReactNode
-  placeholder?: string
-  loading?: boolean
-  disabled?: boolean
-  registerProps: UseFormRegisterReturn
-}) {
-  return (
-    <div className='relative'>
-      <select
-        {...registerProps}
-        disabled={disabled}
-        className='h-11 w-full appearance-none rounded-xl border border-stone-200 bg-white px-3 pr-10 text-sm outline-none focus:border-yellow-900 disabled:bg-stone-50'
-      >
-        <option value=''>
-          {placeholder}
-        </option>
-        {children}
-      </select>
-      <span className='pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-stone-400'>⌄</span>
-      {loading && <span className='absolute right-8 top-1/2 -translate-y-1/2 text-xs text-yellow-900'>Đang tải...</span>}
-    </div>
-  )
-}

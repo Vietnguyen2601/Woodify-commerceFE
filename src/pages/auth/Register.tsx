@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/services'
+import { APP_CONFIG } from '@/constants'
+import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -274,6 +276,24 @@ export default function Register() {
             const registerData = res.data
             
             // Auto-login: store token & user data
+            if (res.data?.token) {
+              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, res.data.token)
+            }
+            if (res.data?.refreshToken) {
+              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
+            }
+
+            const normalizedUser: StoredUser = {
+              accountId: res.data?.accountId || '',
+              email,
+              username: res.data?.username || username,
+              role: 'customer',
+            }
+
+            persistStoredUser(normalizedUser)
+
+            // Update React Query cache so Header shows username
+            queryClient.setQueryData(queryKeys.user(), normalizedUser)
             localStorage.setItem('auth_token', registerData.token)
             
             if (registerData.refreshToken) {
