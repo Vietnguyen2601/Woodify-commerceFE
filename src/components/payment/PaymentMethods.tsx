@@ -10,61 +10,56 @@ interface PaymentMethodsProps {
 
 const paymentOptions = [
   {
-    id: 'cod',
-    label: 'Thanh toán khi nhận hàng',
-    description: 'Thanh toán bằng tiền mặt khi nhận hàng',
-    icon: 'truck',
+    id: 'momo',
+    label: 'Ví điện tử Momo',
+    description: 'Thanh toán bằng ví Momo',
+    icon: 'momo',
   },
   {
-    id: 'bank-transfer',
-    label: 'Chuyển khoản ngân hàng',
-    description: 'Chuyển khoản qua tài khoản ngân hàng',
-    icon: 'bank',
+    id: 'payos',
+    label: 'PayOS',
+    description: 'Thanh toán bằng PayOS',
+    icon: 'payos',
   },
   {
-    id: 'card',
-    label: 'Thẻ tín dụng/ghi nợ',
-    description: 'Thanh toán bằng thẻ Visa, Mastercard',
-    icon: 'card',
+    id: 'vnpay',
+    label: 'VNPay',
+    description: 'Thanh toán bằng VNPay',
+    icon: 'vnpay',
   },
 ];
 
 const renderIcon = (iconType: string, isSelected: boolean) => {
   const iconColor = 'outline-white';
   
-  if (iconType === 'truck') {
+  if (iconType === 'momo') {
     return (
-      <div className="w-6 h-6 relative overflow-hidden">
-        <div className={`w-5 h-3 left-[3px] top-[3px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-        <div className={`w-4 h-4 left-[3px] top-[5px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
+      <div className="w-6 h-6 relative overflow-hidden flex items-center justify-center">
+        <div className={`text-white text-sm font-bold`}>M</div>
       </div>
     );
   }
   
-  if (iconType === 'bank') {
+  if (iconType === 'payos') {
     return (
       <div className="w-6 h-6 relative overflow-hidden">
-        <div className={`w-1 h-0 left-[10px] top-[12px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-        <div className={`w-1 h-0 left-[10px] top-[8px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-        <div className={`w-1 h-[5px] left-[10px] top-[16px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-        <div className={`w-5 h-3.5 left-[2px] top-[7px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-        <div className={`w-3 h-4 left-[6px] top-[3px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
+        <div className={`w-5 h-3 left-[2px] top-[4px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
+        <div className={`w-3 h-2 left-[4px] top-[6px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
       </div>
     );
   }
   
-  if (iconType === 'card') {
+  if (iconType === 'vnpay') {
     return (
-      <div className="w-6 h-6 relative overflow-hidden">
-        <div className={`w-5 h-3.5 left-[2px] top-[5px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-        <div className={`w-5 h-0 left-[2px] top-[10px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
+      <div className="w-6 h-6 relative overflow-hidden flex items-center justify-center">
+        <div className={`text-white text-xs font-bold`}>V</div>
       </div>
     );
   }
 };
 
 export const PaymentMethods: React.FC<PaymentMethodsProps> = ({ register, formState: { errors } }) => {
-  const [selectedMethod, setSelectedMethod] = useState<string>('cod');
+  const [selectedMethod, setSelectedMethod] = useState<string>('momo');
 
   return (
     <div className="w-full px-8 pt-8 pb-8 bg-white rounded-[10px] shadow-[0px_2px_4px_-2px_rgba(0,0,0,0.10)] shadow-md flex flex-col justify-start items-start gap-6">
