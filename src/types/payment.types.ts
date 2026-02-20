@@ -17,7 +17,7 @@ export interface ShippingInfo {
   note?: string;
 }
 
-export type PaymentMethodType = 'cod' | 'bank-transfer' | 'card';
+export type PaymentMethodType = 'momo' | 'payos' | 'vnpay';
 
 export interface PaymentMethod {
   id: PaymentMethodType;

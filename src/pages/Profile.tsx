@@ -55,8 +55,9 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [depositAmount, setDepositAmount] = useState('')
-  const [depositMethod, setDepositMethod] = useState<'card' | 'bank' | 'wallet'>('card')
+  const [depositMethod, setDepositMethod] = useState<'momo' | 'payos' | 'vnpay'>('momo')
   const [isProcessingDeposit, setIsProcessingDeposit] = useState(false)
+  const [depositError, setDepositError] = useState<string | null>(null)
   const walletBalance = 15750000
   const [userInfo, setUserInfo] = useState({
     name: 'Nguyễn Văn A',
@@ -314,7 +315,21 @@ export default function Profile() {
 
   const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!depositAmount || parseFloat(depositAmount) <= 0) return
+    setDepositError(null)
+    
+    const amount = parseFloat(depositAmount)
+    if (!depositAmount || amount <= 0) {
+      setDepositError('Vui lòng nhập số tiền')
+      return
+    }
+    if (amount < 10000) {
+      setDepositError('Số tiền tối thiểu là 10.000đ')
+      return
+    }
+    if (amount > 100000000) {
+      setDepositError('Số tiền tối đa là 100.000.000đ')
+      return
+    }
     
     setIsProcessingDeposit(true)
     try {
@@ -323,7 +338,7 @@ export default function Profile() {
       
       setWalletTab('history')
       setDepositAmount('')
-      setDepositMethod('card')
+      setDepositMethod('momo')
     } catch (err: any) {
       setError(err.message || 'Lỗi khi nạp tiền')
     } finally {
@@ -478,23 +493,33 @@ export default function Profile() {
                         {/* Custom Amount */}
                         <div className='space-y-1.5'>
                           <label className='text-sm font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                            Hoặc nhập số tiền khác
+                            Nhập số tiền khác
                           </label>
                           <div className='relative'>
                             <input
                               type='number'
-                              min='100000'
-                              max='100000000'
-                              step='50000'
                               value={depositAmount}
-                              onChange={(e) => setDepositAmount(e.target.value)}
+                              onChange={(e) => {
+                                setDepositAmount(e.target.value)
+                                setDepositError(null)
+                              }}
                               placeholder='Nhập số tiền...'
-                              className='w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:border-amber-500 focus:bg-white focus:outline-none transition-colors'
+                              className={`w-full rounded-xl border bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:bg-white focus:outline-none transition-colors ${
+                                depositError
+                                  ? 'border-red-500 focus:border-red-500 animate-pulse bg-red-50 focus:bg-red-50'
+                                  : 'border-gray-200 focus:border-amber-500'
+                              }`}
                               style={{ fontFamily: 'Arimo, sans-serif' }}
                             />
                             <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400'>đ</span>
                           </div>
-                          <p className='text-xs text-gray-400' style={{ fontFamily: 'Arimo, sans-serif' }}>Tối thiểu 100.000đ • Tối đa 100.000.000đ</p>
+                          {depositError ? (
+                            <p className='text-xs text-red-500 font-semibold' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                              ⚠️ {depositError}
+                            </p>
+                          ) : (
+                            <p className='text-xs text-gray-400' style={{ fontFamily: 'Arimo, sans-serif' }}>Tối thiểu 10.000đ • Tối đa 100.000.000đ</p>
+                          )}
                         </div>
 
                         {/* Payment Methods */}
@@ -504,9 +529,9 @@ export default function Profile() {
                           </p>
                           <div className='grid grid-cols-3 gap-2'>
                             {[
-                              { value: 'card', label: 'Thẻ tín dụng/Ghi nợ', desc: 'Visa, Mastercard', icon: '💳' },
-                              { value: 'bank', label: 'Chuyển khoản ngân hàng', desc: 'Miễn phí', icon: '🏦' },
-                              { value: 'wallet', label: 'Ví điện tử', desc: 'Momo, ZaloPay', icon: '📱' }
+                              { value: 'momo', label: 'Ví điện tử Momo', desc: 'Momo', icon: '📱' },
+                              { value: 'payos', label: 'PayOS', desc: 'PayOS', icon: '💳' },
+                              { value: 'vnpay', label: 'VNPay', desc: 'VNPay', icon: '🏦' }
                             ].map((method) => (
                               <label
                                 key={method.value}
@@ -522,7 +547,7 @@ export default function Profile() {
                                   name='depositMethod'
                                   value={method.value}
                                   checked={depositMethod === method.value}
-                                  onChange={(e) => setDepositMethod(e.target.value as 'card' | 'bank' | 'wallet')}
+                                  onChange={(e) => setDepositMethod(e.target.value as 'momo' | 'payos' | 'vnpay')}
                                   className='absolute opacity-0'
                                 />
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
@@ -555,7 +580,7 @@ export default function Profile() {
                           </button>
                           <button
                             type='submit'
-                            disabled={!depositAmount || parseFloat(depositAmount) <= 0 || isProcessingDeposit}
+                            disabled={!depositAmount || isProcessingDeposit}
                             className='flex-1 rounded-lg bg-amber-600 py-2 text-white font-semibold text-sm shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:bg-amber-700'
                             style={{ fontFamily: 'Arimo, sans-serif' }}
                           >
@@ -616,52 +641,42 @@ export default function Profile() {
 
             {activeTab === 'profile' && (
               <div className='space-y-8'>
-                {/* Page Title */}
-                <div className='flex justify-between items-center'>
-                  <div>
-                    <h1 className='text-3xl font-bold text-gray-800 mb-2' style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      Thông tin cá nhân
-                    </h1>
-                    <p className='text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                      Quản lý thông tin tài khoản của bạn
-                    </p>
-                  </div>
-                  {!isEditing && (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className='px-6 py-3 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity shadow-md flex items-center gap-2'
-                      style={{ fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' }}
-                    >
-                      <img src={PenIcon} alt='Edit' className='w-4 h-4' style={{ filter: 'brightness(0) invert(1)' }} />
-                      Chỉnh sửa
-                    </button>
-                  )}
-                </div>
-
                 {/* Profile Card */}
                 <div className='bg-white rounded-[20px] shadow-md p-8'>
                   {/* Avatar Section */}
-                  <div className='flex items-center gap-6 pb-8 mb-8 border-b border-gray-200'>
-                    <div className='relative'>
-                      <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg' style={{ background: 'linear-gradient(to bottom, #D4B896, #E3DCC8)' }}>
-                        <span className='text-4xl font-bold' style={{ color: '#BE9C73' }}>
-                          {userInfo.name.charAt(0)}
-                        </span>
+                  <div className='flex items-center justify-between gap-6 pb-8 mb-8 border-b border-gray-200'>
+                    <div className='flex items-center gap-6'>
+                      <div className='relative'>
+                        <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg' style={{ background: 'linear-gradient(to bottom, #D4B896, #E3DCC8)' }}>
+                          <span className='text-4xl font-bold' style={{ color: '#BE9C73' }}>
+                            {userInfo.name.charAt(0)}
+                          </span>
+                        </div>
+                        {isEditing && (
+                          <button className='absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border-2 hover:scale-110 transition-transform' style={{ borderColor: '#BE9C73' }}>
+                            <img src={PenIcon} alt='Upload' className='w-4 h-4' style={{ filter: 'brightness(0) saturate(100%) invert(61%) sepia(21%) saturate(630%) hue-rotate(348deg) brightness(92%) contrast(88%)' }} />
+                          </button>
+                        )}
                       </div>
-                      {isEditing && (
-                        <button className='absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border-2 hover:scale-110 transition-transform' style={{ borderColor: '#BE9C73' }}>
-                          <img src={PenIcon} alt='Upload' className='w-4 h-4' style={{ filter: 'brightness(0) saturate(100%) invert(61%) sepia(21%) saturate(630%) hue-rotate(348deg) brightness(92%) contrast(88%)' }} />
-                        </button>
-                      )}
+                      <div>
+                        <h2 className='text-2xl font-bold mb-1' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
+                          {userInfo.name}
+                        </h2>
+                        <p className='text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                          {userInfo.email}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className='text-2xl font-bold mb-1' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                        {userInfo.name}
-                      </h2>
-                      <p className='text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                        {userInfo.email}
-                      </p>
-                    </div>
+                    {!isEditing && (
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className='px-6 py-3 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity shadow-md flex items-center gap-2 flex-shrink-0'
+                        style={{ fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' }}
+                      >
+                        <img src={PenIcon} alt='Edit' className='w-4 h-4' style={{ filter: 'brightness(0) invert(1)' }} />
+                        Chỉnh sửa
+                      </button>
+                    )}
                   </div>
 
                   {/* Form Fields */}
@@ -822,55 +837,11 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-
-                {/* Security Card */}
-                <div className='bg-white rounded-[20px] shadow-md p-8'>
-                  <h3 className='text-xl font-bold mb-6' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                    Bảo mật
-                  </h3>
-                  <div className='space-y-4'>
-                    <button className='w-full flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors group'>
-                      <div className='flex items-center gap-4'>
-                        <div className='w-12 h-12 rounded-full flex items-center justify-center' style={{ backgroundColor: '#FED7AA' }}>
-                          <span className='text-xl'>🔒</span>
-                        </div>
-                        <div className='text-left'>
-                          <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>Đổi mật khẩu</p>
-                          <p className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>Cập nhật mật khẩu định kỳ</p>
-                        </div>
-                      </div>
-                      <span className='text-gray-400 group-hover:text-gray-600 transition-colors'>→</span>
-                    </button>
-
-                    <button className='w-full flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors group'>
-                      <div className='flex items-center gap-4'>
-                        <div className='w-12 h-12 rounded-full flex items-center justify-center' style={{ backgroundColor: '#DCFCE7' }}>
-                          <span className='text-xl'>✓</span>
-                        </div>
-                        <div className='text-left'>
-                          <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>Xác thực hai yếu tố</p>
-                          <p className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>Tăng cường bảo mật tài khoản</p>
-                        </div>
-                      </div>
-                      <span className='text-gray-400 group-hover:text-gray-600 transition-colors'>→</span>
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
             {activeTab === 'orders' && (
               <div className='space-y-8'>
-                {/* Page Title */}
-                <div>
-                  <h1 className='text-3xl font-bold text-gray-800 mb-2' style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Đơn hàng của tôi
-                  </h1>
-                  <p className='text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                    Theo dõi và quản lý đơn hàng
-                  </p>
-                </div>
-
                 {/* Orders List */}
                 <div className='space-y-4'>
                   {orders.map(order => {
@@ -965,16 +936,6 @@ export default function Profile() {
 
             {activeTab === 'settings' && (
               <div className='space-y-8'>
-                {/* Page Title */}
-                <div>
-                  <h1 className='text-3xl font-bold text-gray-800 mb-2' style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Cài đặt tài khoản
-                  </h1>
-                  <p className='text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                    Quản lý cài đặt và tùy chọn tài khoản
-                  </p>
-                </div>
-
                 {/* Notifications Settings */}
                 <div className='bg-white rounded-[20px] shadow-md p-8'>
                   <h3 className='text-xl font-bold mb-6' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
