@@ -2,11 +2,11 @@ import React, { useState } from 'react'
 import { useCart } from '../store/cartStore'
 
 // Import Icons
-import MailIcon from '../assets/icons/essential/point-address.svg'
-import ShoppingBagIcon from '../assets/icons/essential/shopping-cart.svg'
-import TagIcon from '../assets/icons/essential/tag.svg'
-import ShieldIcon from '../assets/icons/essential/shield-check.svg'
-import TruckIcon from '../assets/icons/essential/truck.svg'
+import MailIcon from '@/assets/icons/essential/commerce/point-address.svg'
+import ShoppingBagIcon from '@/assets/icons/essential/commerce/shopping-cart.svg'
+import TagIcon from '@/assets/icons/essential/commerce/tag.svg'
+import ShieldIcon from '@/assets/icons/essential/commerce/shield-check.svg'
+import TruckIcon from '@/assets/icons/essential/commerce/truck.svg'
 
 type ShippingMethod = 'standard' | 'express' | 'install'
 
