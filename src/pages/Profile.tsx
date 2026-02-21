@@ -60,12 +60,12 @@ export default function Profile() {
   const [depositError, setDepositError] = useState<string | null>(null)
   const walletBalance = 15750000
   const [userInfo, setUserInfo] = useState({
-    name: 'Nguyễn Văn A',
-    email: 'nguyenvana@email.com',
-    phone: '0903038567',
-    dateOfBirth: '1990-01-15',
-    gender: 'Nam',
-    address: 'G30 Lê Thị Riêng, Phường Thới An, Quận 12, TP. Hồ Chí Minh'
+    name: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: '',
+    address: ''
   })
 
   // Fetch user account data on component mount

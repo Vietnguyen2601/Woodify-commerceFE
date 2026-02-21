@@ -59,6 +59,8 @@ export function useAuth() {
     if (isBrowser) {
       localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
       localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN)
+      // Clear old account_id key if it exists
+      localStorage.removeItem('account_id')
     }
     clearStoredUser()
 
