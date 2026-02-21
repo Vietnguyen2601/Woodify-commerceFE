@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
+import type { AxiosError } from 'axios'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../../constants/routes'
 import woodifyLogo from '../../../assets/logo/Woodify.jpg'
 import { Icon } from '../../ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { shopService } from '@/services'
 import './Header.css'
 
 interface HeaderProps {
@@ -28,6 +30,35 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
   const notificationCount = 3
   const [isSearching, setIsSearching] = useState(false)
   const [searchValue, setSearchValue] = useState('')
+  const [isCheckingSellerAccess, setIsCheckingSellerAccess] = useState(false)
+
+  const handleSellerChannelClick = async () => {
+    if (isCheckingSellerAccess) return
+
+    if (!isAuthenticated || !user?.accountId) {
+      navigate(ROUTES.LOGIN)
+      return
+    }
+
+    try {
+      setIsCheckingSellerAccess(true)
+      const response = await shopService.getShopByOwnerId(user.accountId)
+      if (response?.data) {
+        navigate(ROUTES.SELLER)
+        return
+      }
+      navigate(ROUTES.SELLER_REGISTER)
+    } catch (error) {
+      const axiosError = error as AxiosError
+      if (axiosError?.response?.status === 404) {
+        navigate(ROUTES.SELLER_REGISTER)
+      } else {
+        console.error('Unable to verify seller access', error)
+      }
+    } finally {
+      setIsCheckingSellerAccess(false)
+    }
+  }
 
   return (
     <header className="site-header sticky top-0 z-50 w-full" style={{backgroundColor: '#C7A57A'}}>
@@ -40,9 +71,15 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
           <Link to={ROUTES.CATALOG} className="hover:opacity-80 transition">
             ĐẶT HÀNG THEO YÊU CẦU
           </Link>
-          <Link to={ROUTES.SELLER} className="hover:opacity-80 transition">
+          <button
+            type="button"
+            onClick={handleSellerChannelClick}
+            className={`hover:opacity-80 transition ${isCheckingSellerAccess ? 'opacity-60 cursor-not-allowed' : ''}`}
+            disabled={isCheckingSellerAccess}
+            aria-disabled={isCheckingSellerAccess}
+          >
             KÊNH NGƯỜI BÁN
-          </Link>
+          </button>
           <Link to="#" className="hover:opacity-80 transition">
             TẢI ỨNG DỤNG
           </Link>

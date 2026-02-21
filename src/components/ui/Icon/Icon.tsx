@@ -1,6 +1,7 @@
 import React from 'react'
 
-const iconPaths = {
+// Core icons that appear across multiple flows
+const commonIconPaths = {
   'search': (
     <>
       <circle cx="11" cy="11" r="6" />
@@ -80,6 +81,50 @@ const iconPaths = {
       <circle cx="12" cy="9" r="2" />
     </>
   ),
+  'star': (
+    <path d="M12 3.5L14.6 8.8L20.4 9.6L16 13.7L17.2 19.4L12 16.6L6.8 19.4L8 13.7L3.6 9.6L9.4 8.8L12 3.5Z" />
+  ),
+  'star-filled': (
+    <path d="M12 3.5L14.9 8.8L20.8 9.6L16.4 13.6L17.6 19.5L12 16.4L6.4 19.5L7.6 13.6L3.2 9.6L9.1 8.8L12 3.5Z" fill="currentColor" stroke="none" />
+  ),
+  'tag': (
+    <>
+      <path d="M3 12L12 3H20V11L11 20L3 12Z" />
+      <circle cx="16" cy="8" r="1.5" />
+    </>
+  ),
+  'gift': (
+    <>
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M4 10H20" />
+      <path d="M12 4C10.895 4 10 4.895 10 6C10 7.105 10.895 8 12 8C13.105 8 14 7.105 14 6C14 4.895 13.105 4 12 4Z" />
+      <path d="M12 8V20" />
+      <path d="M7 6C7 4.895 7.895 4 9 4C10.105 4 11 4.895 11 6C11 7.105 10.105 8 9 8C7.895 8 7 7.105 7 6Z" />
+      <path d="M17 6C17 4.895 16.105 4 15 4C13.895 4 13 4.895 13 6C13 7.105 13.895 8 15 8C16.105 8 17 7.105 17 6Z" />
+    </>
+  ),
+  'lock': (
+    <>
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7C7 4.791 8.791 3 11 3H13C15.209 3 17 4.791 17 7V11" />
+    </>
+  ),
+  'filter': (
+    <path d="M4 5H20L14 12V19L10 21V12L4 5Z" />
+  ),
+  'arrow-right': (
+    <>
+      <path d="M5 12H19" />
+      <path d="M13 6L19 12L13 18" />
+    </>
+  ),
+  'chevron-right': (
+    <path d="M9 5L16 12L9 19" />
+  ),
+} as const
+
+// Icons tailored for commerce, trust, or branding touchpoints
+const specialtyIconPaths = {
   'facebook': (
     <path d="M15 3H13C10.791 3 9 4.791 9 7V9H7V12H9V21H12V12H14.5L15 9H12V7C12 6.448 12.448 6 13 6H15V3Z" />
   ),
@@ -130,42 +175,56 @@ const iconPaths = {
       <path d="M13 20H11" />
     </>
   ),
-  'star': (
-    <path d="M12 3.5L14.6 8.8L20.4 9.6L16 13.7L17.2 19.4L12 16.6L6.8 19.4L8 13.7L3.6 9.6L9.4 8.8L12 3.5Z" />
-  ),
-  'star-filled': (
-    <path d="M12 3.5L14.9 8.8L20.8 9.6L16.4 13.6L17.6 19.5L12 16.4L6.4 19.5L7.6 13.6L3.2 9.6L9.1 8.8L12 3.5Z" fill="currentColor" stroke="none" />
-  ),
-  'tag': (
+  'bank': (
     <>
-      <path d="M3 12L12 3H20V11L11 20L3 12Z" />
-      <circle cx="16" cy="8" r="1.5" />
+      <path d="M12 4L4 8V10H20V8L12 4Z" />
+      <path d="M7 10V18" />
+      <path d="M12 10V18" />
+      <path d="M17 10V18" />
+      <path d="M5 18H19" />
+      <path d="M4 21H20" />
     </>
   ),
-  'gift': (
+  'credit-card': (
     <>
-      <rect x="4" y="10" width="16" height="10" rx="2" />
-      <path d="M4 10H20" />
-      <path d="M12 4C10.895 4 10 4.895 10 6C10 7.105 10.895 8 12 8C13.105 8 14 7.105 14 6C14 4.895 13.105 4 12 4Z" />
-      <path d="M12 8V20" />
-      <path d="M7 6C7 4.895 7.895 4 9 4C10.105 4 11 4.895 11 6C11 7.105 10.105 8 9 8C7.895 8 7 7.105 7 6Z" />
-      <path d="M17 6C17 4.895 16.105 4 15 4C13.895 4 13 4.895 13 6C13 7.105 13.895 8 15 8C16.105 8 17 7.105 17 6Z" />
+      <rect x="3" y="6" width="18" height="12" rx="3" />
+      <path d="M3 11H21" />
+      <path d="M7.5 16H12.5" />
+      <path d="M15 16H18" />
     </>
   ),
-  'arrow-right': (
+  'e-wallet': (
     <>
-      <path d="M5 12H19" />
-      <path d="M13 6L19 12L13 18" />
+      <rect x="3" y="8" width="18" height="11" rx="3" />
+      <path d="M6 8V6C6 4.895 6.895 4 8 4H17C18.105 4 19 4.895 19 6V8" />
+      <path d="M21 13H18C16.895 13 16 13.895 16 15C16 16.105 16.895 17 18 17H21" />
+      <circle cx="18" cy="15" r="1" />
     </>
   ),
-  'chevron-right': (
-    <path d="M9 5L16 12L9 19" />
+  'locker': (
+    <>
+      <rect x="6" y="3" width="12" height="18" rx="2" />
+      <path d="M6 9H18" />
+      <path d="M6 14H11" />
+      <path d="M15 12V16" />
+    </>
   ),
+  'approve-tick': (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M8.5 12.5L11 15L16 9.5" />
+    </>
+  ),
+} as const
+
+const iconPaths = {
+  ...commonIconPaths,
+  ...specialtyIconPaths,
 } as const
 
 export type IconName = keyof typeof iconPaths
 
-const defaultTitles: Record<IconName, string> = {
+const commonDefaultTitles = {
   'search': 'Search',
   'shopping-cart': 'Shopping cart',
   'user': 'User profile',
@@ -179,6 +238,17 @@ const defaultTitles: Record<IconName, string> = {
   'globe': 'Language selector',
   'mail': 'Email contact',
   'map-pin': 'Showroom location',
+  'star': 'Rating outline',
+  'star-filled': 'Rating filled',
+  'tag': 'Price tag',
+  'gift': 'Gift box',
+  'lock': 'Secure lock',
+  'filter': 'Filter funnel',
+  'arrow-right': 'Arrow right',
+  'chevron-right': 'Chevron right',
+} satisfies Record<keyof typeof commonIconPaths, string>
+
+const specialtyDefaultTitles = {
   'facebook': 'Facebook',
   'instagram': 'Instagram',
   'tiktok': 'TikTok',
@@ -187,12 +257,16 @@ const defaultTitles: Record<IconName, string> = {
   'shield-check': 'Secure guarantee',
   'refresh': 'Easy returns',
   'headset': 'Customer support',
-  'star': 'Rating outline',
-  'star-filled': 'Rating filled',
-  'tag': 'Price tag',
-  'gift': 'Gift box',
-  'arrow-right': 'Arrow right',
-  'chevron-right': 'Chevron right',
+  'bank': 'Bank building',
+  'credit-card': 'Credit card',
+  'e-wallet': 'Digital wallet',
+  'locker': 'Locker storage',
+  'approve-tick': 'Approved status',
+} satisfies Record<keyof typeof specialtyIconPaths, string>
+
+const defaultTitles: Record<IconName, string> = {
+  ...commonDefaultTitles,
+  ...specialtyDefaultTitles,
 }
 
 export interface IconProps extends React.SVGAttributes<SVGSVGElement> {

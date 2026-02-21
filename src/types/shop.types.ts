@@ -7,14 +7,22 @@ export interface CreateShopPayload {
 }
 
 export interface ShopInfo {
-  shopId?: string
-  ownerId?: string
-  [key: string]: unknown
+  shopId: string
+  shopName: string
+  description?: string | null
+  address?: string | null
+  phoneNumber?: string | null
+  ownerId: string
+  isActive?: boolean
+  createdAt?: string
 }
 
-export interface CreateShopResponse {
+export interface ShopResponse<TData> {
   status: number
   message: string
-  data?: ShopInfo
+  data: TData
   errors?: unknown
 }
+
+export type CreateShopResponse = ShopResponse<ShopInfo | null>
+export type GetShopByOwnerResponse = ShopResponse<ShopInfo | null>

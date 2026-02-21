@@ -65,6 +65,7 @@ export const API_ENDPOINTS = {
   // Shop Management
   SHOP: {
     CREATE: '/Shops/CreateShop',
+    GET_BY_OWNER_ID: (ownerId: string) => `/Shops/GetShopByOwnerId/${encodeURIComponent(ownerId)}`,
   },
 
   // Admin
