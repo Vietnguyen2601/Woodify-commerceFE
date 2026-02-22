@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UseFormRegister, FormState } from 'react-hook-form';
-import { Check } from 'lucide-react';
+import { Check, CreditCard, Landmark, Wallet } from 'lucide-react';
 import { PaymentFormSchema } from '../../utils/validation.schema';
 
 interface PaymentMethodsProps {
@@ -30,31 +30,18 @@ const paymentOptions = [
 ];
 
 const renderIcon = (iconType: string, isSelected: boolean) => {
-  const iconColor = 'outline-white';
-  
-  if (iconType === 'momo') {
-    return (
-      <div className="w-6 h-6 relative overflow-hidden flex items-center justify-center">
-        <div className={`text-white text-sm font-bold`}>M</div>
-      </div>
-    );
-  }
-  
-  if (iconType === 'payos') {
-    return (
-      <div className="w-6 h-6 relative overflow-hidden">
-        <div className={`w-5 h-3 left-[2px] top-[4px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-        <div className={`w-3 h-2 left-[4px] top-[6px] absolute outline outline-2 outline-offset-[-1px] ${iconColor}`} />
-      </div>
-    );
-  }
-  
-  if (iconType === 'vnpay') {
-    return (
-      <div className="w-6 h-6 relative overflow-hidden flex items-center justify-center">
-        <div className={`text-white text-xs font-bold`}>V</div>
-      </div>
-    );
+  const stroke = isSelected ? 2.4 : 2;
+  const iconClass = 'w-5 h-5 text-white';
+
+  switch (iconType) {
+    case 'momo':
+      return <Wallet className={iconClass} strokeWidth={stroke} />;
+    case 'payos':
+      return <CreditCard className={iconClass} strokeWidth={stroke} />;
+    case 'vnpay':
+      return <Landmark className={iconClass} strokeWidth={stroke} />;
+    default:
+      return null;
   }
 };
 

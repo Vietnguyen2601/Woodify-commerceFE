@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { api } from '../services/api/client'
 import { APP_CONFIG } from '../constants/app.config'
+import { CreditCard, Filter, Landmark, Wallet } from 'lucide-react'
 
 // Import Icons
 import UserIcon from '@/assets/icons/essential/interface/user.svg'
@@ -309,6 +310,12 @@ export default function Profile() {
     { value: 20000000, label: '20 Triệu' }
   ]
 
+  const depositMethodOptions = [
+    { value: 'momo', label: 'Ví điện tử Momo', desc: 'Momo', Icon: Wallet },
+    { value: 'payos', label: 'PayOS', desc: 'PayOS', Icon: CreditCard },
+    { value: 'vnpay', label: 'VNPay', desc: 'VNPay', Icon: Landmark }
+  ]
+
   const handleQuickAmountSelect = (value: number) => {
     setDepositAmount(value.toString())
   }
@@ -476,8 +483,9 @@ export default function Profile() {
                     {walletTab !== 'deposit' && (
                       /* Filter Buttons */
                       <div className='flex gap-2'>
-                        <button className='px-4 py-2 border border-gray-300 rounded-[10px] text-gray-700 hover:bg-gray-50 transition-colors text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          🔽 Lọc
+                        <button className='px-4 py-2 border border-gray-300 rounded-[10px] text-gray-700 hover:bg-gray-50 transition-colors text-sm inline-flex items-center gap-2' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                          <Filter className='w-4 h-4' strokeWidth={2.2} />
+                          Lọc
                         </button>
                         <button className='px-4 py-2 bg-gray-100 border border-gray-300 rounded-[10px] text-gray-700 hover:bg-gray-200 transition-colors text-sm font-medium' style={{ fontFamily: 'Arimo, sans-serif' }}>
                           Tháng này
@@ -528,42 +536,42 @@ export default function Profile() {
                             Phương thức thanh toán
                           </p>
                           <div className='grid grid-cols-3 gap-2'>
-                            {[
-                              { value: 'momo', label: 'Ví điện tử Momo', desc: 'Momo', icon: '📱' },
-                              { value: 'payos', label: 'PayOS', desc: 'PayOS', icon: '💳' },
-                              { value: 'vnpay', label: 'VNPay', desc: 'VNPay', icon: '🏦' }
-                            ].map((method) => (
-                              <label
-                                key={method.value}
-                                className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all text-center ${
-                                  depositMethod === method.value
-                                    ? 'border-amber-500 bg-amber-50 shadow-sm'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                                style={{ fontFamily: 'Arimo, sans-serif' }}
-                              >
-                                <input
-                                  type='radio'
-                                  name='depositMethod'
-                                  value={method.value}
-                                  checked={depositMethod === method.value}
-                                  onChange={(e) => setDepositMethod(e.target.value as 'momo' | 'payos' | 'vnpay')}
-                                  className='absolute opacity-0'
-                                />
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                                  depositMethod === method.value ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'
-                                }`}>
-                                  {method.icon}
-                                </div>
-                                <div>
-                                  <p className='font-semibold text-gray-900 text-xs'>{method.label}</p>
-                                  <p className='text-xs text-gray-500 leading-tight'>{method.desc}</p>
-                                </div>
-                                {depositMethod === method.value && (
-                                  <span className='text-amber-600 text-xs font-semibold'>✓</span>
-                                )}
-                              </label>
-                            ))}
+                            {depositMethodOptions.map((method) => {
+                              const Icon = method.Icon
+
+                              return (
+                                <label
+                                  key={method.value}
+                                  className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all text-center ${
+                                    depositMethod === method.value
+                                      ? 'border-amber-500 bg-amber-50 shadow-sm'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                  style={{ fontFamily: 'Arimo, sans-serif' }}
+                                >
+                                  <input
+                                    type='radio'
+                                    name='depositMethod'
+                                    value={method.value}
+                                    checked={depositMethod === method.value}
+                                    onChange={(e) => setDepositMethod(e.target.value as 'momo' | 'payos' | 'vnpay')}
+                                    className='absolute opacity-0'
+                                  />
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                                    depositMethod === method.value ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'
+                                  }`}>
+                                    <Icon className='w-5 h-5' strokeWidth={depositMethod === method.value ? 2.6 : 2.2} />
+                                  </div>
+                                  <div>
+                                    <p className='font-semibold text-gray-900 text-xs'>{method.label}</p>
+                                    <p className='text-xs text-gray-500 leading-tight'>{method.desc}</p>
+                                  </div>
+                                  {depositMethod === method.value && (
+                                    <span className='text-amber-600 text-xs font-semibold'>✓</span>
+                                  )}
+                                </label>
+                              )
+                            })}
                           </div>
                         </div>
 
