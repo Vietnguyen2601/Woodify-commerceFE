@@ -51,7 +51,7 @@ interface Order {
 }
 
 export default function Profile() {
-  const [activeTab, setActiveTab] = useState<TabType>('wallet')
+  const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [walletTab, setWalletTab] = useState<WalletTabType>('history')
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
