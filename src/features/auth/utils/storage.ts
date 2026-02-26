@@ -2,11 +2,11 @@ import { APP_CONFIG } from '@/constants'
 import type { UserRole } from '@/types'
 
 export interface StoredUser {
-  accountId: string
   email: string
   username: string
   fullName?: string
   role?: UserRole
+  accountId?: string
 }
 
 const VALID_USER_ROLES: UserRole[] = ['customer', 'seller', 'admin']
@@ -51,10 +51,8 @@ export const readStoredUser = (): StoredUser | null => {
 
   const email = localStorage.getItem(LEGACY_USER_KEYS.EMAIL) || ''
   const storedRole = sanitizeRole(localStorage.getItem(LEGACY_USER_KEYS.ROLE))
-  const storedAccountId = localStorage.getItem(LEGACY_USER_KEYS.ID) || ''
 
   return {
-    accountId: storedAccountId,
     email,
     username,
     role: storedRole,
@@ -62,30 +60,24 @@ export const readStoredUser = (): StoredUser | null => {
 }
 
 /**
- * Persist user data to both the consolidated and legacy keys to keep compatibility.
+ * Persist user data to localStorage (consolidated approach).
+ * Only stores non-sensitive display data (email, username, role).
+ * AccountId should be fetched from /auth/me endpoint when needed.
  */
 export const persistStoredUser = (user: StoredUser) => {
   if (!isBrowser) return
   try {
+    // Only store consolidated user_data - this is the modern approach
     localStorage.setItem(APP_CONFIG.STORAGE_KEYS.USER, JSON.stringify(user))
   } catch (error) {
     console.warn('Unable to persist user data', error)
   }
 
-  localStorage.setItem(LEGACY_USER_KEYS.NAME, user.username)
-  localStorage.setItem(LEGACY_USER_KEYS.EMAIL, user.email ?? '')
-
-  if (user.role) {
-    localStorage.setItem(LEGACY_USER_KEYS.ROLE, user.role)
-  } else {
-    localStorage.removeItem(LEGACY_USER_KEYS.ROLE)
-  }
-
-  if (user.accountId) {
-    localStorage.setItem(LEGACY_USER_KEYS.ID, user.accountId)
-  } else {
-    localStorage.removeItem(LEGACY_USER_KEYS.ID)
-  }
+  // Clean up all legacy keys to reduce localStorage clutter
+  localStorage.removeItem(LEGACY_USER_KEYS.NAME)
+  localStorage.removeItem(LEGACY_USER_KEYS.EMAIL)
+  localStorage.removeItem(LEGACY_USER_KEYS.ROLE)
+  localStorage.removeItem(LEGACY_USER_KEYS.ID)
 }
 
 export const clearStoredUser = () => {

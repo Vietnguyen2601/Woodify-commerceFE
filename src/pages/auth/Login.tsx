@@ -91,20 +91,25 @@ export default function Login() {
       authService
         .login({ email, password })
         .then((res) => {
-          const loginData = res.data
-          const isSuccessful = Boolean(loginData?.token && (loginData?.success || res.status === 200))
+          // Handle response structure: API may return { status, message, data: {...} }
+          // OR just the data object directly
+          const loginData = res.data || res
+          
+          // Check if login was successful
+          // With HttpOnly Cookies, tokens are in Set-Cookie headers (not in response body)
+          const isSuccessful = Boolean(
+            loginData?.success === true || 
+            loginData?.message?.includes('thành công') ||
+            loginData?.accountId ||
+            (res.status === 200 && loginData?.email)
+          )
 
-          if (isSuccessful && loginData) {
-            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, loginData.token)
-            if (loginData.refreshToken) {
-              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, loginData.refreshToken)
-            }
-
+          if (isSuccessful && loginData.email) {
+            // Store only non-sensitive data in localStorage
             const normalizedUser: StoredUser = {
-              accountId: loginData.accountId || '',
               email: loginData.email || email,
               username: loginData.username || loginData.email || email,
-              role: 'customer',
+              role: loginData.role || 'customer',
             }
 
             persistStoredUser(normalizedUser)
@@ -115,12 +120,19 @@ export default function Login() {
               localStorage.removeItem('remember_me')
             }
 
-            queryClient.setQueryData(queryKeys.user(), normalizedUser)
+            // Store full user data (with accountId) in React Query cache
+            queryClient.setQueryData(queryKeys.user(), loginData)
+            
+            // Redirect to home
             nav('/')
             setFormState('idle')
           } else {
             setFormState('error')
-            setBannerMessage(res.message || loginData?.message || 'Sai email hoặc mật khẩu.')
+            setBannerMessage(
+              loginData?.message || 
+              res.message || 
+              'Sai email hoặc mật khẩu.'
+            )
           }
         })
         .catch((err) => {

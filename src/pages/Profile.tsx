@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../services/api/client'
+import { authService, queryKeys } from '@/services'
 import { APP_CONFIG } from '../constants/app.config'
 
 // Import Icons
@@ -68,37 +70,49 @@ export default function Profile() {
     address: ''
   })
 
+  // Fetch authenticated user to get accountId
+  const { data: authenticatedUser, isLoading: isUserLoading } = useQuery({
+    queryKey: queryKeys.user(),
+    queryFn: () => authService.getCurrentUser(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
   // Fetch user account data on component mount
   useEffect(() => {
+    // Wait until authenticated user is loaded
+    if (isUserLoading) return
+
     const fetchAccountData = async () => {
       try {
         setIsLoading(true)
         setError(null)
         
-        // Get accountId from localStorage
-        const accountId = localStorage.getItem('account_id')
+        // Get accountId from authenticated user (now includes accountId from useAuth)
+        let accountId = authenticatedUser?.accountId || authenticatedUser?.id
         
         if (!accountId) {
-          setError('Không tìm thấy ID tài khoản')
+          const msg = 'Không thể lấy thông tin tài khoản.'
+          setError(msg)
           setIsLoading(false)
           return
         }
 
-        // Call API to get account details
+        // Call API to get account details using the correct endpoint
         const endpoint = `/Accounts/GetAccountById/${accountId}`
-        
         const response = await api.get(endpoint) as any
         
-        // Extract account data - check if it's nested in response.data.data or just response.data
-        let accountData = response.data?.data
+        // Extract account data - handle nested structure from API
+        // API returns: { status, message, data: { accountId, username, email, ... } }
+        let accountData = response?.data
         
-        // Fallback: if data is not nested, use response.data directly
-        if (!accountData && response.data?.accountId) {
-          accountData = response.data
+        // If using api client that strips outer status, it might already be unwrapped
+        if (response?.accountId) {
+          accountData = response
         }
         
         if (!accountData) {
-          setError('Dữ liệu tài khoản không hợp lệ')
+          const msg = 'Dữ liệu tài khoản không hợp lệ'
+          setError(msg)
           setIsLoading(false)
           return
         }
@@ -132,14 +146,15 @@ export default function Profile() {
         
         setUserInfo(updatedUserInfo)
       } catch (err: any) {
-        setError(err.response?.data?.message || err.message || 'Không thể tải thông tin tài khoản')
+        const errorMsg = err.response?.data?.message || err.message || 'Không thể tải thông tin tài khoản'
+        setError(errorMsg)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchAccountData()
-  }, [])
+  }, [authenticatedUser?.accountId || authenticatedUser?.id, isUserLoading])
 
   const menuItems = [
     { id: 'profile' as TabType, label: 'Thông tin cá nhân', icon: UserIcon },
@@ -230,6 +245,10 @@ export default function Profile() {
       style: 'currency',
       currency: 'VND'
     }).format(amount)
+  }
+
+  const displayValue = (value: string | null | undefined) => {
+    return value && value.trim() ? value : 'Chưa cập nhật'
   }
 
   const getTransactionIcon = (type: string) => {
@@ -348,7 +367,33 @@ export default function Profile() {
 
   return (
     <div className='w-full min-h-screen bg-gray-100'>
+      {/* Loading state */}
+      {(isUserLoading || isLoading) && (
+        <div className='flex items-center justify-center min-h-screen'>
+          <div className='text-center'>
+            <div className='inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700'></div>
+            <p className='mt-4 text-gray-600'>Đang tải...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className='flex items-center justify-center min-h-screen'>
+          <div className='text-center'>
+            <p className='text-red-600 font-semibold mb-4'>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className='px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800'
+            >
+              Thử lại
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
+      {!error && !isLoading && (
       <div className='max-w-[1280px] mx-auto px-8 py-8'>
         <div className='flex gap-8'>
           {/* Sidebar - Left */}
@@ -357,12 +402,12 @@ export default function Profile() {
             <div className='rounded-[20px] shadow-md p-8 mb-4' style={{ background: 'linear-gradient(to bottom, #D4B896, #E3DCC8)' }}>
               {/* Avatar */}
               <div className='w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg'>
-                <span className='text-3xl font-bold' style={{ color: '#BE9C73' }}>{userInfo.name.charAt(0)}</span>
+                <span className='text-3xl font-bold' style={{ color: '#BE9C73' }}>{(userInfo.name || userInfo.email).charAt(0).toUpperCase()}</span>
               </div>
               {/* User Info */}
               <div className='text-center'>
                 <h3 className='text-lg font-semibold mb-1' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                  {userInfo.name}
+                  {displayValue(userInfo.name)}
                 </h3>
                 <p className='text-sm' style={{ fontFamily: 'Arimo, sans-serif', color: '#6C5B50', opacity: 0.8 }}>
                   {userInfo.email}
@@ -649,7 +694,7 @@ export default function Profile() {
                       <div className='relative'>
                         <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg' style={{ background: 'linear-gradient(to bottom, #D4B896, #E3DCC8)' }}>
                           <span className='text-4xl font-bold' style={{ color: '#BE9C73' }}>
-                            {userInfo.name.charAt(0)}
+                            {(userInfo.name || userInfo.email).charAt(0).toUpperCase()}
                           </span>
                         </div>
                         {isEditing && (
@@ -660,7 +705,7 @@ export default function Profile() {
                       </div>
                       <div>
                         <h2 className='text-2xl font-bold mb-1' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                          {userInfo.name}
+                          {displayValue(userInfo.name)}
                         </h2>
                         <p className='text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
                           {userInfo.email}
@@ -698,7 +743,7 @@ export default function Profile() {
                         />
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {userInfo.name}
+                          {displayValue(userInfo.name)}
                         </div>
                       )}
                     </div>
@@ -742,7 +787,7 @@ export default function Profile() {
                         />
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {userInfo.phone}
+                          {displayValue(userInfo.phone)}
                         </div>
                       )}
                     </div>
@@ -764,7 +809,7 @@ export default function Profile() {
                         />
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {userInfo.dateOfBirth ? new Date(userInfo.dateOfBirth).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}
+                          {userInfo.dateOfBirth ? new Date(userInfo.dateOfBirth).toLocaleDateString('vi-VN') : displayValue(userInfo.dateOfBirth)}
                         </div>
                       )}
                     </div>
@@ -789,7 +834,7 @@ export default function Profile() {
                         </select>
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {userInfo.gender}
+                          {displayValue(userInfo.gender)}
                         </div>
                       )}
                     </div>
@@ -811,7 +856,7 @@ export default function Profile() {
                         />
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {userInfo.address}
+                          {displayValue(userInfo.address)}
                         </div>
                       )}
                     </div>
@@ -1080,6 +1125,7 @@ export default function Profile() {
           </div>
         </div>
       </div>
-     </div>
+      )}
+    </div>
   )
 }

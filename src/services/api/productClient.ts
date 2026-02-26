@@ -9,53 +9,28 @@ const createProductServiceClient = (): AxiosInstance => {
   const client = axios.create({
     baseURL: resolveBaseUrl(),
     timeout: 10000,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },
   })
 
+  // Request interceptor - with HttpOnly Cookies, no manual token needed
   client.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
       return config
     },
     (error) => Promise.reject(error)
   )
 
+  // Response interceptor - handle 401 (cookie expired)
   client.interceptors.response.use(
     (response) => response,
-    async (error: AxiosError) => {
-      const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
-
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true
-
-        try {
-          const refreshToken = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN)
-          if (refreshToken) {
-            const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-              refreshToken,
-            })
-
-            const { accessToken } = response.data
-            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, accessToken)
-
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${accessToken}`
-            }
-            return client(originalRequest)
-          }
-        } catch (refreshError) {
-          localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
-          localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN)
-          localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER)
-          window.location.href = '/login'
-        }
+    (error: AxiosError) => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER)
+        window.location.href = '/login'
       }
-
       return Promise.reject(error)
     }
   )

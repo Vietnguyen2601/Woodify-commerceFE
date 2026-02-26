@@ -9,18 +9,15 @@ const createApiClient = (): AxiosInstance => {
   const client = axios.create({
     baseURL: API_BASE_URL,
     timeout: 10000,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },
   })
 
-  // Request interceptor - add auth token
+  // Request interceptor - with HttpOnly Cookies, no manual token needed
   client.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
       return config
     },
     (error) => Promise.reject(error)
@@ -37,36 +34,27 @@ const createApiClient = (): AxiosInstance => {
         return Promise.reject(networkError)
       }
 
-      const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
-
-      // Handle 401 Unauthorized - try refresh token
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true
-
-        try {
-          const refreshToken = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN)
-          if (refreshToken) {
-            // Attempt to refresh token
-            const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-              refreshToken,
-            })
-
-            const { accessToken } = response.data
-            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, accessToken)
-
-            // Retry original request with new token
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${accessToken}`
-            }
-            return client(originalRequest)
-          }
-        } catch (refreshError) {
-          // Refresh failed - clear tokens and redirect to login
-          localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
-          localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN)
-          localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER)
-          window.location.href = '/login'
+      // Handle 401 Unauthorized
+      if (error.response?.status === 401) {
+        const requestUrl = error.config?.url || ''
+        
+        // For /auth/me endpoint, return empty response instead of rejecting
+        // This prevents console error logging while still allowing catch to handle it
+        if (requestUrl.includes('/auth/me')) {
+          // Return a fake successful response that will resolve as empty
+          // The caller will detect this and handle as unauthenticated
+          return Promise.resolve({
+            data: null,
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: {},
+            config: error.config!
+          } as any)
         }
+        
+        // For other endpoints, redirect to login
+        localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER)
+        window.location.href = '/login'
       }
 
       return Promise.reject(error)
@@ -81,19 +69,24 @@ export const apiClient = createApiClient()
 /**
  * Type-safe API wrapper functions
  */
+const unwrapNestedData = <T,>(data: any): T => {
+  // If response has nested data structure { status, message, data: {...} }, unwrap it
+  return data?.data !== undefined ? data.data : data
+}
+
 export const api = {
-  get: <T>(url: string, config?: AxiosRequestConfig) =>
-    apiClient.get<T>(url, config).then((res) => res.data),
+  get: <T,>(url: string, config?: AxiosRequestConfig) =>
+    apiClient.get<T>(url, config).then((res) => unwrapNestedData<T>(res.data)),
 
-  post: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    apiClient.post<T>(url, data, config).then((res) => res.data),
+  post: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
+    apiClient.post<T>(url, data, config).then((res) => unwrapNestedData<T>(res.data)),
 
-  put: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    apiClient.put<T>(url, data, config).then((res) => res.data),
+  put: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
+    apiClient.put<T>(url, data, config).then((res) => unwrapNestedData<T>(res.data)),
 
-  patch: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    apiClient.patch<T>(url, data, config).then((res) => res.data),
+  patch: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
+    apiClient.patch<T>(url, data, config).then((res) => unwrapNestedData<T>(res.data)),
 
-  delete: <T>(url: string, config?: AxiosRequestConfig) =>
-    apiClient.delete<T>(url, config).then((res) => res.data),
+  delete: <T,>(url: string, config?: AxiosRequestConfig) =>
+    apiClient.delete<T>(url, config).then((res) => unwrapNestedData<T>(res.data)),
 }

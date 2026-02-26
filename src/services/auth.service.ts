@@ -44,7 +44,12 @@ export const authService = {
    * Login with email and password
    */
     login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      const response = await identityServiceClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials)
+      // Transform to PascalCase for backend
+      const payload = {
+        Email: credentials.email,
+        Password: credentials.password,
+      }
+      const response = await identityServiceClient.post(API_ENDPOINTS.AUTH.LOGIN, payload)
       return response as unknown as LoginResponse
     },
 
@@ -52,14 +57,27 @@ export const authService = {
    * Register new user (default, non-OTP)
    */
   register: async (data: RegisterData): Promise<RegisterResponse> => {
-    return identityServiceClient.post<RegisterResponse>(API_ENDPOINTS.IDENTITY.REGISTER, data)
+    // Transform to PascalCase for backend
+    const payload = {
+      Email: data.email,
+      Password: data.password,
+      FullName: data.fullName,
+      ...(data.phone && { Phone: data.phone }),
+    }
+    return identityServiceClient.post<RegisterResponse>(API_ENDPOINTS.IDENTITY.REGISTER, payload)
   },
 
   /**
    * Logout current user
    */
   logout: async (): Promise<void> => {
-    return api.post(API_ENDPOINTS.AUTH.LOGOUT)
+    // Try to call logout API if it exists for server-side cleanup
+    // But continue even if it fails - client-side cleanup is enough
+    try {
+      await api.post(API_ENDPOINTS.AUTH.LOGOUT)
+    } catch (error) {
+      // Silently fail - logout continues with client-side cleanup
+    }
   },
 
   /**
@@ -80,9 +98,12 @@ export const authService = {
    * Send OTP to email for email verification
    */
   sendOtp: async (request: SendOtpRequest): Promise<SendOtpResponse> => {
+    const payload = {
+      Email: request.email,
+    }
     return identityServiceClient.post<SendOtpResponse>(
       API_ENDPOINTS.IDENTITY.SEND_OTP,
-      request
+      payload
     )
   },
 
@@ -90,9 +111,13 @@ export const authService = {
    * Verify OTP code
    */
   verifyOtp: async (request: VerifyOtpRequest): Promise<VerifyOtpResponse> => {
+    const payload = {
+      Email: request.email,
+      Otp: request.otp,
+    }
     return identityServiceClient.post<VerifyOtpResponse>(
       API_ENDPOINTS.IDENTITY.VERIFY_OTP,
-      request
+      payload
     )
   },
 
@@ -102,9 +127,17 @@ export const authService = {
   registerWithOtp: async (
     request: RegisterWithOtpRequest
   ): Promise<RegisterWithOtpResponse> => {
+    // Transform to PascalCase for backend (it expects PascalCase)
+    const payload = {
+      Email: request.email,
+      Password: request.password,
+      ConfirmPassword: request.confirmPassword,
+      Username: request.username,
+      ...(request.phone && { Phone: request.phone }),
+    }
     return identityServiceClient.post<RegisterWithOtpResponse>(
       API_ENDPOINTS.IDENTITY.REGISTER,
-      request
+      payload
     )
   },
 }
