@@ -6,6 +6,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 export const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL
 export const SHOP_SERVICE_URL = import.meta.env.VITE_SHOP_SERVICE_URL
 export const PRODUCT_SERVICE_URL = import.meta.env.VITE_PRODUCT_SERVICE_URL
+export const WALLET_SERVICE_URL = import.meta.env.VITE_WALLET_SERVICE_URL
 
 export const API_ENDPOINTS = {
   // Auth

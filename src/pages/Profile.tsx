@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../services/api/client'
-import { authService, queryKeys } from '@/services'
+import { authService, walletService, queryKeys } from '@/services'
 import { APP_CONFIG } from '../constants/app.config'
 
 // Import Icons
@@ -60,7 +60,8 @@ export default function Profile() {
   const [depositMethod, setDepositMethod] = useState<'momo' | 'payos' | 'vnpay'>('momo')
   const [isProcessingDeposit, setIsProcessingDeposit] = useState(false)
   const [depositError, setDepositError] = useState<string | null>(null)
-  const walletBalance = 15750000
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [walletData, setWalletData] = useState<any>(null)
   const [userInfo, setUserInfo] = useState({
     name: '',
     email: '',
@@ -70,12 +71,28 @@ export default function Profile() {
     address: ''
   })
 
-  // Fetch authenticated user to get accountId
+  // Fetch authenticated user to get accountId and walletId
   const { data: authenticatedUser, isLoading: isUserLoading } = useQuery({
     queryKey: queryKeys.user(),
     queryFn: () => authService.getCurrentUser(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
+
+  // Fetch wallet data using accountId from authenticated user
+  const { data: wallet, isLoading: isWalletLoading } = useQuery({
+    queryKey: ['wallet', (authenticatedUser as any)?.accountId],
+    queryFn: () => walletService.getWalletByAccountId((authenticatedUser as any)?.accountId),
+    enabled: !!(authenticatedUser as any)?.accountId, // Only fetch when accountId exists
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  })
+
+  // Update wallet balance when wallet data is fetched
+  useEffect(() => {
+    if (wallet?.balance !== undefined) {
+      setWalletBalance(wallet.balance)
+      setWalletData(wallet)
+    }
+  }, [wallet])
 
   // Fetch user account data on component mount
   useEffect(() => {
@@ -368,7 +385,7 @@ export default function Profile() {
   return (
     <div className='w-full min-h-screen bg-gray-100'>
       {/* Loading state */}
-      {(isUserLoading || isLoading) && (
+      {(isUserLoading || isLoading || isWalletLoading) && (
         <div className='flex items-center justify-center min-h-screen'>
           <div className='text-center'>
             <div className='inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700'></div>

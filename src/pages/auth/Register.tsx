@@ -211,7 +211,7 @@ export default function Register() {
     import('@/services/auth.service').then(({ authService }) => {
       authService.verifyOtp({ email, otp: code })
         .then((res: any) => {
-          if (res.data?.success || res.status === 200) {
+          if (res?.success) {
             setStep(3)
           } else {
             setOtpError('Mã xác minh không đúng. Vui lòng thử lại.')
@@ -282,6 +282,7 @@ export default function Register() {
               email: userData.email || email,
               username: userData.username || username,
               role: userData.role || 'customer',
+              accountId: userData.accountId || userData.id,
             }
 
             // Store user display info in localStorage
