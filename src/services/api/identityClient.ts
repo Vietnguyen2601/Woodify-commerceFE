@@ -10,18 +10,15 @@ const createIdentityServiceClient = (): AxiosInstance => {
   const client = axios.create({
     baseURL: IDENTITY_SERVICE_URL,
     timeout: 10000,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },
   })
 
-  // Request interceptor - add auth token (same as main client)
+  // Request interceptor - with HttpOnly Cookies, no manual token needed
   client.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
       return config
     },
     (error) => Promise.reject(error)
@@ -29,11 +26,19 @@ const createIdentityServiceClient = (): AxiosInstance => {
 
   // Response interceptor - return full response (consistent with main client)
   client.interceptors.response.use(
-    (response) => response.data,
+    (response) => {
+      // If response has nested data structure, unwrap it
+      const data = response.data
+      return data?.data !== undefined ? data.data : data
+    },
     (error: AxiosError) => {
       // Handle network error (backend not available)
       if (!error.response) {
-        const networkError: any = new Error('Lỗi hệ thống, vui lòng thử lại sau')
+        const networkError: any = new Error(
+          error.code === 'ECONNABORTED' 
+            ? 'Hết thời gian chờ. Backend không phản hồi.' 
+            : `Lỗi hệ thống: ${error.message}. Vui lòng kiểm tra kết nối hoặc liên hệ hỗ trợ.`
+        )
         networkError.isNetworkError = true
         return Promise.reject(networkError)
       }

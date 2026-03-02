@@ -3,14 +3,16 @@
  */
 
 export interface User {
-  id: string
+  id?: string
+  accountId?: string
   email: string
-  fullName: string
+  fullName?: string
+  username?: string
   phone?: string
   avatarUrl?: string
   role: UserRole
-  createdAt: string
-  updatedAt: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type UserRole = 'customer' | 'seller' | 'admin'

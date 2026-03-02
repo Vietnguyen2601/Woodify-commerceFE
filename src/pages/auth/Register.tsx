@@ -211,7 +211,7 @@ export default function Register() {
     import('@/services/auth.service').then(({ authService }) => {
       authService.verifyOtp({ email, otp: code })
         .then((res: any) => {
-          if (res.data?.success || res.status === 200) {
+          if (res?.success) {
             setStep(3)
           } else {
             setOtpError('Mã xác minh không đúng. Vui lòng thử lại.')
@@ -269,54 +269,32 @@ export default function Register() {
         password,
         confirmPassword,
         username,
+        phone,
       })
         .then((res: any) => {
-          // Check if registration was successful
-          if ((res.status === 0 || res.status === 200) && res.data?.token) {
-            const registerData = res.data
-            
-            // Auto-login: store token & user data
-            if (res.data?.token) {
-              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN, res.data.token)
-            }
-            if (res.data?.refreshToken) {
-              localStorage.setItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, res.data.refreshToken)
-            }
-
+          // If we reach here without error, registration was successful (with HttpOnly Cookies)
+          // API automatically unwraps nested data structure
+          const userData = res
+          
+          if (userData && (userData.email || userData.accountId)) {
+            // Store only non-sensitive data in localStorage
             const normalizedUser: StoredUser = {
-              accountId: res.data?.accountId || '',
-              email,
-              username: res.data?.username || username,
-              role: 'customer',
+              email: userData.email || email,
+              username: userData.username || username,
+              role: userData.role || 'customer',
+              accountId: userData.accountId || userData.id,
             }
 
+            // Store user display info in localStorage
             persistStoredUser(normalizedUser)
-
-            // Update React Query cache so Header shows username
-            queryClient.setQueryData(queryKeys.user(), normalizedUser)
-            localStorage.setItem('auth_token', registerData.token)
             
-            if (registerData.refreshToken) {
-              localStorage.setItem('refresh_token', registerData.refreshToken)
-            }
-            
-            localStorage.setItem('account_id', registerData.accountId)
-            localStorage.setItem('user_email', email)
-            localStorage.setItem('user_name', registerData.username || username)
-            localStorage.setItem('user_role', 'user')
-
-            // Update React Query cache so Header shows username
-            queryClient.setQueryData(queryKeys.user(), {
-              accountId: registerData.accountId,
-              email,
-              username: registerData.username || username,
-            })
-
-            setRegisterState('success')
-            setStep(4)
-          } else {
-            setRegisterState('idle')
+            // Store full user data (with accountId) in React Query cache only
+            queryClient.setQueryData(queryKeys.user(), userData)
           }
+
+          // Redirect to home immediately
+          setRegisterState('success')
+          nav('/')
         })
         .catch((err) => {
           setRegisterState('idle')

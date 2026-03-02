@@ -232,10 +232,7 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
                 <span className="opacity-60">|</span>
                 <button
                   type="button"
-                  onClick={async () => {
-                    await logout()
-                    navigate(ROUTES.HOME)
-                  }}
+                  onClick={() => logout()}
                   className="hover:opacity-80 transition"
                 >
                   Đăng xuất

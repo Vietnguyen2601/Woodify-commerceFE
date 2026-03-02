@@ -16,6 +16,7 @@ import UploadImageDemo from './pages/UploadImageDemo'
 import Header from './components/layout/Header/Header'
 import AuthPageHeader from './components/layout/Header/AuthPageHeader'
 import Footer from './components/layout/Footer'
+import ProtectedRoute from './components/ProtectedRoute'
 import { useCart } from './store/cartStore'
 import './styles/app.css'
 import './styles/payment.css'
@@ -64,7 +65,7 @@ export default function App() {
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />
           <Route path='/auth/register' element={<Register />} />
-          <Route path='/profile/*' element={<Profile />} />
+          <Route path='/profile/*' element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path='/seller/register' element={<SellerRegistration />} />
           <Route path='/seller/*' element={<SellerDashboard />} />
           <Route path='/admin/*' element={<AdminDashboard />} />

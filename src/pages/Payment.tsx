@@ -84,7 +84,6 @@ export const Payment: React.FC = () => {
 
   const handleApplyDiscount = (code: string) => {
     // Implement discount logic here
-    console.log('Applying discount code:', code);
   };
 
   const handlePlaceOrder = () => {
@@ -95,7 +94,6 @@ export const Payment: React.FC = () => {
     // Simulate API call
     setTimeout(() => {
       const formData = watch();
-      console.log('Order submitted:', formData);
       setIsLoading(false);
       // Show success message or redirect
       alert('Đơn hàng của bạn đã được tạo thành công!');
