@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { api } from '../services/api/client'
 import { APP_CONFIG } from '../constants/app.config'
-import { CreditCard, Filter, Landmark, Wallet } from 'lucide-react'
+import { Filter } from 'lucide-react'
 
 // Import Icons
 import UserIcon from '@/assets/icons/essential/interface/user.svg'
@@ -18,6 +18,9 @@ import NotificationBellIcon from '@/assets/icons/essential/interface/notificatio
 import GlobeIcon from '@/assets/icons/essential/interface/globe.svg'
 import TruckIcon from '@/assets/icons/essential/commerce/truck.svg'
 import ChevronRightIcon from '@/assets/icons/essential/interface/chevron-right.svg'
+import MomoBrandIcon from '@/assets/icons/essential/brand/momo-removebg-preview.png'
+import PayosBrandIcon from '@/assets/icons/essential/brand/payos-removebg-preview.png'
+import VnpayBrandIcon from '@/assets/icons/essential/brand/vnpay-removebg-preview.png'
 
 type TabType = 'profile' | 'orders' | 'wallet' | 'settings'
 type WalletTabType = 'history' | 'deposit'
@@ -311,9 +314,9 @@ export default function Profile() {
   ]
 
   const depositMethodOptions = [
-    { value: 'momo', label: 'Ví điện tử Momo', desc: 'Momo', Icon: Wallet },
-    { value: 'payos', label: 'PayOS', desc: 'PayOS', Icon: CreditCard },
-    { value: 'vnpay', label: 'VNPay', desc: 'VNPay', Icon: Landmark }
+    { value: 'momo', label: 'Ví điện tử Momo', desc: 'Momo', icon: MomoBrandIcon },
+    { value: 'payos', label: 'PayOS', desc: 'PayOS', icon: PayosBrandIcon },
+    { value: 'vnpay', label: 'VNPay', desc: 'VNPay', icon: VnpayBrandIcon }
   ]
 
   const handleQuickAmountSelect = (value: number) => {
@@ -536,42 +539,38 @@ export default function Profile() {
                             Phương thức thanh toán
                           </p>
                           <div className='grid grid-cols-3 gap-2'>
-                            {depositMethodOptions.map((method) => {
-                              const Icon = method.Icon
-
-                              return (
-                                <label
-                                  key={method.value}
-                                  className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all text-center ${
-                                    depositMethod === method.value
-                                      ? 'border-amber-500 bg-amber-50 shadow-sm'
-                                      : 'border-gray-200 hover:border-gray-300'
-                                  }`}
-                                  style={{ fontFamily: 'Arimo, sans-serif' }}
-                                >
-                                  <input
-                                    type='radio'
-                                    name='depositMethod'
-                                    value={method.value}
-                                    checked={depositMethod === method.value}
-                                    onChange={(e) => setDepositMethod(e.target.value as 'momo' | 'payos' | 'vnpay')}
-                                    className='absolute opacity-0'
-                                  />
-                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                                    depositMethod === method.value ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'
-                                  }`}>
-                                    <Icon className='w-5 h-5' strokeWidth={depositMethod === method.value ? 2.6 : 2.2} />
-                                  </div>
-                                  <div>
-                                    <p className='font-semibold text-gray-900 text-xs'>{method.label}</p>
-                                    <p className='text-xs text-gray-500 leading-tight'>{method.desc}</p>
-                                  </div>
-                                  {depositMethod === method.value && (
-                                    <span className='text-amber-600 text-xs font-semibold'>✓</span>
-                                  )}
-                                </label>
-                              )
-                            })}
+                            {depositMethodOptions.map((method) => (
+                              <label
+                                key={method.value}
+                                className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all text-center ${
+                                  depositMethod === method.value
+                                    ? 'border-amber-500 bg-amber-50 shadow-sm'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                style={{ fontFamily: 'Arimo, sans-serif' }}
+                              >
+                                <input
+                                  type='radio'
+                                  name='depositMethod'
+                                  value={method.value}
+                                  checked={depositMethod === method.value}
+                                  onChange={(e) => setDepositMethod(e.target.value as 'momo' | 'payos' | 'vnpay')}
+                                  className='absolute opacity-0'
+                                />
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border ${
+                                  depositMethod === method.value ? 'border-amber-400 bg-white' : 'border-gray-200 bg-gray-50'
+                                }`}>
+                                  <img src={method.icon} alt={method.label} className='w-full h-full object-contain scale-[1.25]' />
+                                </div>
+                                <div>
+                                  <p className='font-semibold text-gray-900 text-xs'>{method.label}</p>
+                                  <p className='text-xs text-gray-500 leading-tight'>{method.desc}</p>
+                                </div>
+                                {depositMethod === method.value && (
+                                  <span className='text-amber-600 text-xs font-semibold'>✓</span>
+                                )}
+                              </label>
+                            ))}
                           </div>
                         </div>
 

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { UseFormRegister, FormState } from 'react-hook-form';
-import { Check, CreditCard, Landmark, Wallet } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { PaymentFormSchema } from '../../utils/validation.schema';
+import momoIcon from '../../assets/icons/essential/brand/momo-removebg-preview.png';
+import payosIcon from '../../assets/icons/essential/brand/payos-removebg-preview.png';
+import vnpayIcon from '../../assets/icons/essential/brand/vnpay-removebg-preview.png';
 
 interface PaymentMethodsProps {
   register: UseFormRegister<PaymentFormSchema>;
@@ -13,37 +16,21 @@ const paymentOptions = [
     id: 'momo',
     label: 'Ví điện tử Momo',
     description: 'Thanh toán bằng ví Momo',
-    icon: 'momo',
+    icon: momoIcon,
   },
   {
     id: 'payos',
     label: 'PayOS',
     description: 'Thanh toán bằng PayOS',
-    icon: 'payos',
+    icon: payosIcon,
   },
   {
     id: 'vnpay',
     label: 'VNPay',
     description: 'Thanh toán bằng VNPay',
-    icon: 'vnpay',
+    icon: vnpayIcon,
   },
 ];
-
-const renderIcon = (iconType: string, isSelected: boolean) => {
-  const stroke = isSelected ? 2.4 : 2;
-  const iconClass = 'w-5 h-5 text-white';
-
-  switch (iconType) {
-    case 'momo':
-      return <Wallet className={iconClass} strokeWidth={stroke} />;
-    case 'payos':
-      return <CreditCard className={iconClass} strokeWidth={stroke} />;
-    case 'vnpay':
-      return <Landmark className={iconClass} strokeWidth={stroke} />;
-    default:
-      return null;
-  }
-};
 
 export const PaymentMethods: React.FC<PaymentMethodsProps> = ({ register, formState: { errors } }) => {
   const [selectedMethod, setSelectedMethod] = useState<string>('momo');
@@ -70,8 +57,8 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({ register, formSt
             >
               <div className="self-stretch h-12 inline-flex justify-start items-center gap-4">
                 {/* Icon Circle */}
-                <div className="w-12 h-12 rounded-full flex justify-center items-center flex-shrink-0 bg-[#C9A16E]">
-                  {renderIcon(option.icon, isSelected)}
+                <div className="w-12 h-12 rounded-full flex justify-center items-center flex-shrink-0 bg-white border border-[#C9A16E] overflow-hidden">
+                  <img src={option.icon} alt={option.label} className="w-full h-full object-contain scale-[1.25]" />
                 </div>
 
                 {/* Text Content */}
