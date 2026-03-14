@@ -55,8 +55,8 @@ const fetchAuthenticatedUser = async (): Promise<StoredUser | null> => {
     if (error?.response?.status === 401) {
       return null
     }
-    // For other errors, return cached user if available
-    return cachedUser ?? null
+    // For other errors, return null
+    return null
   }
 }
 
