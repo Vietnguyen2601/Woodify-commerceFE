@@ -6,6 +6,7 @@ import Product from './pages/Product'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import { Payment } from './pages/Payment'
+import PaymentCallback from './pages/PaymentCallback'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
@@ -32,6 +33,7 @@ export default function App() {
     location.pathname === '/register' ||
     location.pathname.startsWith('/auth/login') ||
     location.pathname.startsWith('/auth/register')
+  const isPaymentCallbackRoute = location.pathname.startsWith('/payment/callback')
   const showUserHeader = !isSellerRoute && !isAdminRoute && !isAuthRoute
   const showFooter = !isSellerRoute && !isAdminRoute
   const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
@@ -61,6 +63,8 @@ export default function App() {
           <Route path='/cart' element={<Cart />} />
           <Route path='/checkout' element={<Checkout />} />
           <Route path='/payment' element={<Payment />} />
+          <Route path='/payment/callback/success' element={<PaymentCallback />} />
+          <Route path='/payment/callback/cancel' element={<PaymentCallback />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />

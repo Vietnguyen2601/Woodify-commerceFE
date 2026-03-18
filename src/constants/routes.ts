@@ -17,6 +17,11 @@ export const ROUTES = {
   AUTH_LOGIN: '/auth/login',
   AUTH_REGISTER: '/auth/register',
 
+  // Payment routes
+  PAYMENT: '/payment',
+  PAYMENT_CALLBACK_SUCCESS: '/payment/callback/success',
+  PAYMENT_CALLBACK_CANCEL: '/payment/callback/cancel',
+
   // Profile routes
   PROFILE: '/profile',
   PROFILE_ACCOUNT: '/profile/account',

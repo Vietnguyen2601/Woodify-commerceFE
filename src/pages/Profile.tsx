@@ -63,6 +63,13 @@ export default function Profile() {
   const [depositError, setDepositError] = useState<string | null>(null)
   const [walletBalance, setWalletBalance] = useState(0)
   const [walletData, setWalletData] = useState<any>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
+  const [transactionError, setTransactionError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalDeposits, setTotalDeposits] = useState(0)
+  const [totalSpending, setTotalSpending] = useState(0)
   const [userInfo, setUserInfo] = useState({
     name: '',
     email: '',
@@ -87,6 +94,22 @@ export default function Profile() {
     staleTime: 2 * 60 * 1000, // 2 minutes
   })
 
+  // Fetch wallet transactions using walletId (for pagination)
+  const { data: transactionsData, isLoading: isTransactionsLoading } = useQuery({
+    queryKey: ['wallet-transactions', (wallet as any)?.walletId, currentPage],
+    queryFn: () => walletService.getWalletTransactions((wallet as any)?.walletId, currentPage, 5),
+    enabled: !!(wallet as any)?.walletId, // Only fetch when walletId exists
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  })
+
+  // Fetch all wallet transactions for calculating stats (no pagination)
+  const { data: allTransactionsData } = useQuery({
+    queryKey: ['wallet-transactions-all', (wallet as any)?.walletId],
+    queryFn: () => walletService.getWalletTransactions((wallet as any)?.walletId, 1, 1000), // Large pageSize to get all
+    enabled: !!(wallet as any)?.walletId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
   // Update wallet balance when wallet data is fetched
   useEffect(() => {
     if (wallet?.balance !== undefined) {
@@ -94,6 +117,83 @@ export default function Profile() {
       setWalletData(wallet)
     }
   }, [wallet])
+
+  // Transform and update transactions when API data is fetched
+  useEffect(() => {
+    if (transactionsData?.items && Array.isArray(transactionsData.items)) {
+      try {
+        const transformedTransactions: Transaction[] = transactionsData.items.map((apiTx: any) => {
+          // Parse createdAt to get date and time
+          const createdDate = new Date(apiTx.createdAt)
+          const date = createdDate.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+          const time = createdDate.toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          })
+
+          // Map transactionType to Transaction type
+          let type: 'income' | 'expense' | 'refund' = 'income'
+          if (apiTx.transactionType === 'Debit') {
+            type = 'expense'
+          } else if (apiTx.transactionType === 'Credit') {
+            type = 'income'
+          }
+
+          // Map API status to Transaction status
+          let status: 'success' | 'pending' | 'failed' = 'success'
+          if (apiTx.status === 'Pending') {
+            status = 'pending'
+          } else if (apiTx.status === 'Failed') {
+            status = 'failed'
+          }
+
+          return {
+            id: apiTx.transactionId,
+            type,
+            title: apiTx.note || `${type === 'income' ? 'Nạp tiền' : 'Thanh toán'} ví`,
+            date,
+            time,
+            status,
+            amount: type === 'expense' ? -apiTx.amount : apiTx.amount,
+            balance: apiTx.balanceAfter
+          }
+        })
+
+        setTransactions(transformedTransactions)
+        setTotalPages(transactionsData.totalPages || 1)
+        setTransactionError(null)
+      } catch (err) {
+        console.error('Error transforming transactions:', err)
+        setTransactionError('Lỗi khi xử lý dữ liệu giao dịch')
+      }
+    }
+  }, [transactionsData])
+
+  // Calculate total deposits and spending from all transactions
+  useEffect(() => {
+    if (allTransactionsData?.items && Array.isArray(allTransactionsData.items)) {
+      const deposits = allTransactionsData.items
+        .filter((tx: any) => tx.transactionType === 'Credit' && tx.status === 'Completed')
+        .reduce((sum: number, tx: any) => sum + tx.amount, 0)
+
+      const spending = allTransactionsData.items
+        .filter((tx: any) => tx.transactionType === 'Debit' && tx.status === 'Completed')
+        .reduce((sum: number, tx: any) => sum + tx.amount, 0)
+
+      setTotalDeposits(deposits)
+      setTotalSpending(spending)
+    }
+  }, [allTransactionsData])
+
+  // Reset to page 1 when wallet tab changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab, walletTab])
 
   // Fetch user account data on component mount
   useEffect(() => {
@@ -179,39 +279,6 @@ export default function Profile() {
     { id: 'orders' as TabType, label: 'Đơn hàng', icon: PackageIcon },
     { id: 'wallet' as TabType, label: 'Ví của tôi', icon: WalletIcon },
     { id: 'settings' as TabType, label: 'Cài đặt', icon: SettingIcon }
-  ]
-
-  const transactions: Transaction[] = [
-    {
-      id: '1',
-      type: 'income',
-      title: 'Nạp tiền vào ví',
-      date: '15/02/2026',
-      time: '14:30',
-      status: 'success',
-      amount: 5000000,
-      balance: 15750000
-    },
-    {
-      id: '2',
-      type: 'expense',
-      title: 'Thanh toán đơn hàng #DH2024001',
-      date: '14/02/2026',
-      time: '10:15',
-      status: 'success',
-      amount: -3500000,
-      balance: 10750000
-    },
-    {
-      id: '3',
-      type: 'refund',
-      title: 'Hoàn tiền đơn hàng #DH2024002',
-      date: '13/02/2026',
-      time: '16:45',
-      status: 'success',
-      amount: 2250000,
-      balance: 14250000
-    }
   ]
 
   const orders: Order[] = [
@@ -376,14 +443,34 @@ export default function Profile() {
     
     setIsProcessingDeposit(true)
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      setWalletTab('history')
-      setDepositAmount('')
-      setDepositMethod('momo')
+      // Map deposit method to API format
+      const methodMap: { [key: string]: string } = {
+        'momo': 'Momo',
+        'payos': 'PayOs',
+        'vnpay': 'VNPay'
+      }
+
+      const topupResponse = await walletService.topupWallet({
+        walletId: (wallet as any)?.walletId,
+        amount: Math.round(amount),
+        method: methodMap[depositMethod] || depositMethod
+      })
+
+      // Open payment URL in new tab
+      if (topupResponse.paymentUrl) {
+        window.open(topupResponse.paymentUrl, '_blank')
+        
+        // Reset form and switch back to history tab
+        setWalletTab('history')
+        setDepositAmount('')
+        setDepositMethod('momo')
+        setDepositError(null)
+      } else {
+        setDepositError('Không thể tạo link thanh toán')
+      }
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi nạp tiền')
+      setDepositError(err.message || 'Lỗi khi nạp tiền')
+      console.error('Deposit error:', err)
     } finally {
       setIsProcessingDeposit(false)
     }
@@ -417,7 +504,7 @@ export default function Profile() {
       )}
 
       {/* Main Content */}
-      {!error && !isLoading && (
+      {!error && !isLoading && !isUserLoading && !isWalletLoading && (
       <div className='max-w-[1280px] mx-auto px-8 py-8'>
         <div className='flex gap-8'>
           {/* Sidebar - Left */}
@@ -495,7 +582,7 @@ export default function Profile() {
                           </p>
                         </div>
                         <p className='text-xl font-bold' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                          25M
+                          {formatCurrency(totalDeposits)}
                         </p>
                       </div>
                       <div className='bg-white/20 backdrop-blur-sm rounded-[10px] p-4 min-w-[140px]'>
@@ -506,7 +593,7 @@ export default function Profile() {
                           </p>
                         </div>
                         <p className='text-xl font-bold' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                          18.75M
+                          {formatCurrency(totalSpending)}
                         </p>
                       </div>
                     </div>
@@ -563,7 +650,7 @@ export default function Profile() {
                         {/* Custom Amount */}
                         <div className='space-y-1.5'>
                           <label className='text-sm font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                            Nhập số tiền khác
+                            Nhập số tiền
                           </label>
                           <div className='relative'>
                             <input
@@ -664,45 +751,125 @@ export default function Profile() {
                   {/* Transaction List */}
                   {walletTab !== 'deposit' && (
                     <div className='space-y-4'>
-                      {transactions.map(transaction => (
-                        <div
-                          key={transaction.id}
-                          className='flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors'
-                        >
-                          {/* Left Side - Icon and Details */}
-                          <div className='flex items-center gap-4 flex-1'>
-                            {/* Icon Circle */}
-                            <div className={`w-12 h-12 ${getTransactionBgColor(transaction.type)} rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md`}>
-                              {getTransactionIcon(transaction.type)}
-                            </div>
-
-                            {/* Transaction Details */}
-                            <div className='flex-1'>
-                              <h4 className='text-gray-800 font-semibold mb-1' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                {transaction.title}
-                              </h4>
-                              <div className='flex items-center gap-3'>
-                                <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                  {transaction.date} • {transaction.time}
-                                </p>
-                                <span className='px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                  Thành công
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right Side - Amount and Balance */}
-                          <div className='text-right'>
-                            <p className={`text-lg font-bold mb-1 ${getTransactionColor(transaction.type)}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                              {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
-                            </p>
-                            <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                              Số dư: {formatCurrency(transaction.balance)}
-                            </p>
+                      {isTransactionsLoading && (
+                        <div className='flex items-center justify-center py-8'>
+                          <div className='text-center'>
+                            <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700 mb-2'></div>
+                            <p className='text-gray-600 text-sm'>Đang tải lịch sử giao dịch...</p>
                           </div>
                         </div>
-                      ))}
+                      )}
+
+                      {transactionError && (
+                        <div className='p-4 bg-red-50 border border-red-200 rounded-[10px]'>
+                          <p className='text-red-600 text-sm font-semibold'>⚠️ {transactionError}</p>
+                        </div>
+                      )}
+
+                      {!isTransactionsLoading && !transactionError && transactions.length === 0 && (
+                        <div className='p-8 text-center bg-gray-50 rounded-[10px]'>
+                          <p className='text-gray-500 text-sm'>Chưa có giao dịch nào</p>
+                        </div>
+                      )}
+
+                      {!isTransactionsLoading && transactions.length > 0 && (
+                        <>
+                          {transactions.map(transaction => {
+                            const statusColor = transaction.status === 'success' ? 'bg-green-100 text-green-700' : transaction.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                            const statusLabel = transaction.status === 'success' ? 'Thành công' : transaction.status === 'pending' ? 'Chờ xử lý' : 'Thất bại'
+
+                            return (
+                              <div
+                                key={transaction.id}
+                                className='flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors'
+                              >
+                                {/* Left Side - Icon and Details */}
+                                <div className='flex items-center gap-4 flex-1'>
+                                  {/* Icon Circle */}
+                                  <div className={`w-12 h-12 ${getTransactionBgColor(transaction.type)} rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md`}>
+                                    {getTransactionIcon(transaction.type)}
+                                  </div>
+
+                                  {/* Transaction Details */}
+                                  <div className='flex-1'>
+                                    <h4 className='text-gray-800 font-semibold mb-1' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                                      {transaction.title}
+                                    </h4>
+                                    <div className='flex items-center gap-3'>
+                                      <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                                        {transaction.date} • {transaction.time}
+                                      </p>
+                                      <span className={`px-3 py-1 ${statusColor} rounded-full text-xs font-medium`} style={{ fontFamily: 'Arimo, sans-serif' }}>
+                                        {statusLabel}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right Side - Amount and Balance */}
+                                <div className='text-right'>
+                                  <p className={`text-lg font-bold mb-1 ${getTransactionColor(transaction.type)}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                    {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
+                                  </p>
+                                  <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                                    Số dư: {formatCurrency(transaction.balance)}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </>
+                      )}
+
+                      {/* Pagination */}
+                      {!isTransactionsLoading && transactions.length > 0 && totalPages > 1 && (
+                        <div className='flex items-center justify-between pt-6 border-t border-gray-200 mt-6'>
+                          <div className='flex items-center gap-2'>
+                            <button
+                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                              className='px-4 py-2 border border-gray-300 rounded-[10px] text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                              style={{ fontFamily: 'Arimo, sans-serif' }}
+                            >
+                              ← Trước
+                            </button>
+
+                            <div className='flex gap-1'>
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                  key={page}
+                                  onClick={() => setCurrentPage(page)}
+                                  className={`w-10 h-10 rounded-[10px] font-semibold transition-all ${
+                                    currentPage === page
+                                      ? 'text-white shadow-md'
+                                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                  }`}
+                                  style={{
+                                    fontFamily: 'Arimo, sans-serif',
+                                    backgroundColor: currentPage === page ? '#BE9C73' : 'transparent',
+                                    borderColor: currentPage === page ? '#BE9C73' : '#D1D5DB'
+                                  }}
+                                >
+                                  {page}
+                                </button>
+                              ))}
+                            </div>
+
+                            <button
+                              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                              disabled={currentPage === totalPages}
+                              className='px-4 py-2 border border-gray-300 rounded-[10px] text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                              style={{ fontFamily: 'Arimo, sans-serif' }}
+                            >
+                              Sau →
+                            </button>
+                          </div>
+
+                          <p className='text-sm text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                            Trang <span className='font-semibold'>{currentPage}</span> / <span className='font-semibold'>{totalPages}</span>
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
