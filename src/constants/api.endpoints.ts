@@ -72,7 +72,7 @@ export const API_ENDPOINTS = {
     GET_BY_OWNER_ID: (ownerId: string) => `/Shops/GetShopByOwnerId/${encodeURIComponent(ownerId)}`,
   },
 
-  // Admin
+  // Admin (legacy / generic — prefer ADMIN_API for gateway routes in ADMIN_API_SPEC.md)
   ADMIN: {
     DASHBOARD: '/admin/dashboard',
     SELLERS: '/admin/sellers',
@@ -103,5 +103,39 @@ export const API_ENDPOINTS = {
     ADDRESSES: '/user/addresses',
     WALLET: '/user/wallet',
     VOUCHERS: '/user/vouchers',
+  },
+} as const
+
+/**
+ * Admin dashboard — paths relative to API_BASE_URL (already includes `/api`).
+ * Matches ADMIN_API_SPEC.md; alternate PascalCase paths are tried in admin.service when needed.
+ */
+export const ADMIN_API = {
+  ACCOUNTS: {
+    GET_ALL: '/accounts/GetAllAccounts',
+    GET_BY_ID: (id: string) => `/accounts/GetAccountById/${encodeURIComponent(id)}`,
+  },
+  SHOPS: {
+    GET_ALL_ADMIN: ['/shop/shops/admin/GetAllShops', '/Shops/admin/GetAllShops'],
+    PATCH_STATUS: (shopId: string) => [`/shop/shops/${encodeURIComponent(shopId)}/status`, `/Shops/${encodeURIComponent(shopId)}/status`],
+  },
+  PRODUCT_MASTERS: {
+    GET_ALL: ['/product/productmasters/GetAllProducts', '/ProductMasters/GetAllProducts'],
+    BY_SHOP: (shopId: string) => [
+      `/product/productmasters/GetProductByShopId/${encodeURIComponent(shopId)}`,
+      `/ProductMasters/GetProductByShopId/${encodeURIComponent(shopId)}`,
+    ],
+  },
+  ORDERS: {
+    /** P0 endpoints from API_GAPS — may not exist yet on backend */
+    ADMIN_ALL: ['/orders/admin/all', '/orders/admin/list'],
+    BY_SHOP: (shopId: string) => [`/orders/Shop/${encodeURIComponent(shopId)}`, `/Orders/Shop/${encodeURIComponent(shopId)}`],
+    DETAIL: (orderId: string) => `/orders/${encodeURIComponent(orderId)}`,
+  },
+  SHIPMENTS: {
+    GET_ALL: ['/shipments/GetAllShipments', '/Shipments/GetAllShipments'],
+  },
+  SHIPMENT_PROVIDERS: {
+    LIST: ['/shipment/providers', '/Shipment/providers'],
   },
 } as const

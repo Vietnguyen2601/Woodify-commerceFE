@@ -84,6 +84,13 @@ export const queryKeys = {
       [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'sellers'] as const,
     users: () => 
       [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'users'] as const,
+    shops: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'shops'] as const,
+    accounts: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'accounts'] as const,
+    orders: (filters?: Record<string, unknown>) =>
+      [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'orders', filters] as const,
+    shipments: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'shipments'] as const,
+    products: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'product-masters'] as const,
+    snapshot: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'snapshot'] as const,
   },
 
   // Categories
