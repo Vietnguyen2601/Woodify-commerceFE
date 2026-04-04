@@ -6,6 +6,7 @@ import type { CategoryDTO } from '@/types'
 import CategoryCreateForm from './CategoryCreateForm'
 
 type CategoryNode = CategoryDTO & { children: CategoryNode[] }
+type HierarchyOption = { value: string; label: string }
 
 const STATUS_BADGE: Record<'true' | 'false', string> = {
   true: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
@@ -25,77 +26,11 @@ const formatDate = (isoDate?: string | null) => {
   }
 }
 
-const buildCategoryTree = (categories: CategoryDTO[]): CategoryNode[] => {
-  const map = new Map<string, CategoryNode>()
-  categories.forEach((category) => {
-    map.set(category.categoryId, { ...category, children: [] })
-  })
-
-  const roots: CategoryNode[] = []
-
-  map.forEach((node) => {
-    if (node.parentCategoryId && map.has(node.parentCategoryId)) {
-      map.get(node.parentCategoryId)!.children.push(node)
-    } else {
-      roots.push(node)
-    }
-  })
-
-  const sortNodes = (nodes: CategoryNode[]) => {
-    return nodes
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((node) => ({ ...node, children: sortNodes(node.children) }))
-  }
-
-  return sortNodes(roots)
-}
-
-const filterTree = (
-  nodes: CategoryNode[],
-  keyword: string,
-  statusFilter: 'all' | 'active' | 'inactive',
-  matchIds?: Set<string>
-): CategoryNode[] => {
-  const normalizedKeyword = keyword.trim().toLowerCase()
-
-  const walk = (input: CategoryNode[]): CategoryNode[] => {
-    const filtered: CategoryNode[] = []
-
-    input.forEach((node) => {
-      const childMatches = walk(node.children)
-      const searchMatch = !normalizedKeyword || node.name.toLowerCase().includes(normalizedKeyword)
-      const forcedMatch = matchIds?.has(node.categoryId) ?? false
-      const statusMatch =
-        statusFilter === 'all' || (statusFilter === 'active' ? node.isActive : !node.isActive)
-
-      const includeSelf = statusMatch && (normalizedKeyword ? searchMatch || forcedMatch : true)
-
-      if (includeSelf || childMatches.length) {
-        filtered.push({ ...node, children: childMatches })
-      }
-    })
-
-    return filtered
-  }
-
-  return walk(nodes)
-}
-
-const findNodeById = (nodes: CategoryNode[], nodeId: string): CategoryNode | null => {
-  for (const node of nodes) {
-    if (node.categoryId === nodeId) return node
-    const childMatch = findNodeById(node.children, nodeId)
-    if (childMatch) return childMatch
-  }
-  return null
-}
-
 export default function CategoryManager() {
   const [searchTerm, setSearchTerm] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all')
-  const [parentFilter, setParentFilter] = React.useState<'all' | string>('all')
+  const [selectedRootId, setSelectedRootId] = React.useState<string | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null)
-  const [expandedNodes, setExpandedNodes] = React.useState<Set<string>>(new Set())
   const [isCreateFormOpen, setIsCreateFormOpen] = React.useState(false)
   const [createParentId, setCreateParentId] = React.useState<string | null>(null)
 
@@ -119,37 +54,101 @@ export default function CategoryManager() {
     if (!searchData?.data) return []
     return Array.isArray(searchData.data) ? searchData.data : [searchData.data]
   }, [searchData])
-  const parentOptions = React.useMemo(() => {
-    const roots = categories
-      .filter((cat) => !cat.parentCategoryId)
-      .map((cat) => ({ value: cat.categoryId, label: cat.name }))
-      .sort((a, b) => a.label.localeCompare(b.label))
 
-    return [{ value: 'all', label: 'Tất cả danh mục' }, ...roots]
-  }, [categories])
+  const parentMap = React.useMemo(() => createParentMap(categories), [categories])
+  const childrenMap = React.useMemo(() => createChildrenMap(categories), [categories])
+  const treeData = React.useMemo(() => buildCategoryTree(categories), [categories])
+  const hierarchyOptions = React.useMemo(() => collectHierarchyOptions(treeData), [treeData])
+
+  const searchHighlightIds = React.useMemo(() => new Set(searchResults.map((item) => item.categoryId)), [searchResults])
+  const normalizedKeyword = React.useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm])
+
+  const resolveRootId = React.useCallback(
+    (categoryId: string | null | undefined) => {
+      if (!categoryId) return null
+      let currentId: string | null = categoryId
+      let parentId = parentMap.get(currentId) ?? null
+      while (parentId) {
+        currentId = parentId
+        parentId = parentMap.get(currentId) ?? null
+      }
+      return currentId
+    },
+    [parentMap]
+  )
+
+  const matchesStatus = React.useCallback(
+    (category: CategoryDTO) =>
+      statusFilter === 'all' || (statusFilter === 'active' ? category.isActive : !category.isActive),
+    [statusFilter]
+  )
+
+  const matchesKeyword = React.useCallback(
+    (category: CategoryDTO) => {
+      if (!normalizedKeyword) return true
+      const localMatch = category.name.toLowerCase().includes(normalizedKeyword)
+      const descriptionMatch = category.description?.toLowerCase().includes(normalizedKeyword) ?? false
+      return localMatch || descriptionMatch || searchHighlightIds.has(category.categoryId)
+    },
+    [normalizedKeyword, searchHighlightIds]
+  )
+
+  const rootCategories = React.useMemo(
+    () => sortByName(categories.filter((cat) => !cat.parentCategoryId)),
+    [categories]
+  )
+
+  const highlightRootIds = React.useMemo(() => {
+    if (!normalizedKeyword && searchHighlightIds.size === 0) return new Set<string>()
+    const ids = new Set<string>()
+    categories.forEach((category) => {
+      const localMatch = normalizedKeyword
+        ? category.name.toLowerCase().includes(normalizedKeyword) ||
+          (category.description?.toLowerCase().includes(normalizedKeyword) ?? false)
+        : false
+      if (localMatch || searchHighlightIds.has(category.categoryId)) {
+        const rootId = resolveRootId(category.categoryId)
+        if (rootId) ids.add(rootId)
+      }
+    })
+    return ids
+  }, [categories, normalizedKeyword, resolveRootId, searchHighlightIds])
+
+  const filteredRootCategories = React.useMemo(() => {
+    return rootCategories.filter((root) => {
+      if (!matchesStatus(root)) return false
+      if (!normalizedKeyword) return true
+      if (matchesKeyword(root)) return true
+      const children = childrenMap[root.categoryId] ?? []
+      return children.some((child) => matchesKeyword(child))
+    })
+  }, [childrenMap, matchesKeyword, matchesStatus, normalizedKeyword, rootCategories])
 
   React.useEffect(() => {
-    if (!selectedCategoryId && categories.length) {
-      setSelectedCategoryId(categories[0].categoryId)
+    if (!filteredRootCategories.length) {
+      setSelectedRootId(null)
+      setSelectedCategoryId(null)
+      return
     }
-    if (categories.length && expandedNodes.size === 0) {
-      const rootIds = categories.filter((cat) => !cat.parentCategoryId).map((cat) => cat.categoryId)
-      setExpandedNodes(new Set(rootIds))
+    const hasSelectedRoot = selectedRootId && filteredRootCategories.some((cat) => cat.categoryId === selectedRootId)
+    if (!hasSelectedRoot) {
+      const nextRootId = filteredRootCategories[0].categoryId
+      setSelectedRootId(nextRootId)
+      setSelectedCategoryId((prev) => prev ?? nextRootId)
     }
-  }, [categories, selectedCategoryId, expandedNodes.size])
+  }, [filteredRootCategories, selectedRootId])
 
-  const treeData = React.useMemo(() => buildCategoryTree(categories), [categories])
+  React.useEffect(() => {
+    if (!selectedCategoryId && selectedRootId) {
+      setSelectedCategoryId(selectedRootId)
+    }
+  }, [selectedCategoryId, selectedRootId])
 
-  const scopedTree = React.useMemo(() => {
-    if (parentFilter === 'all') return treeData
-    const targetNode = findNodeById(treeData, parentFilter)
-    return targetNode ? [targetNode] : []
-  }, [treeData, parentFilter])
-
-  const filteredTree = React.useMemo(() => {
-    const highlightIds = debouncedKeyword && searchResults.length ? new Set(searchResults.map((item) => item.categoryId)) : undefined
-    return filterTree(scopedTree, debouncedKeyword || searchTerm, statusFilter, highlightIds)
-  }, [scopedTree, debouncedKeyword, searchResults, searchTerm, statusFilter])
+  const displayedChildren = React.useMemo(() => {
+    if (!selectedRootId) return []
+    const children = childrenMap[selectedRootId] ?? []
+    return sortByName(children.filter((child) => matchesStatus(child) && matchesKeyword(child)))
+  }, [childrenMap, matchesKeyword, matchesStatus, selectedRootId])
 
   const selectedCategory = React.useMemo(
     () => categories.find((cat) => cat.categoryId === selectedCategoryId) ?? null,
@@ -195,20 +194,23 @@ export default function CategoryManager() {
     ]
   }, [categories])
 
-  const toggleNode = (nodeId: string) => {
-    setExpandedNodes((prev) => {
-      const next = new Set(prev)
-      if (next.has(nodeId)) {
-        next.delete(nodeId)
-      } else {
-        next.add(nodeId)
-      }
-      return next
-    })
+  const handleRootSelect = (categoryId: string) => {
+    setSelectedRootId(categoryId)
+    setSelectedCategoryId(categoryId)
   }
 
-  const handleSelect = (nodeId: string) => {
-    setSelectedCategoryId(nodeId)
+  const handleChildSelect = (categoryId: string) => {
+    setSelectedCategoryId(categoryId)
+  }
+
+  const handleQuickSelect = (categoryId: string) => {
+    if (!categoryId) return
+    const rootId = resolveRootId(categoryId) ?? categoryId
+    setSelectedRootId(rootId)
+    setSelectedCategoryId(categoryId)
+    window.requestAnimationFrame(() => {
+      document.getElementById(`root-card-${rootId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    })
   }
 
   const openCreateForm = (parentId: string | null = null) => {
@@ -223,75 +225,18 @@ export default function CategoryManager() {
 
   const handleCreateSuccess = (newCategory: CategoryDTO) => {
     setSelectedCategoryId(newCategory.categoryId)
+    const nextRootId = resolveRootId(newCategory.parentCategoryId ?? newCategory.categoryId) ?? newCategory.categoryId
+    setSelectedRootId(nextRootId)
     setIsCreateFormOpen(false)
     setCreateParentId(null)
-    setExpandedNodes((prev) => {
-      const next = new Set(prev)
-      if (newCategory.parentCategoryId) {
-        next.add(newCategory.parentCategoryId)
-      } else {
-        next.add(newCategory.categoryId)
-      }
-      return next
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(`root-card-${nextRootId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     })
   }
 
-  const renderTree = (nodes: CategoryNode[], depth = 0) => {
-    if (!nodes.length) return null
-    return (
-      <ul className='space-y-1.5' role={depth === 0 ? 'tree' : 'group'}>
-        {nodes.map((node) => {
-          const hasChildren = node.children.length > 0
-          const isExpanded = expandedNodes.has(node.categoryId)
-          const isSelected = selectedCategoryId === node.categoryId
-          return (
-            <li key={node.categoryId}>
-              <div
-                className={`group flex items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 text-sm transition-colors duration-150 ${
-                  isSelected
-                    ? 'bg-stone-100/80 text-stone-900 ring-1 ring-stone-200'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                style={{ paddingLeft: `${depth * 20 + 12}px` }}
-                role='treeitem'
-                aria-selected={isSelected}
-              >
-                {hasChildren ? (
-                  <button
-                    type='button'
-                    className='rounded-full border border-gray-200 bg-white p-1 text-gray-500 transition hover:border-gray-300 hover:text-gray-700'
-                    onClick={() => toggleNode(node.categoryId)}
-                    aria-label={isExpanded ? 'Thu gọn' : 'Mở rộng'}
-                    aria-expanded={isExpanded}
-                  >
-                    <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                      {isExpanded ? <path d='M6 12h12' strokeLinecap='round' /> : <path d='M12 6v12M6 12h12' strokeLinecap='round' />}
-                    </svg>
-                  </button>
-                ) : (
-                  <span className='h-1.5 w-1.5 rounded-full bg-gray-300' aria-hidden='true' />
-                )}
-                <button
-                  type='button'
-                  className='flex-1 text-left'
-                  onClick={() => handleSelect(node.categoryId)}
-                >
-                  <p className='font-medium leading-tight'>{node.name}</p>
-                  <p className='text-xs text-gray-500'>{node.subCategoriesCount} danh mục con</p>
-                </button>
-                <span className={`inline-flex rounded-xl px-2 py-0.5 text-[11px] font-semibold ${STATUS_BADGE[node.isActive ? 'true' : 'false']}`}>
-                  {node.isActive ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-              {hasChildren && isExpanded && (
-                <div className='mt-1 border-l border-dashed border-gray-200 pl-4'>{renderTree(node.children, depth + 1)}</div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-    )
-  }
+  const selectedHierarchyValue = selectedCategoryId ?? ''
 
   return (
     <div className='space-y-6'>
@@ -299,7 +244,7 @@ export default function CategoryManager() {
         <div>
           <p className='text-xs font-semibold uppercase tracking-[0.28em] text-gray-500'>Woodify Admin</p>
           <h1 className='text-[22px] font-semibold text-gray-900'>Quản lý danh mục</h1>
-          <p className='mt-1 text-sm text-gray-500'>Sắp xếp danh mục đa tầng để tối ưu hiển thị và kiểm soát sản phẩm.</p>
+          <p className='mt-1 text-sm text-gray-500'>Quản trị danh mục đa cấp với bố cục ngang trực quan hơn.</p>
         </div>
       </header>
 
@@ -317,38 +262,30 @@ export default function CategoryManager() {
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder='Tìm nhanh theo tên hoặc mô tả danh mục'
-              className='h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-500 transition focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-200'
+              className='h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-10 text-sm text-gray-900 placeholder:text-gray-500 transition focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-200'
             />
+            {isSearching && (
+              <span className='pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400'>
+                <svg className='h-4 w-4 animate-spin' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+                  <circle cx='12' cy='12' r='9' strokeOpacity='0.25' />
+                  <path d='M21 12a9 9 0 0 0-9-9' strokeLinecap='round' />
+                </svg>
+              </span>
+            )}
           </div>
 
-          <div className='flex flex-1 min-w-[200px] flex-wrap gap-3 sm:flex-nowrap'>
-            <label className='flex-1 text-xs font-medium text-gray-600'>
-              <span className='mb-1 block text-[11px] uppercase tracking-wide text-gray-500'>Trạng thái</span>
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
-                className='h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 transition focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200'
-              >
-                <option value='all'>Tất cả</option>
-                <option value='active'>Đang hoạt động</option>
-                <option value='inactive'>Tạm dừng</option>
-              </select>
-            </label>
-            <label className='flex-1 text-xs font-medium text-gray-600'>
-              <span className='mb-1 block text-[11px] uppercase tracking-wide text-gray-500'>Danh mục cha</span>
-              <select
-                value={parentFilter}
-                onChange={(event) => setParentFilter(event.target.value)}
-                className='h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 transition focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200'
-              >
-                {parentOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <label className='flex-1 min-w-[200px] text-xs font-medium text-gray-600'>
+            <span className='mb-1 block text-[11px] uppercase tracking-wide text-gray-500'>Trạng thái</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
+              className='h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 transition focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200'
+            >
+              <option value='all'>Tất cả</option>
+              <option value='active'>Đang hoạt động</option>
+              <option value='inactive'>Tạm dừng</option>
+            </select>
+          </label>
 
           <div className='ml-auto flex items-center gap-2'>
             <button
@@ -377,6 +314,30 @@ export default function CategoryManager() {
         </div>
       </div>
 
+      <div className='rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'>
+        <div className='flex flex-wrap items-center gap-4'>
+          <div className='flex-1 min-w-[220px]'>
+            <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Selected box</p>
+            <p className='text-sm text-gray-500'>Chọn nhanh bất kỳ danh mục nào trong cây để highlight và scroll.</p>
+          </div>
+          <label className='flex-1 min-w-[260px] text-xs font-medium text-gray-700'>
+            <span className='sr-only'>Chọn danh mục</span>
+            <select
+              className='h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 transition focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200'
+              value={selectedHierarchyValue}
+              onChange={(event) => handleQuickSelect(event.target.value)}
+            >
+              <option value=''>Danh mục gốc &gt; danh mục con</option>
+              {hierarchyOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+
       <div className='grid gap-4 md:grid-cols-3'>
         {metrics.map((metric) => (
           <div key={metric.label} className='rounded-xl border border-gray-100 bg-white/90 p-4 shadow-sm'>
@@ -391,139 +352,35 @@ export default function CategoryManager() {
         ))}
       </div>
 
-      <div className='grid gap-6 lg:grid-cols-[420px_1fr] xl:grid-cols-[460px_1fr]'>
-        <section className='relative flex h-full flex-col rounded-2xl border border-gray-100 bg-white shadow-sm'>
-          <div className='top-0 z-10 border-b border-gray-100 bg-white/95 p-5'>
-            <div className='flex items-start justify-between gap-3'>
-              <div>
-                <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Cây danh mục</p>
-                <p className='mt-1 text-sm text-gray-600'>Mở rộng nhánh để rà soát cấu trúc nhiều cấp nhanh chóng.</p>
-              </div>
-              <span className='text-xs font-semibold text-gray-400'>{categories.length} mục</span>
-            </div>
+      <section className='space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
+          <div>
+            <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Danh mục gốc</p>
+            <p className='text-sm text-gray-600'>6 thẻ ngang. Cuộn để xem thêm hoặc chọn bằng dropdown.</p>
           </div>
-          <div className='flex-1 overflow-y-auto p-5 pt-4'>
-            <div className='mb-4 rounded-xl border border-dashed border-gray-200 bg-stone-50/70 px-4 py-3 text-xs text-gray-600'>
-              Sử dụng thanh tìm kiếm và bộ lọc phía trên để thu hẹp danh mục. Nhấn biểu tượng cộng để mở nhánh con.
-            </div>
-            {isLoading && <p className='text-sm text-gray-500'>Đang tải danh mục...</p>}
-            {isError && <p className='text-sm text-red-500'>Không thể tải danh mục. Vui lòng thử lại.</p>}
-            {!isLoading && !isError && filteredTree.length === 0 && (
-              <p className='text-sm text-gray-500'>Không tìm thấy danh mục phù hợp.</p>
-            )}
-            {!isLoading && !isError && <div className='pr-1'>{renderTree(filteredTree)}</div>}
-          </div>
-        </section>
+          <span className='text-xs font-semibold text-gray-400'>{filteredRootCategories.length} mục hiển thị</span>
+        </div>
+        {isError && <p className='text-sm text-red-500'>Không thể tải danh mục. Vui lòng thử lại.</p>}
+        <RootCategoryGrid
+          categories={filteredRootCategories}
+          highlightIds={highlightRootIds}
+          isLoading={isLoading}
+          selectedId={selectedRootId}
+          onSelect={handleRootSelect}
+        />
+      </section>
 
-        <section className='rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
-          {selectedCategory ? (
-            <div className='space-y-6'>
-              <div className='flex items-start justify-between gap-3 border-b border-gray-100 pb-4'>
-                <div>
-                  <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Danh mục đang xem</p>
-                  <h2 className='text-xl font-semibold text-gray-900'>{selectedCategory.name}</h2>
-                  <p className='mt-1 text-sm text-gray-500'>{selectedCategory.description || 'Chưa có mô tả'}</p>
-                </div>
-                <span
-                  className={`inline-flex rounded-2xl px-3 py-1 text-xs font-semibold ${
-                    STATUS_BADGE[selectedCategory.isActive ? 'true' : 'false']
-                  }`}
-                >
-                  {selectedCategory.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
-                </span>
-              </div>
+      <div className='grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]'>
+        <SubCategoryPanel
+          categories={displayedChildren}
+          isLoading={isLoading}
+          parentCategory={categories.find((cat) => cat.categoryId === selectedRootId) ?? null}
+          selectedId={selectedCategoryId}
+          onSelect={handleChildSelect}
+          onAddChild={openCreateForm}
+        />
 
-              <section className='space-y-3'>
-                <div className='flex items-center justify-between'>
-                  <h3 className='text-sm font-semibold text-gray-900'>Thông tin cơ bản</h3>
-                  <span className='text-xs text-gray-500'>Mã #{selectedCategory.categoryId}</span>
-                </div>
-                <dl className='grid gap-3 md:grid-cols-2'>
-                  <div className='rounded-xl border border-gray-100 bg-gray-50/60 p-4'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-gray-500'>Mô tả</dt>
-                    <dd className='mt-1 text-sm text-gray-900'>
-                      {selectedCategory.description || 'Chưa có mô tả'}
-                    </dd>
-                  </div>
-                  <div className='rounded-xl border border-gray-100 bg-gray-50/60 p-4'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-gray-500'>Trạng thái</dt>
-                    <dd className='mt-2 text-sm font-semibold text-gray-900'>
-                      {selectedCategory.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
-
-              <div className='h-px bg-gray-100' />
-
-              <section className='space-y-3'>
-                <h3 className='text-sm font-semibold text-gray-900'>Phân cấp</h3>
-                <dl className='grid gap-3 md:grid-cols-2'>
-                  <div className='rounded-xl border border-gray-100 bg-white p-4'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-gray-500'>Danh mục cha</dt>
-                    <dd className='mt-1 text-sm font-medium text-gray-900'>
-                      {selectedCategory.parentCategoryName ?? 'Danh mục gốc'}
-                    </dd>
-                  </div>
-                  <div className='rounded-xl border border-gray-100 bg-white p-4'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-gray-500'>Số danh mục con</dt>
-                    <dd className='mt-1 text-sm font-medium text-gray-900'>
-                      {selectedCategory.subCategoriesCount}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
-
-              <div className='h-px bg-gray-100' />
-
-              <section className='space-y-3'>
-                <h3 className='text-sm font-semibold text-gray-900'>Thống kê</h3>
-                <dl className='grid gap-3 md:grid-cols-2'>
-                  <div className='rounded-xl border border-gray-100 bg-white p-4'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-gray-500'>Ngày tạo</dt>
-                    <dd className='mt-1 text-sm font-medium text-gray-900'>{formatDate(selectedCategory.createdAt)}</dd>
-                  </div>
-                  <div className='rounded-xl border border-gray-100 bg-white p-4'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-gray-500'>Cập nhật gần nhất</dt>
-                    <dd className='mt-1 text-sm font-medium text-gray-900'>{formatDate(selectedCategory.updatedAt)}</dd>
-                  </div>
-                </dl>
-              </section>
-
-              <div className='h-px bg-gray-100' />
-
-              <section className='space-y-3'>
-                <h3 className='text-sm font-semibold text-gray-900'>Hành động</h3>
-                <div className='flex flex-wrap gap-3'>
-                  <button
-                    type='button'
-                    className='inline-flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
-                  >
-                    <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                      <path d='m12.5 5.5 6 6L9 21l-6 .5.5-6z' strokeLinejoin='round' />
-                      <path d='M4 21h16' strokeLinecap='round' />
-                    </svg>
-                    Chỉnh sửa danh mục
-                  </button>
-                  <button
-                    type='button'
-                    className='inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-200'
-                    onClick={() => openCreateForm(selectedCategory.categoryId)}
-                  >
-                    <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                      <path d='M12 6v12M6 12h12' strokeLinecap='round' />
-                    </svg>
-                    Thêm danh mục con
-                  </button>
-                </div>
-              </section>
-            </div>
-          ) : (
-            <div className='flex h-full items-center justify-center text-sm text-gray-500'>
-              Chọn một danh mục trong cây bên trái để xem chi tiết
-            </div>
-          )}
-        </section>
+        <CategoryDetailPanel category={selectedCategory} onAddChild={openCreateForm} />
       </div>
 
       {isCreateFormOpen && (
@@ -548,6 +405,316 @@ export default function CategoryManager() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function buildCategoryTree(categories: CategoryDTO[]): CategoryNode[] {
+  const map = new Map<string, CategoryNode>()
+  categories.forEach((category) => {
+    map.set(category.categoryId, { ...category, children: [] })
+  })
+
+  const roots: CategoryNode[] = []
+
+  map.forEach((node) => {
+    if (node.parentCategoryId && map.has(node.parentCategoryId)) {
+      map.get(node.parentCategoryId)!.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+
+  const sortNodes = (nodes: CategoryNode[]) =>
+    nodes
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((node) => ({ ...node, children: sortNodes(node.children) }))
+
+  return sortNodes(roots)
+}
+
+function collectHierarchyOptions(nodes: CategoryNode[]): HierarchyOption[] {
+  const options: HierarchyOption[] = []
+  const traverse = (input: CategoryNode[], path: string[]) => {
+    input.forEach((node) => {
+      const currentPath = [...path, node.name]
+      options.push({ value: node.categoryId, label: currentPath.join(' > ') })
+      if (node.children.length) traverse(node.children, currentPath)
+    })
+  }
+  traverse(nodes, [])
+  return options
+}
+
+function createChildrenMap(categories: CategoryDTO[]) {
+  const map: Record<string, CategoryDTO[]> = {}
+  categories.forEach((category) => {
+    if (!category.parentCategoryId) return
+    if (!map[category.parentCategoryId]) {
+      map[category.parentCategoryId] = []
+    }
+    map[category.parentCategoryId].push(category)
+  })
+  Object.values(map).forEach((list) => list.sort((a, b) => a.name.localeCompare(b.name)))
+  return map
+}
+
+function createParentMap(categories: CategoryDTO[]) {
+  const map = new Map<string, string | null>()
+  categories.forEach((category) => {
+    map.set(category.categoryId, category.parentCategoryId ?? null)
+  })
+  return map
+}
+
+function sortByName(categories: CategoryDTO[]) {
+  return [...categories].sort((a, b) => a.name.localeCompare(b.name))
+}
+
+interface RootCategoryGridProps {
+  categories: CategoryDTO[]
+  selectedId: string | null
+  highlightIds: Set<string>
+  isLoading: boolean
+  onSelect: (categoryId: string) => void
+}
+
+function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, onSelect }: RootCategoryGridProps) {
+  if (isLoading) {
+    return (
+      <div className='grid min-w-[960px] grid-cols-6 gap-4 overflow-x-auto pb-2 lg:min-w-0 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2'>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className='h-32 rounded-2xl border border-dashed border-gray-200 bg-gray-50 animate-pulse' />
+        ))}
+      </div>
+    )
+  }
+
+  if (!categories.length) {
+    return <p className='text-sm text-gray-500'>Không có danh mục gốc phù hợp với bộ lọc hiện tại.</p>
+  }
+
+  return (
+    <div className='overflow-x-auto pb-2'>
+      <div className='grid min-w-[960px] grid-cols-6 gap-4 lg:min-w-0 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2'>
+        {categories.map((category) => {
+          const isSelected = selectedId === category.categoryId
+          const isHighlighted = highlightIds.has(category.categoryId)
+          return (
+            <button
+              key={category.categoryId}
+              id={`root-card-${category.categoryId}`}
+              type='button'
+              onClick={() => onSelect(category.categoryId)}
+              className={`flex h-full flex-col rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md ${
+                isSelected ? 'border-stone-900 bg-stone-900/90 text-white shadow-lg' : 'border-stone-200 bg-white'
+              } ${isHighlighted && !isSelected ? 'ring-2 ring-stone-200 ring-offset-2' : ''}`}
+            >
+              <div className='flex items-start justify-between gap-2'>
+                <h3 className='text-base font-semibold leading-tight'>{category.name}</h3>
+                <span className={`inline-flex rounded-xl px-2 py-0.5 text-[11px] font-semibold ${
+                  STATUS_BADGE[category.isActive ? 'true' : 'false']
+                } ${isSelected ? 'bg-white/20 text-white' : ''}`}>
+                  {category.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <p className={`mt-2 text-sm ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                {category.subCategoriesCount} danh mục con
+              </p>
+              <span className={`mt-auto inline-flex items-center text-sm font-semibold ${isSelected ? 'text-white' : 'text-stone-900'}`}>
+                Chọn danh mục
+                <svg className='ml-1 h-4 w-4' viewBox='0 0 16 16' fill='none' stroke='currentColor' strokeWidth='1.4'>
+                  <path d='M6 4l4 4-4 4' strokeLinecap='round' strokeLinejoin='round' />
+                </svg>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+interface SubCategoryPanelProps {
+  categories: CategoryDTO[]
+  parentCategory: CategoryDTO | null
+  selectedId: string | null
+  isLoading: boolean
+  onSelect: (categoryId: string) => void
+  onAddChild: (parentId: string | null) => void
+}
+
+function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, onSelect, onAddChild }: SubCategoryPanelProps) {
+  return (
+    <section className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
+      <div className='flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4'>
+        <div>
+          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Danh mục con</p>
+          <p className='text-sm text-gray-600'>Hiển thị cấp 1 của danh mục gốc đang chọn.</p>
+        </div>
+        {parentCategory && (
+          <button
+            type='button'
+            className='inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50'
+            onClick={() => onAddChild(parentCategory.categoryId)}
+          >
+            <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+              <path d='M12 6v12M6 12h12' strokeLinecap='round' />
+            </svg>
+            Thêm danh mục con
+          </button>
+        )}
+      </div>
+
+      {!parentCategory && <p className='mt-4 text-sm text-gray-500'>Chọn một danh mục gốc ở phía trên để xem danh mục con.</p>}
+
+      {parentCategory && (
+        <div className='mt-4'>
+          {isLoading ? (
+            <div className='flex flex-wrap gap-3 overflow-x-auto pb-2'>
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className='h-28 min-w-[220px] flex-1 rounded-xl border border-dashed border-gray-200 bg-gray-50 animate-pulse' />
+              ))}
+            </div>
+          ) : categories.length ? (
+            <div className='flex flex-wrap gap-3 overflow-x-auto pb-2 lg:flex-nowrap'>
+              {categories.map((category) => {
+                const isSelected = selectedId === category.categoryId
+                return (
+                  <button
+                    key={category.categoryId}
+                    type='button'
+                    onClick={() => onSelect(category.categoryId)}
+                    className={`min-w-[240px] flex-1 rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-stone-300 ${
+                      isSelected ? 'border-stone-900 bg-stone-900/90 text-white shadow-lg' : 'border-stone-100 bg-white'
+                    }`}
+                  >
+                    <div className='flex items-center justify-between gap-2'>
+                      <p className='font-semibold'>{category.name}</p>
+                      <span className={`rounded-lg px-2 py-0.5 text-[11px] font-semibold ${
+                        STATUS_BADGE[category.isActive ? 'true' : 'false']
+                      } ${isSelected ? 'bg-white/20 text-white' : ''}`}>
+                        {category.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <p className={`mt-2 text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                      {category.description || 'Chưa có mô tả'}
+                    </p>
+                    <p className={`mt-3 text-sm font-medium ${isSelected ? 'text-white' : 'text-stone-900'}`}>
+                      {category.subCategoriesCount} danh mục con
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500'>
+              Chưa có danh mục con. Nhấn "Thêm danh mục con" để tạo mới.
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function CategoryDetailPanel({ category, onAddChild }: { category: CategoryDTO | null; onAddChild: (parentId: string | null) => void }) {
+  if (!category) {
+    return (
+      <section className='flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm'>
+        Chọn danh mục gốc hoặc danh mục con để xem chi tiết.
+      </section>
+    )
+  }
+
+  return (
+    <section className='space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
+      <div className='flex items-start justify-between gap-3 border-b border-gray-100 pb-4'>
+        <div>
+          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Danh mục đang xem</p>
+          <h2 className='text-xl font-semibold text-gray-900'>{category.name}</h2>
+          <p className='mt-1 text-sm text-gray-500'>{category.description || 'Chưa có mô tả'}</p>
+        </div>
+        <span className={`inline-flex rounded-2xl px-3 py-1 text-xs font-semibold ${STATUS_BADGE[category.isActive ? 'true' : 'false']}`}>
+          {category.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
+        </span>
+      </div>
+      <div className='space-y-4'>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
+          <h3 className='text-sm font-semibold text-gray-900'>Thông tin nhanh</h3>
+          <span className='text-xs text-gray-500'>Mã #{category.categoryId}</span>
+        </div>
+
+        <div className='flex flex-wrap gap-4 overflow-x-auto pb-2 lg:flex-nowrap'>
+          <DetailCard label='Mô tả' value={category.description || 'Chưa có mô tả'} tone='muted' />
+          <DetailCard label='Trạng thái' value={category.isActive ? 'Đang hoạt động' : 'Tạm dừng'} highlight />
+          <DetailCard
+            label='Danh mục cha'
+            value={category.parentCategoryName ?? 'Danh mục gốc'}
+          />
+          <DetailCard label='Số danh mục con' value={`${category.subCategoriesCount}`} />
+          <DetailCard label='Ngày tạo' value={formatDate(category.createdAt)} />
+          <DetailCard label='Cập nhật gần nhất' value={formatDate(category.updatedAt)} />
+        </div>
+      </div>
+
+      <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4'>
+        <h3 className='text-sm font-semibold text-gray-900'>Timeline</h3>
+        <div className='mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
+          <TimelineItem label='Tạo' value={formatDate(category.createdAt)} />
+          <span className='hidden lg:block h-px flex-1 bg-gray-200' />
+          <TimelineItem label='Cập nhật' value={formatDate(category.updatedAt)} />
+          <span className='hidden lg:block h-px flex-1 bg-gray-200' />
+          <TimelineItem label='Tình trạng' value={category.isActive ? 'Active' : 'Inactive'} />
+        </div>
+      </div>
+
+      <div className='flex flex-wrap gap-3 rounded-2xl border border-gray-100 bg-gray-50/80 p-4'>
+        <button
+          type='button'
+          className='inline-flex flex-1 min-w-[180px] items-center justify-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+        >
+          <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+            <path d='m12.5 5.5 6 6L9 21l-6 .5.5-6z' strokeLinejoin='round' />
+            <path d='M4 21h16' strokeLinecap='round' />
+          </svg>
+          Chỉnh sửa danh mục
+        </button>
+        <button
+          type='button'
+          className='inline-flex flex-1 min-w-[180px] items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-200'
+          onClick={() => onAddChild(category.categoryId)}
+        >
+          <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+            <path d='M12 6v12M6 12h12' strokeLinecap='round' />
+          </svg>
+          Thêm danh mục con
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function DetailCard({ label, value, highlight, tone }: { label: string; value: string; highlight?: boolean; tone?: 'muted' }) {
+  return (
+    <div
+      className={`flex min-w-[220px] flex-1 rounded-2xl border p-4 ${
+        highlight ? 'border-stone-900 bg-stone-900/90 text-white' : 'border-gray-100 bg-white'
+      } ${tone === 'muted' && !highlight ? 'bg-gray-50/70' : ''}`}
+    >
+      <div>
+      <dt className={`text-[11px] font-medium uppercase tracking-wide ${highlight ? 'text-white/70' : 'text-gray-500'}`}>{label}</dt>
+      <dd className={`mt-2 text-sm font-semibold ${highlight ? 'text-white' : 'text-gray-900'}`}>{value}</dd>
+      </div>
+    </div>
+  )
+}
+
+function TimelineItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className='flex items-center gap-3 rounded-xl bg-white px-4 py-2 shadow-sm'>
+      <span className='text-[11px] font-semibold uppercase tracking-wide text-gray-400'>{label}</span>
+      <span className='text-sm font-medium text-gray-900'>{value}</span>
     </div>
   )
 }

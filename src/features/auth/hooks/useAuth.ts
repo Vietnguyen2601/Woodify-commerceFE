@@ -18,11 +18,13 @@ const fetchAuthenticatedUser = async (): Promise<StoredUser | null> => {
     
     // If response is null (from 401 handling), user is not authenticated
     if (!response) {
+      clearStoredUser()
       return null
     }
     
-    // Handle nested response structure: { status, message, data: { accountId, email, ... } }
-    const profile = response?.data || response
+    // The API client interceptor already unwraps { status, message, data: {...} }
+    // so `response` is already the inner User object.
+    const profile = response
     
     // Extract only non-sensitive data for localStorage
     const normalizedUser: StoredUser = {
@@ -53,6 +55,7 @@ const fetchAuthenticatedUser = async (): Promise<StoredUser | null> => {
     // 401 (Unauthorized) is expected on public pages for unauthenticated users
     // Silently return null instead of throwing
     if (error?.response?.status === 401) {
+      clearStoredUser()
       return null
     }
     // For other errors, return cached user if available
@@ -87,17 +90,9 @@ export function useAuth() {
     } catch (error) {
       // Silently continue - logout is not critical
     }
-    
-    // Navigate FIRST before clearing user data to prevent ProtectedRoute redirect race condition
-    // This ensures browser navigation happens before React re-renders ProtectedRoute
-    if (isBrowser) {
-      // Use replaceState to remove protected pages from browser history
-      // so user can't back into protected pages after logout
-      window.history.replaceState({}, '', ROUTES.HOME)
-      window.location.href = ROUTES.HOME
-    }
-    
-    // Then clear tokens & user data from localStorage
+
+    // Clear tokens & user data BEFORE navigating — window.location.href stops
+    // JS execution so any cleanup placed after it never runs.
     if (isBrowser) {
       localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
       localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.REFRESH_TOKEN)
@@ -109,6 +104,13 @@ export function useAuth() {
     // Clear user from cache
     queryClient.setQueryData(queryKeys.user(), null)
     queryClient.clear()
+
+    if (isBrowser) {
+      // Use replaceState to remove protected pages from browser history
+      // so user can't back into protected pages after logout
+      window.history.replaceState({}, '', ROUTES.HOME)
+      window.location.href = ROUTES.HOME
+    }
   }, [queryClient])
 
   /**

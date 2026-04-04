@@ -1,16 +1,21 @@
 import React from 'react'
 import { useForm } from 'react-hook-form'
-import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import AddressModal from '@/components/seller/AddressModal/AddressModal'
 import type { PickupAddressPayload } from '@/components/seller/AddressModal/types'
+import { ROUTES } from '@/constants/routes'
 import { useAuth } from '@/features/auth/hooks'
 import { useDebounce } from '@/hooks'
-import { sellerService, shopService } from '@/services'
+import { sellerService } from '@/services'
 import type { CreateShopPayload } from '@/types'
+
+const STEP_ONE_STORAGE_KEY = 'seller_register_step1'
+
+type StepOneDraft = Pick<CreateShopPayload, 'ownerAccountId' | 'name' | 'description' | 'defaultPickupAddress'>
 
 interface RegistrationFormValues {
   shopName: string
+  description: string
 }
 
 type PickupAddress = PickupAddressPayload
@@ -37,10 +42,6 @@ export default function SellerRegistrationPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [editingAddress, setEditingAddress] = React.useState<PickupAddress | null>(null)
   const [shopNameStatus, setShopNameStatus] = React.useState<ShopNameStatus>('idle')
-  const [submissionFeedback, setSubmissionFeedback] = React.useState<{
-    type: 'success' | 'error'
-    message: string
-  } | null>(null)
 
   const {
     register,
@@ -53,6 +54,7 @@ export default function SellerRegistrationPage() {
     mode: 'onChange',
     defaultValues: {
       shopName: '',
+      description: '',
     },
   })
 
@@ -112,45 +114,25 @@ export default function SellerRegistrationPage() {
     }
   }, [debouncedShopName, clearErrors, setError])
 
-  const shopCreationMutation = useMutation({
-    mutationFn: (payload: CreateShopPayload) => shopService.createShop(payload),
-  })
-
   const onSubmit = handleSubmit(async (values) => {
     if (!selectedAddress || shopNameStatus !== 'available') {
-      if (!selectedAddress) {
-        setSubmissionFeedback({ type: 'error', message: 'Vui lòng thêm địa chỉ lấy hàng.' })
-      }
       return
     }
 
     if (!user?.accountId) {
-      setSubmissionFeedback({ type: 'error', message: 'Không tìm thấy thông tin chủ shop. Vui lòng đăng nhập lại.' })
       return
     }
 
-    setSubmissionFeedback(null)
-
     const normalizedShopName = values.shopName.trim()
-    const shopPayload: CreateShopPayload = {
-      shopName: normalizedShopName,
-      description: `Gian hàng ${normalizedShopName}`,
-      address: formatPickupAddress(selectedAddress),
-      phoneNumber: selectedAddress.phone,
-      ownerId: user.accountId,
+    const preparedData: StepOneDraft = {
+      ownerAccountId: user.accountId,
+      name: normalizedShopName,
+      description: values.description.trim(),
+      defaultPickupAddress: formatPickupAddress(selectedAddress),
     }
 
-    try {
-      await shopCreationMutation.mutateAsync(shopPayload)
-      setSubmissionFeedback({
-        type: 'success',
-        message: 'Tạo shop thành công! Đang chuyển tới trang quản trị người bán...',
-      })
-      navigate('/seller', { replace: true })
-    } catch (error) {
-      console.error(error)
-      setSubmissionFeedback({ type: 'error', message: 'Tạo shop thất bại. Vui lòng thử lại sau.' })
-    }
+    localStorage.setItem(STEP_ONE_STORAGE_KEY, JSON.stringify(preparedData))
+    navigate(ROUTES.SELLER_REGISTER)
   })
 
   const requiresLogin = !user?.accountId
@@ -160,7 +142,6 @@ export default function SellerRegistrationPage() {
     !isValid ||
     shopNameStatus !== 'available' ||
     isSubmitting ||
-    shopCreationMutation.isPending ||
     requiresLogin
 
   const openAddressModal = (address?: PickupAddress | null) => {
@@ -230,6 +211,26 @@ export default function SellerRegistrationPage() {
               </div>
             </section>
 
+            <section className='space-y-3'>
+              <header>
+                <p className='text-xs font-semibold uppercase tracking-[0.25em] text-stone-500'>Giới thiệu cửa hàng</p>
+                <p className='mt-1 text-base font-semibold text-stone-900'>Mô tả *</p>
+              </header>
+              <div className='space-y-2'>
+                <textarea
+                  rows={4}
+                  placeholder='Hãy chia sẻ câu chuyện thương hiệu và dòng sản phẩm chủ đạo của bạn'
+                  {...register('description', {
+                    required: 'Vui lòng nhập mô tả cửa hàng',
+                    minLength: { value: 10, message: 'Tối thiểu 10 ký tự' },
+                    maxLength: { value: 500, message: 'Tối đa 500 ký tự' },
+                  })}
+                  className='w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-yellow-800 focus:outline-none'
+                />
+                {errors.description && <p className='text-sm text-rose-600'>{errors.description.message}</p>}
+              </div>
+            </section>
+
             <section className='space-y-4'>
               <header className='flex flex-wrap items-center justify-between gap-3'>
                 <div>
@@ -267,18 +268,6 @@ export default function SellerRegistrationPage() {
               )}
             </section>
 
-            {submissionFeedback && (
-              <div
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  submissionFeedback.type === 'success'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : 'border-rose-200 bg-rose-50 text-rose-700'
-                }`}
-              >
-                {submissionFeedback.message}
-              </div>
-            )}
-
             <footer className='flex flex-wrap items-center justify-between gap-4 border-t border-stone-100 pt-5'>
               <button type='button' className='text-sm font-semibold text-stone-500 hover:text-stone-800'>
                 Lưu nháp
@@ -291,7 +280,7 @@ export default function SellerRegistrationPage() {
                     isContinueDisabled ? 'bg-stone-300' : 'bg-yellow-900 hover:bg-yellow-800'
                   }`}
                 >
-                  {shopCreationMutation.isPending || isSubmitting ? 'Đang xử lý...' : 'Tạo shop'}
+                  {isSubmitting ? 'Đang xử lý...' : 'Tiếp tục bước 2'}
                 </button>
                 {requiresLogin && (
                   <p className='text-xs font-medium text-rose-600'>Vui lòng đăng nhập lại để tiếp tục.</p>

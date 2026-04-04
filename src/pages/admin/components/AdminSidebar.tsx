@@ -156,39 +156,36 @@ const SidebarIcon: React.FC<{ variant: SidebarItem['icon']; isActive?: boolean }
 
 export default function AdminSidebar() {
   return (
-    <aside className='w-64 bg-white border-r border-gray-200 flex flex-col h-full min-h-[calc(100vh-64px)] overflow-hidden shadow-sm'>
-      <div className='h-16 border-b border-gray-200 flex items-center px-6'>
-        <div className='flex items-center gap-3'>
-          <div className='h-9 w-9 rounded-2xl bg-gradient-to-b from-stone-500 to-stone-600 flex items-center justify-center text-white font-semibold'>
-            <span className='text-sm'>WF</span>
-          </div>
-          <div>
-            <strong className='text-lg font-bold text-neutral-800 leading-tight'>Woodify</strong>
-            <p className='text-xs text-neutral-500'>Admin Console</p>
-          </div>
+    <aside className='admin-sidebar-panel shrink-0' aria-label='Điều hướng admin'>
+      <div className='admin-sidebar-panel__brand'>
+        <div className='admin-sidebar-panel__badge'>WF</div>
+        <div>
+          <p className='admin-sidebar-panel__eyebrow'>Woodify Console</p>
+          <strong>Admin Command</strong>
+          <span>Giám sát toàn bộ sàn</span>
         </div>
       </div>
 
-      <nav className='flex-1 overflow-y-auto px-3 pt-6 space-y-1'>
+      <nav className='admin-sidebar-panel__nav'>
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              [
-                'flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors',
-                isActive
-                  ? 'bg-gradient-to-b from-stone-500 to-stone-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              ].join(' ')
+              ['admin-sidebar__link', isActive ? 'is-active' : ''].join(' ')
             }
           >
             {({ isActive }) => (
               <>
-                <div className='flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600'>
+                <span className='admin-sidebar__icon-wrap' aria-hidden='true'>
                   <SidebarIcon variant={item.icon} isActive={isActive} />
-                </div>
-                <span className='text-sm font-medium'>{item.label}</span>
+                </span>
+                <span className='admin-sidebar__label'>{item.label}</span>
+                <span className='admin-sidebar__chevron' aria-hidden='true'>
+                  <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+                    <path d='m9 6 6 6-6 6' />
+                  </svg>
+                </span>
               </>
             )}
           </NavLink>
