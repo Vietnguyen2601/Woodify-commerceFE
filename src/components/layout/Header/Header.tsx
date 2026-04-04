@@ -6,6 +6,7 @@ import woodifyLogo from '../../../assets/logo/Woodify.jpg'
 import { Icon } from '../../ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { shopService } from '@/services'
+import { useShopStore } from '@/store/shopStore'
 import './Header.css'
 
 interface HeaderProps {
@@ -26,6 +27,7 @@ const mainNavigation: NavItem[] = [
 
 export default function Header({ cartItemCount = 0 }: HeaderProps) {
   const { user, isAuthenticated, logout } = useAuth()
+  const { setShop } = useShopStore()
   const navigate = useNavigate()
   const notificationCount = 3
   const [isSearching, setIsSearching] = useState(false)
@@ -42,16 +44,17 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
 
     try {
       setIsCheckingSellerAccess(true)
-      const response = await shopService.getShopByOwnerId(user.accountId)
-      if (response?.data) {
+      const shopData = await shopService.getShopByOwnerId(user.accountId)
+      if (shopData?.shopId) {
+        setShop(shopData)
         navigate(ROUTES.SELLER)
         return
       }
-      navigate(ROUTES.SELLER_REGISTER)
+      navigate(ROUTES.SELLER_REGISTRATION)
     } catch (error) {
       const axiosError = error as AxiosError
-      if (axiosError?.response?.status === 404) {
-        navigate(ROUTES.SELLER_REGISTER)
+      if (axiosError?.response?.status === 404 || (error as any)?.status === 404) {
+        navigate(ROUTES.SELLER_REGISTRATION)
       } else {
         console.error('Unable to verify seller access', error)
       }
@@ -218,8 +221,8 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
             )}
           </Link>
 
-          {/* Auth Links - Hidden on Mobile */}
-          <div className="hidden md:flex items-center gap-2 text-white text-xs font-arbutus border-l border-white border-opacity-40 pl-4 whitespace-nowrap">
+          {/* Auth Links */}
+          <div className="flex items-center gap-2 text-white text-xs font-arbutus border-l border-white border-opacity-40 pl-4 whitespace-nowrap">
             {isAuthenticated && user ? (
               <div className="flex items-center gap-2">
                 <Link

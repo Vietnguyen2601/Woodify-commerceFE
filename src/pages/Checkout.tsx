@@ -118,7 +118,7 @@ export default function Checkout() {
                     value={deliveryForm.fullName}
                     onChange={(e) => handleInputChange('fullName', e.target.value)}
                     className='w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:border-2 text-xs lg:text-sm h-9 sm:h-9 lg:h-10'
-                    style={{ fontFamily: 'Arimo, sans-serif', borderColor: '#D1D5DB', focusBorderColor: '#78716C' }}
+                    style={{ fontFamily: 'Arimo, sans-serif', borderColor: '#D1D5DB' }}
                     onFocus={(e) => e.target.style.borderColor = '#78716C'}
                     onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
                   />

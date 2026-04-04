@@ -8,6 +8,8 @@ export interface ProductionCardProduct {
   price: number
   badge?: string
   tags?: string[]
+  thumbnailUrl?: string
+  shopName?: string | null
 }
 
 interface ProductionCardProps {
@@ -32,9 +34,31 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
       onClick={onCardClick}
       onKeyDown={handleKeyDown}
     >
-      <div className='production-card__header'>
+      <div className='production-card__thumbnail'>
+        {product.thumbnailUrl ? (
+          <img
+            src={product.thumbnailUrl}
+            alt={product.title}
+            className='production-card__thumbnail-img'
+            loading='lazy'
+          />
+        ) : (
+          <div className='production-card__thumbnail-placeholder'>
+            <svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' aria-hidden='true'>
+              <rect x='3' y='3' width='18' height='18' rx='3' />
+              <circle cx='8.5' cy='8.5' r='1.5' />
+              <path d='m21 15-5-5L5 21' strokeLinecap='round' strokeLinejoin='round' />
+            </svg>
+          </div>
+        )}
         {product.badge && <span className='production-card__badge'>{product.badge}</span>}
+      </div>
+
+      <div className='production-card__header'>
         <h3>{product.title}</h3>
+        {product.shopName && (
+          <p className='production-card__shop'>{product.shopName}</p>
+        )}
         <p className='production-card__description'>{product.description}</p>
       </div>
 

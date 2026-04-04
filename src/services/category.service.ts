@@ -1,4 +1,4 @@
-import { productApi } from './api/productClient'
+import { categoryApi } from './api/categoryClient'
 import { API_ENDPOINTS } from '@/constants'
 import type {
   CreateCategoryRequest,
@@ -15,21 +15,21 @@ export const categoryService = {
    * Fetch all categories with hierarchy info
    */
   getAllCategories: async (): Promise<CategoryListApiResponse> => {
-    return productApi.get<CategoryListApiResponse>(API_ENDPOINTS.CATEGORIES.GET_ALL)
+    return categoryApi.get<CategoryListApiResponse>(API_ENDPOINTS.CATEGORIES.GET_ALL)
   },
 
   /**
    * Fetch category suggestions by keyword
    */
   searchCategoryByName: async (keyword: string): Promise<CategorySearchApiResponse> => {
-    return productApi.get<CategorySearchApiResponse>(API_ENDPOINTS.CATEGORIES.GET_BY_NAME(keyword))
+    return categoryApi.get<CategorySearchApiResponse>(API_ENDPOINTS.CATEGORIES.GET_BY_NAME(keyword))
   },
 
     /**
      * Fetch direct child categories for a given parent
      */
     getSubCategories: async (parentId: string): Promise<CategoryListApiResponse> => {
-      return productApi.get<CategoryListApiResponse>(
+      return categoryApi.get<CategoryListApiResponse>(
         API_ENDPOINTS.CATEGORIES.GET_SUB_CATEGORIES(parentId)
       )
     },
@@ -49,7 +49,7 @@ export const categoryService = {
       description: payload.description ?? null,
     }
 
-    return productApi.post<CreateCategoryApiResponse>(
+    return categoryApi.post<CreateCategoryApiResponse>(
       API_ENDPOINTS.CATEGORIES.CREATE,
       normalizedPayload
     )

@@ -152,7 +152,7 @@ export default function Home() {
                   </ul>
                   <div className="mt-8 flex flex-wrap gap-4">
                     <Link
-                      to={ROUTES.SELLER_REGISTER}
+                      to={ROUTES.SELLER_REGISTRATION}
                       className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-[#2f1f12] transition hover:-translate-y-0.5 hover:bg-white/90"
                     >
                       Đăng ký mở shop

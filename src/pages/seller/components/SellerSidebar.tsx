@@ -1,5 +1,6 @@
 import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 
 interface SellerNavLink {
   label: string
@@ -102,6 +103,7 @@ const isPathActive = (currentPath: string, targetPath?: string) => {
 
 export default function SellerSidebar() {
   const location = useLocation()
+  const { user, logout } = useAuth()
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
     NAV_GROUPS.forEach(group => {
@@ -190,8 +192,25 @@ export default function SellerSidebar() {
       </div>
 
       <div className='border-t border-white/10 px-4 py-4 text-xs text-stone-100/70'>
+        {user && (
+          <div className='mb-2 flex items-center gap-2 rounded-2xl px-3 py-2'>
+            <div className='flex h-7 w-7 items-center justify-center rounded-full bg-amber-800/60 text-[11px] font-semibold text-amber-200'>
+              {(user.fullName ?? user.username).charAt(0).toUpperCase()}
+            </div>
+            <div className='min-w-0'>
+              <p className='truncate font-medium text-white'>{user.fullName ?? user.username}</p>
+              <p className='truncate text-[10px] text-stone-400'>{user.role}</p>
+            </div>
+          </div>
+        )}
         <p className='rounded-2xl px-3 py-2 transition hover:bg-white/5'>Cài đặt</p>
-        <p className='rounded-2xl px-3 py-2 transition hover:bg-white/5'>Đăng xuất</p>
+        <button
+          type='button'
+          onClick={() => logout()}
+          className='w-full rounded-2xl px-3 py-2 text-left text-rose-400 transition hover:bg-white/5 hover:text-rose-300'
+        >
+          Đăng xuất
+        </button>
       </div>
     </aside>
   )

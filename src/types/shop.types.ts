@@ -1,20 +1,29 @@
 export interface CreateShopPayload {
-  shopName: string
+  ownerAccountId: string
+  name: string
   description: string
-  address: string
-  phoneNumber: string
-  ownerId: string
+  logoUrl: string
+  coverImageUrl: string
+  defaultPickupAddress: string
+  defaultProvider: string
 }
 
 export interface ShopInfo {
   shopId: string
-  shopName: string
-  description?: string | null
-  address?: string | null
-  phoneNumber?: string | null
   ownerId: string
-  isActive?: boolean
-  createdAt?: string
+  name: string
+  description: string
+  logoUrl: string
+  coverImageUrl: string
+  defaultPickupAddress: string
+  defaultProvider: string
+  rating: number
+  reviewCount: number
+  totalProducts: number
+  totalOrders: number
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+  createdAt: string
+  updatedAt?: string | null
 }
 
 export interface ShopResponse<TData> {
@@ -24,5 +33,5 @@ export interface ShopResponse<TData> {
   errors?: unknown
 }
 
-export type CreateShopResponse = ShopResponse<ShopInfo | null>
-export type GetShopByOwnerResponse = ShopResponse<ShopInfo | null>
+export type CreateShopResponse = ShopResponse<ShopInfo>
+export type GetShopByOwnerResponse = ShopResponse<ShopInfo>

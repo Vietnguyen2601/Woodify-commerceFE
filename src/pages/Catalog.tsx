@@ -1,7 +1,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import ProductionCard, { type ProductionCardProduct } from '../components/ProductionCard'
-import { products } from '../data/mockProducts'
+import { productMasterService, shopService } from '@/services'
 
 const catalogCategories = [
   { id: 'living', label: 'Không gian phòng khách' },
@@ -18,31 +19,48 @@ const priceFilters = [
   { id: 'over10', label: 'Trên 10 triệu', range: [10000000, Number.MAX_SAFE_INTEGER] as [number, number] }
 ]
 
-const badgePool = ['Bán chạy', 'Hàng mới', 'Giảm đặc biệt']
-const tagPool = [
-  ['Thủ công', 'Chuẩn FSC'],
-  ['Thiết kế độc quyền', 'Bảo hành 24 tháng'],
-  ['Giao trong 5 ngày', 'Tùy chọn cá nhân hóa']
-]
-
-type SortOption = 'featured' | 'priceAsc' | 'priceDesc'
-type CatalogProduct = ProductionCardProduct & { category: string }
+type SortOption = 'featured' | 'priceAsc' | 'priceDesc' | 'dateDesc' | 'dateAsc'
+type CatalogProduct = ProductionCardProduct & { category: string; shopId: string; createdAt?: string }
 
 export default function Catalog() {
   const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null)
+  const [selectedShop, setSelectedShop] = React.useState<string | null>(null)
   const [selectedPrice, setSelectedPrice] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
-  const [sortOption, setSortOption] = React.useState<SortOption>('featured')
+  const [sortOption, setSortOption] = React.useState<SortOption>('dateDesc')
+
+  const { data: rawProducts = [], isLoading, isError } = useQuery({
+    queryKey: ['published-products'],
+    queryFn: () => productMasterService.getPublishedProducts(),
+  })
+
+  const { data: shops = [] } = useQuery({
+    queryKey: ['all-shops'],
+    queryFn: () => shopService.getAllShops(),
+  })
+
+  const shopMap = React.useMemo(() => {
+    const map: Record<string, string> = {}
+    shops.forEach(s => { map[s.shopId] = s.name })
+    return map
+  }, [shops])
 
   const catalogProducts = React.useMemo<CatalogProduct[]>(() => (
-    products.map((product, index) => ({
-      ...product,
+    rawProducts.map((p, index) => ({
+      id: p.productId,
+      title: p.name,
+      description: p.description || '',
+      price: 0,
+      badge: undefined,
+      tags: [p.categoryName].filter(Boolean),
+      thumbnailUrl: p.thumbnailUrl ?? undefined,
+      shopName: p.shopName ?? shopMap[p.shopId] ?? null,
+      shopId: p.shopId,
       category: catalogCategories[index % catalogCategories.length].id,
-      badge: badgePool[index % badgePool.length],
-      tags: tagPool[index % tagPool.length]
+      createdAt: p.createdAt,
     }))
-  ), [])
+  ), [rawProducts, shopMap])
 
   const filteredProducts = React.useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
@@ -50,19 +68,32 @@ export default function Catalog() {
 
     let result = catalogProducts.filter(product => {
       const matchCategory = selectedCategory ? product.category === selectedCategory : true
+      const matchShop = selectedShop ? product.shopId === selectedShop : true
       const matchSearch = normalizedSearch
         ? product.title.toLowerCase().includes(normalizedSearch) ||
           product.description.toLowerCase().includes(normalizedSearch)
         : true
       const matchPrice = priceRange ? (product.price >= priceRange[0] && product.price <= priceRange[1]) : true
 
-      return matchCategory && matchSearch && matchPrice
+      return matchCategory && matchShop && matchSearch && matchPrice
     })
 
     if (sortOption === 'priceAsc') {
       result = [...result].sort((a, b) => a.price - b.price)
     } else if (sortOption === 'priceDesc') {
       result = [...result].sort((a, b) => b.price - a.price)
+    } else if (sortOption === 'dateDesc') {
+      result = [...result].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return dateB - dateA
+      })
+    } else if (sortOption === 'dateAsc') {
+      result = [...result].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return dateA - dateB
+      })
     }
 
     return result
@@ -70,9 +101,10 @@ export default function Catalog() {
 
   const handleResetFilters = () => {
     setSelectedCategory(null)
+    setSelectedShop(null)
     setSelectedPrice(null)
     setSearchTerm('')
-    setSortOption('featured')
+    setSortOption('dateDesc')
   }
 
   return (
@@ -132,6 +164,30 @@ export default function Catalog() {
 
             <button type='button' className='catalog__reset' onClick={handleResetFilters}>Xóa lọc</button>
           </section>
+
+          {shops.length > 0 && (
+            <section className='catalog__sidebar-section'>
+              <div className='catalog__sidebar-heading'>
+                <div>
+                  <p className='catalog__eyebrow'>Cửa hàng</p>
+                  <h2>Lọc theo shop</h2>
+                </div>
+                <button type='button' className='catalog__link' onClick={() => setSelectedShop(null)}>Bỏ chọn</button>
+              </div>
+              <div className='catalog__pill-group'>
+                {shops.map(shop => (
+                  <button
+                    key={shop.shopId}
+                    type='button'
+                    className={selectedShop === shop.shopId ? 'catalog__pill active' : 'catalog__pill'}
+                    onClick={() => setSelectedShop(prev => prev === shop.shopId ? null : shop.shopId)}
+                  >
+                    {shop.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
         </aside>
 
         <section className='catalog__content'>
@@ -148,6 +204,8 @@ export default function Catalog() {
                 value={sortOption}
                 onChange={event => setSortOption(event.target.value as SortOption)}
               >
+                <option value='dateDesc'>Mới nhất</option>
+                <option value='dateAsc'>Cũ nhất</option>
                 <option value='featured'>Nổi bật</option>
                 <option value='priceAsc'>Giá tăng dần</option>
                 <option value='priceDesc'>Giá giảm dần</option>
@@ -156,7 +214,18 @@ export default function Catalog() {
           </div>
 
           <div className='catalog__grid'>
-            {filteredProducts.length === 0 ? (
+            {isLoading ? (
+              <div className='catalog__empty'>
+                <div className='flex flex-col items-center gap-3 py-10'>
+                  <div className='h-7 w-7 animate-spin rounded-full border-4 border-yellow-800 border-t-transparent' />
+                  <p className='text-sm text-stone-500'>Đang tải sản phẩm...</p>
+                </div>
+              </div>
+            ) : isError ? (
+              <div className='catalog__empty'>
+                <p>Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.</p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className='catalog__empty'>
                 <p>Không có sản phẩm nào khớp với bộ lọc. Hãy thử điều chỉnh điều kiện tìm kiếm.</p>
               </div>

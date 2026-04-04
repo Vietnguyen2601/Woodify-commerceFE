@@ -12,10 +12,10 @@ export default function AdminLayout() {
   }).format(new Date())
 
   return (
-    <div className='min-h-screen bg-white text-neutral-900'>
-      <div className='flex items-start gap-6 px-6 py-6'>
+    <div className='admin-surface min-h-screen text-neutral-900'>
+      <div className='admin-layout-grid flex flex-col gap-6 pl-0 pr-6 pb-10 lg:flex-row lg:items-start'>
         <AdminSidebar />
-        <main className='flex-1 space-y-6'>
+        <main className='admin-main flex-1 space-y-6'>
           <AdminHeader />
 
           <section className='rounded-2xl border border-gray-200 bg-white shadow-sm shadow-black/5'>
