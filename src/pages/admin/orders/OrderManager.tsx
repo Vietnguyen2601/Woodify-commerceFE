@@ -1,15 +1,16 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAppLanguage } from '@/hooks'
 import { adminOrderUtils, adminService, queryKeys } from '@/services'
 import type { AdminShopDto } from '@/types'
 
 const fmtMoney = (n: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n)
 
-const fmtDateTime = (iso?: string) => {
-  if (!iso) return 'â€”'
+const fmtDateTime = (iso: string | undefined, locale: 'vi-VN' | 'en-US') => {
+  if (!iso) return ''
   try {
-    return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
   } catch {
     return iso
   }
@@ -31,12 +32,52 @@ const styleForStatus = (status?: string) => {
 }
 
 export default function OrderManager() {
+  const { isVietnamese } = useAppLanguage()
+
   const [orderStatus, setOrderStatus] = React.useState('')
   const [shopId, setShopId] = React.useState('')
   const [dateFrom, setDateFrom] = React.useState('')
   const [dateTo, setDateTo] = React.useState('')
   const [page, setPage] = React.useState(1)
   const pageSize = 20
+
+  const t = {
+    eyebrow: isVietnamese ? 'V?n hành don hàng' : 'Order operations',
+    title: isVietnamese ? 'Qu?n lý don hàng' : 'Order Management',
+    subtitle: isVietnamese
+      ? 'Theo dõi don c?a merchant, tr?ng thái giao hàng và di?m ngh?n x? lý.'
+      : 'Track merchant orders, monitor delivery states and quickly investigate issue clusters.',
+    sourceInfo: isVietnamese
+      ? 'Uu tiên API admin orders; n?u chua có s? g?p t? GET /orders/Shop/{shopId} (xem API gaps).'
+      : 'Uses admin order list when available; otherwise merges GET /orders/Shop/{shopId} (see API gaps).',
+    aggregate: isVietnamese
+      ? 'Ðang hi?n th? d? li?u g?p - b? l?c và phân trang ch?y phía client.'
+      : 'Showing aggregated data - filters and pagination run on the client for this mode.',
+    loadFailed: isVietnamese ? 'Không t?i du?c danh sách don hàng' : 'Failed to load orders',
+    filterTitle: isVietnamese ? 'L?c don hàng' : 'Filter orders',
+    filterSub: isVietnamese ? 'L?c theo tr?ng thái, shop và kho?ng ngày.' : 'Refine by status, shop and date range.',
+    clear: isVietnamese ? 'Xóa b? l?c' : 'Clear filters',
+    status: isVietnamese ? 'Tr?ng thái don' : 'Order Status',
+    shop: isVietnamese ? 'C?a hàng' : 'Shop',
+    from: isVietnamese ? 'T? ngày' : 'Date From',
+    to: isVietnamese ? 'Ð?n ngày' : 'Date To',
+    allStatus: isVietnamese ? 'T?t c? tr?ng thái' : 'All statuses',
+    allShop: isVietnamese ? 'T?t c? c?a hàng' : 'All shops',
+    showing: isVietnamese ? 'Ðang hi?n th?' : 'Showing',
+    of: isVietnamese ? 'trong t?ng' : 'of',
+    orders: isVietnamese ? 'don hàng' : 'orders',
+    page: isVietnamese ? 'Trang' : 'Page',
+    total: isVietnamese ? 'T?ng' : 'Total',
+    order: isVietnamese ? 'Ðon hàng' : 'Order',
+    amount: isVietnamese ? 'Giá tr?' : 'Total',
+    placed: isVietnamese ? 'Ngày t?o' : 'Placed',
+    details: isVietnamese ? 'Chi ti?t' : 'Details',
+    loading: isVietnamese ? 'Ðang t?i...' : 'Loading...',
+    noOrders: isVietnamese ? 'Không tìm th?y don hàng.' : 'No orders found.',
+    apiDetails: isVietnamese ? 'API: dòng s?n ph?m trong don' : 'API: order line items',
+    previous: isVietnamese ? 'Tru?c' : 'Previous',
+    next: isVietnamese ? 'Sau' : 'Next',
+  }
 
   const { data: shops = [] } = useQuery({
     queryKey: queryKeys.admin.shops(),
@@ -74,58 +115,83 @@ export default function OrderManager() {
     const pending = list.filter((o) => (o.status || '').toUpperCase().includes('PEND')).length
     const delivered = list.filter((o) => (o.status || '').toUpperCase().includes('DELIVER')).length
     return [
-      { label: 'Orders (page)', value: String(list.length), iconBg: 'bg-blue-50' },
-      { label: 'Page revenue', value: fmtMoney(revenue), iconBg: 'bg-green-50' },
-      { label: 'Pending (page)', value: String(pending), iconBg: 'bg-orange-50' },
-      { label: 'Delivered (page)', value: String(delivered), iconBg: 'bg-purple-50' },
+      { label: isVietnamese ? 'Ðon theo trang' : 'Orders (page)', value: String(list.length), iconBg: 'bg-blue-50' },
+      { label: isVietnamese ? 'Doanh thu trang' : 'Page revenue', value: fmtMoney(revenue), iconBg: 'bg-green-50' },
+      { label: isVietnamese ? 'Ch? x? lý (trang)' : 'Pending (page)', value: String(pending), iconBg: 'bg-orange-50' },
+      { label: isVietnamese ? 'Ðã giao (trang)' : 'Delivered (page)', value: String(delivered), iconBg: 'bg-purple-50' },
     ]
-  }, [orders])
+  }, [orders, isVietnamese])
 
   React.useEffect(() => {
     setPage(1)
   }, [orderStatus, shopId, dateFrom, dateTo])
 
+  const clearFilters = () => {
+    setOrderStatus('')
+    setShopId('')
+    setDateFrom('')
+    setDateTo('')
+  }
+
   return (
-    <div className='space-y-6'>
-      <header className='space-y-1'>
-        <h1 className='text-2xl font-bold text-gray-900'>Order Management</h1>
-        <p className='text-sm text-gray-500'>
-          Uses admin order list when available; otherwise merges <code className='text-xs'>GET /orders/Shop/&#123;shopId&#125;</code> (see API gaps).
-        </p>
+    <div className='admin-order'>
+      <header className='admin-order__hero'>
+        <div>
+          <p className='admin-order__eyebrow'>{t.eyebrow}</p>
+          <h1 className='admin-order__title'>{t.title}</h1>
+          <p className='admin-order__subtitle'>{t.subtitle}</p>
+          <p className='mt-2 text-sm text-gray-500'>{t.sourceInfo}</p>
+        </div>
+        <div className='admin-order__hero-badges'>
+          <span className='admin-order__badge'>{t.page} {page} / {totalPages}</span>
+          <span className='admin-order__badge'>{t.total} {totalItems} {t.orders}</span>
+        </div>
         {data?.source === 'aggregate' && (
-          <p className='text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2'>
-            Showing aggregated data â€” filters & pagination run on the client for this mode.
+          <p className='w-full rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800'>
+            {t.aggregate}
           </p>
         )}
         {isError && (
-          <p className='text-sm text-red-600'>{error instanceof Error ? error.message : 'Failed to load orders'}</p>
+          <p className='w-full rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600'>
+            {error instanceof Error ? error.message : t.loadFailed}
+          </p>
         )}
       </header>
 
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+      <section className='admin-order__metrics'>
         {metrics.map((metric) => (
-          <div key={metric.label} className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
-            <div className='flex items-center justify-between'>
+          <article key={metric.label} className='admin-order__metric-card'>
+            <div className='flex items-start justify-between gap-3'>
               <div>
                 <p className='text-sm text-gray-500'>{metric.label}</p>
-                <p className='text-2xl font-bold text-gray-900'>{isLoading ? 'â€¦' : metric.value}</p>
+                <p className='text-2xl font-bold text-gray-900'>{isLoading ? '...' : metric.value}</p>
               </div>
-              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${metric.iconBg}`} />
+              <span className={`admin-order__metric-dot ${metric.iconBg}`} />
             </div>
-          </div>
+          </article>
         ))}
-      </div>
+      </section>
 
-      <section className='rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
-        <div className='grid gap-4 lg:grid-cols-5'>
-          <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>Order Status</label>
+      <section className='admin-order__filters'>
+        <div className='admin-order__filter-head'>
+          <div>
+            <h2 className='text-base font-semibold text-gray-900'>{t.filterTitle}</h2>
+            <p className='text-sm text-gray-500'>{t.filterSub}</p>
+          </div>
+          <button type='button' onClick={clearFilters} className='admin-order__clear-btn'>
+            {t.clear}
+          </button>
+        </div>
+
+        <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-5'>
+          <div className='space-y-2 xl:col-span-1'>
+            <label className='text-xs font-medium text-gray-700'>{t.status}</label>
             <select
               value={orderStatus}
               onChange={(e) => setOrderStatus(e.target.value)}
-              className='h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'
+              className='admin-order__field'
             >
-              <option value=''>All statuses</option>
+              <option value=''>{t.allStatus}</option>
               <option value='PENDING'>PENDING</option>
               <option value='CONFIRMED'>CONFIRMED</option>
               <option value='SHIPPED'>SHIPPED</option>
@@ -133,14 +199,14 @@ export default function OrderManager() {
               <option value='CANCELLED'>CANCELLED</option>
             </select>
           </div>
-          <div className='space-y-2 lg:col-span-2'>
-            <label className='text-xs font-medium text-gray-700'>Shop</label>
+          <div className='space-y-2 xl:col-span-2'>
+            <label className='text-xs font-medium text-gray-700'>{t.shop}</label>
             <select
               value={shopId}
               onChange={(e) => setShopId(e.target.value)}
-              className='h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'
+              className='admin-order__field'
             >
-              <option value=''>All shops</option>
+              <option value=''>{t.allShop}</option>
               {shops.map((s: AdminShopDto) => (
                 <option key={s.shopId} value={s.shopId}>
                   {s.shopName}
@@ -149,77 +215,77 @@ export default function OrderManager() {
             </select>
           </div>
           <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>Date From</label>
+            <label className='text-xs font-medium text-gray-700'>{t.from}</label>
             <input
               type='date'
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className='h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'
+              className='admin-order__field'
             />
           </div>
           <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>Date To</label>
+            <label className='text-xs font-medium text-gray-700'>{t.to}</label>
             <input
               type='date'
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className='h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'
+              className='admin-order__field'
             />
           </div>
         </div>
       </section>
 
       <p className='text-sm text-gray-600'>
-        Showing <span className='font-semibold text-gray-900'>{orders.length}</span> of{' '}
-        <span className='font-semibold text-gray-900'>{totalItems}</span> orders
+        {t.showing} <span className='font-semibold text-gray-900'>{orders.length}</span> {t.of}{' '}
+        <span className='font-semibold text-gray-900'>{totalItems}</span> {t.orders}
         {totalPages > 1 && (
           <span className='ml-2'>
-            Page {page} / {totalPages}
+            {t.page} {page} / {totalPages}
           </span>
         )}
       </p>
 
-      <section className='overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm'>
+      <section className='admin-order__table-wrap'>
         <div className='overflow-x-auto'>
           <table className='min-w-full divide-y divide-gray-100 text-sm'>
             <thead className='bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500'>
               <tr>
-                <th className='px-6 py-3 text-left'>Order</th>
-                <th className='px-6 py-3 text-left'>Shop</th>
-                <th className='px-6 py-3 text-left'>Total</th>
-                <th className='px-6 py-3 text-left'>Order Status</th>
-                <th className='px-6 py-3 text-left'>Placed</th>
-                <th className='px-6 py-3 text-center'>Details</th>
+                <th className='px-6 py-3 text-left'>{t.order}</th>
+                <th className='px-6 py-3 text-left'>{t.shop}</th>
+                <th className='px-6 py-3 text-left'>{t.amount}</th>
+                <th className='px-6 py-3 text-left'>{t.status}</th>
+                <th className='px-6 py-3 text-left'>{t.placed}</th>
+                <th className='px-6 py-3 text-center'>{t.details}</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-100 text-gray-900'>
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className='px-6 py-8 text-center text-gray-500'>
-                    Loadingâ€¦
+                    {t.loading}
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className='px-6 py-8 text-center text-gray-500'>
-                    No orders found.
+                    {t.noOrders}
                   </td>
                 </tr>
               ) : (
                 orders.map((order) => (
-                  <tr key={order.orderId}>
+                  <tr key={order.orderId} className='hover:bg-gray-50/75'>
                     <td className='whitespace-nowrap px-6 py-4 font-mono text-sm'>
                       {order.orderCode || order.orderId}
                     </td>
-                    <td className='px-6 py-4 text-gray-700'>{order.shopName ?? order.shopId ?? 'â€”'}</td>
+                    <td className='px-6 py-4 text-gray-700'>{order.shopName ?? order.shopId ?? ''}</td>
                     <td className='px-6 py-4 font-semibold'>{fmtMoney(adminOrderUtils.orderTotal(order))}</td>
                     <td className='px-6 py-4'>
                       <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${styleForStatus(order.status)}`}>
-                        {order.status ?? 'â€”'}
+                        {order.status ?? ''}
                       </span>
                     </td>
-                    <td className='px-6 py-4 text-gray-700'>{fmtDateTime(order.createdDate)}</td>
-                    <td className='px-6 py-4 text-center text-xs text-gray-500'>API: order line items</td>
+                    <td className='px-6 py-4 text-gray-700'>{fmtDateTime(order.createdDate, isVietnamese ? 'vi-VN' : 'en-US')}</td>
+                    <td className='px-6 py-4 text-center text-xs text-gray-500'>{t.apiDetails}</td>
                   </tr>
                 ))
               )}
@@ -229,22 +295,22 @@ export default function OrderManager() {
       </section>
 
       {totalPages > 1 && (
-        <div className='flex justify-end gap-2'>
+        <div className='admin-order__pager'>
           <button
             type='button'
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className='rounded-xl border border-gray-200 px-4 py-2 text-sm disabled:opacity-40'
+            className='admin-order__pager-btn'
           >
-            Previous
+            {t.previous}
           </button>
           <button
             type='button'
             disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className='rounded-xl border border-gray-200 px-4 py-2 text-sm disabled:opacity-40'
+            className='admin-order__pager-btn'
           >
-            Next
+            {t.next}
           </button>
         </div>
       )}

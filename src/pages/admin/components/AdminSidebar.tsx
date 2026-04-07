@@ -1,19 +1,24 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
+import { useAppLanguage } from '@/hooks'
 
 interface SidebarItem {
-  label: string
+  labelVi: string
+  labelEn: string
   to: string
+  end?: boolean
   icon: 'dashboard' | 'shops' | 'products' | 'reviews' | 'orders' | 'shipments' | 'providers' | 'categories' | 'vouchers' | 'disputes' | 'finance' | 'cms' | 'settings' | 'logs'
 }
 
 const NAV_ITEMS: SidebarItem[] = [
-  { label: 'Overview', to: '/admin', icon: 'dashboard' },
-  { label: 'Shop Management', to: '/admin/sellers', icon: 'shops' },
-  { label: 'Product Moderation', to: '/admin/products', icon: 'products' },
-  { label: 'Category Management', to: '/admin/categories', icon: 'categories' },
-  { label: 'Order Management', to: '/admin/orders', icon: 'orders' },
-  { label: 'Shipment Management', to: '/admin/shipments', icon: 'shipments' }
+  { labelVi: 'Tổng quan', labelEn: 'Overview', to: '/admin', end: true, icon: 'dashboard' },
+  { labelVi: 'Cửa hàng', labelEn: 'Shops', to: '/admin/sellers', icon: 'shops' },
+  { labelVi: 'Kiểm duyệt sản phẩm', labelEn: 'Product Moderation', to: '/admin/products', icon: 'products' },
+  { labelVi: 'Danh mục', labelEn: 'Categories', to: '/admin/categories', icon: 'categories' },
+  { labelVi: 'Đơn hàng', labelEn: 'Orders', to: '/admin/orders', icon: 'orders' },
+  { labelVi: 'Vận chuyển', labelEn: 'Shipments', to: '/admin/shipments', icon: 'shipments' },
+  { labelVi: 'Quảng cáo', labelEn: 'Advertising', to: '/admin/marketing', icon: 'cms' },
+  { labelVi: 'Tài chính', labelEn: 'Finance', to: '/admin/finance', icon: 'finance' }
 ]
 
 const iconStroke = 'currentColor'
@@ -155,14 +160,15 @@ const SidebarIcon: React.FC<{ variant: SidebarItem['icon']; isActive?: boolean }
 }
 
 export default function AdminSidebar() {
+  const { isVietnamese } = useAppLanguage()
+
   return (
-    <aside className='admin-sidebar-panel shrink-0' aria-label='Điều hướng admin'>
+    <aside className='admin-sidebar-panel shrink-0' aria-label={isVietnamese ? 'Điều hướng admin' : 'Admin navigation'}>
       <div className='admin-sidebar-panel__brand'>
         <div className='admin-sidebar-panel__badge'>WF</div>
         <div>
           <p className='admin-sidebar-panel__eyebrow'>Woodify Console</p>
           <strong>Admin Command</strong>
-          <span>Giám sát toàn bộ sàn</span>
         </div>
       </div>
 
@@ -171,6 +177,7 @@ export default function AdminSidebar() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.end}
             className={({ isActive }) =>
               ['admin-sidebar__link', isActive ? 'is-active' : ''].join(' ')
             }
@@ -180,7 +187,7 @@ export default function AdminSidebar() {
                 <span className='admin-sidebar__icon-wrap' aria-hidden='true'>
                   <SidebarIcon variant={item.icon} isActive={isActive} />
                 </span>
-                <span className='admin-sidebar__label'>{item.label}</span>
+                <span className='admin-sidebar__label'>{isVietnamese ? item.labelVi : item.labelEn}</span>
                 <span className='admin-sidebar__chevron' aria-hidden='true'>
                   <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
                     <path d='m9 6 6 6-6 6' />

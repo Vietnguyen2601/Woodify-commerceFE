@@ -1,4 +1,5 @@
 import React from 'react'
+import { useAppLanguage } from '@/hooks'
 
 const CAMPAIGNS = [
   {
@@ -31,22 +32,24 @@ const ROADMAP = [
 ]
 
 export default function MarketingPlan() {
+  const { isVietnamese } = useAppLanguage()
+
   return (
     <div className='admin-view'>
       <header className='admin-view__header'>
         <div>
-          <p className='admin-eyebrow'>Kế hoạch Marketing</p>
-          <h2>Quỹ tăng trưởng & chiến dịch đang hoạt động</h2>
-          <span>Đồng bộ ngân sách, KPI và tiến độ cùng seller chiến lược.</span>
+          <p className='admin-eyebrow'>{isVietnamese ? 'Kế hoạch Marketing' : 'Marketing Plan'}</p>
+          <h2>{isVietnamese ? 'Quỹ tăng trưởng và chiến dịch đang hoạt động' : 'Growth budget and active campaigns'}</h2>
+          <span>{isVietnamese ? 'Đồng bộ ngân sách, KPI và tiến độ cùng seller chiến lược.' : 'Align budget, KPI, and execution timeline with strategic sellers.'}</span>
         </div>
-        <button type='button' className='admin-btn primary'>Tạo chiến dịch</button>
+        <button type='button' className='admin-btn primary'>{isVietnamese ? 'Tạo chiến dịch' : 'Create campaign'}</button>
       </header>
 
       <div className='admin-grid admin-grid--split'>
         <section className='admin-panel'>
           <header className='admin-panel__header'>
-            <h3>Chiến dịch chủ lực</h3>
-            <button type='button' className='admin-btn ghost'>Gửi cập nhật</button>
+            <h3>{isVietnamese ? 'Chiến dịch chủ lực' : 'Primary campaigns'}</h3>
+            <button type='button' className='admin-btn ghost'>{isVietnamese ? 'Gửi cập nhật' : 'Send update'}</button>
           </header>
           <div className='admin-table is-striped'>
             {CAMPAIGNS.map((campaign) => (
@@ -56,7 +59,7 @@ export default function MarketingPlan() {
                   <span>{campaign.goal}</span>
                 </div>
                 <div className='admin-table__meta'>
-                  <span>Ngân sách: {campaign.budget}</span>
+                  <span>{isVietnamese ? 'Ngân sách' : 'Budget'}: {campaign.budget}</span>
                   <span>{campaign.window}</span>
                   <span className='admin-chip neutral'>{campaign.status}</span>
                 </div>
@@ -68,8 +71,8 @@ export default function MarketingPlan() {
 
         <section className='admin-panel'>
           <header className='admin-panel__header'>
-            <h3>Mốc roadmap</h3>
-            <button type='button' className='admin-btn ghost'>Chia sẻ</button>
+            <h3>{isVietnamese ? 'Mốc roadmap' : 'Roadmap milestones'}</h3>
+            <button type='button' className='admin-btn ghost'>{isVietnamese ? 'Chia sẻ' : 'Share'}</button>
           </header>
           <ol className='admin-roadmap'>
             {ROADMAP.map((milestone) => (

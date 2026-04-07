@@ -1,4 +1,5 @@
 import React from 'react'
+import { useAppLanguage } from '@/hooks'
 
 const POLICIES = [
   {
@@ -22,24 +23,26 @@ const POLICIES = [
 ]
 
 export default function PolicyCenter() {
+  const { isVietnamese } = useAppLanguage()
+
   return (
     <div className='admin-view'>
       <header className='admin-view__header'>
         <div>
-          <p className='admin-eyebrow'>Chính sách</p>
-          <h2>Kiểm soát tuân thủ & cập nhật quy định</h2>
-          <span>Ghi nhận thay đổi, rà soát tác động và chia sẻ đến seller.</span>
+          <p className='admin-eyebrow'>{isVietnamese ? 'Chính sách' : 'Policy'}</p>
+          <h2>{isVietnamese ? 'Kiểm soát tuân thủ và cập nhật quy định' : 'Compliance control and policy updates'}</h2>
+          <span>{isVietnamese ? 'Ghi nhận thay đổi, rà soát tác động và chia sẻ đến seller.' : 'Track changes, assess impact, and share updates with sellers.'}</span>
         </div>
         <div className='admin-view__actions'>
-          <button type='button' className='admin-btn ghost'>Tải template</button>
-          <button type='button' className='admin-btn primary'>Tạo chính sách</button>
+          <button type='button' className='admin-btn ghost'>{isVietnamese ? 'Tải template' : 'Download template'}</button>
+          <button type='button' className='admin-btn primary'>{isVietnamese ? 'Tạo chính sách' : 'Create policy'}</button>
         </div>
       </header>
 
       <section className='admin-panel'>
         <header className='admin-panel__header'>
-          <h3>Danh mục chính sách</h3>
-          <button type='button' className='admin-btn outline'>Lịch sử thay đổi</button>
+          <h3>{isVietnamese ? 'Danh mục chính sách' : 'Policy catalog'}</h3>
+          <button type='button' className='admin-btn outline'>{isVietnamese ? 'Lịch sử thay đổi' : 'Change history'}</button>
         </header>
 
         <div className='admin-policy'>
@@ -52,7 +55,7 @@ export default function PolicyCenter() {
               </div>
               <div className='admin-policy__meta'>
                 <span>Owner: {policy.owner}</span>
-                <button type='button' className='admin-btn ghost'>Chia sẻ</button>
+                <button type='button' className='admin-btn ghost'>{isVietnamese ? 'Chia sẻ' : 'Share'}</button>
               </div>
             </article>
           ))}

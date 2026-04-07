@@ -1,10 +1,19 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useAppLanguage } from '@/hooks'
 import { adminOrderUtils, adminService, queryKeys } from '@/services'
 import { ROUTES } from '@/constants'
 
 const iconStroke = 'currentColor'
+
+type MetricCard = {
+  label: string
+  value: string
+  hint: string
+  accent: string
+  icon: 'store' | 'package' | 'clipboard' | 'cart' | 'gmv' | 'users'
+}
 
 const StatIcon: React.FC<{ variant: string; accent: string }> = ({ variant, accent }) => {
   const strokeWidth = 1.5
@@ -90,6 +99,8 @@ const orderStatusTone = (status?: string): keyof typeof statusStyles => {
 }
 
 export default function AdminHome() {
+  const { isVietnamese } = useAppLanguage()
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.admin.snapshot(),
     queryFn: adminService.getDashboardSnapshot,
@@ -97,93 +108,109 @@ export default function AdminHome() {
   })
 
   const metricCards = React.useMemo(() => {
-    if (!data) return []
+    if (!data) return [] as MetricCard[]
     return [
       {
-        label: 'Total Shops',
+        label: isVietnamese ? 'Tổng cửa hàng' : 'Total Shops',
         value: String(data.totalShops),
-        change: 'Live data',
+        hint: isVietnamese ? 'Dữ liệu realtime' : 'Live data',
         accent: 'bg-blue-50 text-blue-600',
         icon: 'store' as const,
       },
       {
-        label: 'Total Products',
+        label: isVietnamese ? 'Tổng sản phẩm' : 'Total Products',
         value: String(data.totalProducts),
-        change: 'GetAllProducts',
+        hint: 'GetAllProducts',
         accent: 'bg-purple-50 text-purple-600',
         icon: 'package' as const,
       },
       {
-        label: 'Pending shop approvals',
+        label: isVietnamese ? 'Chờ duyệt cửa hàng' : 'Pending shop approvals',
         value: String(data.pendingShopApprovals),
-        change: 'Status PENDING',
+        hint: 'Status PENDING',
         accent: 'bg-orange-50 text-orange-600',
         icon: 'clipboard' as const,
       },
       {
-        label: 'Today orders (sample)',
+        label: isVietnamese ? 'Đơn hôm nay (mẫu)' : 'Today orders (sample)',
         value: String(data.ordersToday),
-        change: 'Merged from shops',
+        hint: isVietnamese ? 'Gộp từ cửa hàng' : 'Merged from shops',
         accent: 'bg-green-50 text-green-600',
         icon: 'cart' as const,
       },
       {
-        label: 'GMV today (sample)',
+        label: isVietnamese ? 'GMV hôm nay (mẫu)' : 'GMV today (sample)',
         value: fmtMoney(data.revenueToday),
-        change: 'Sum of order lines',
+        hint: isVietnamese ? 'Tổng dòng đơn hàng' : 'Sum of order lines',
         accent: 'bg-emerald-50 text-emerald-600',
         icon: 'gmv' as const,
       },
       {
-        label: 'Accounts',
+        label: isVietnamese ? 'Tài khoản' : 'Accounts',
         value: String(data.totalUsers),
-        change: 'GetAllAccounts',
+        hint: 'GetAllAccounts',
         accent: 'bg-teal-50 text-teal-600',
         icon: 'users' as const,
       },
     ]
-  }, [data])
+  }, [data, isVietnamese])
 
   const orderTrend = data?.orderTrend ?? []
   const maxOrderValue = Math.max(1, ...orderTrend.map((item) => item.value))
   const topShops = data?.topShopsByRevenue ?? []
   const maxShopRevenue = Math.max(1, ...topShops.map((shop) => shop.revenue))
+  const ordersCount = data?.ordersSample.length ?? 0
+  const productsCount = data?.productsSample.length ?? 0
+  const skeletonMetrics = Array.from({ length: 6 })
 
   return (
-    <div className='flex flex-col gap-6 px-6 py-6'>
-      <header className='flex flex-col gap-1'>
-        <h1 className='text-2xl font-bold text-neutral-900'>Dashboard Overview</h1>
-        <p className='text-sm text-neutral-500'>Welcome back, here&apos;s what&apos;s happening today</p>
-        {isError && (
-          <p className='text-sm text-red-600'>
-            {error instanceof Error ? error.message : 'Không tải được dữ liệu dashboard.'}
+    <div className='admin-home'>
+      <header className='admin-home__hero'>
+        <div>
+          <p className='admin-home__eyebrow'>{isVietnamese ? 'Trung tâm vận hành' : 'Operations Center'}</p>
+          <h1 className='admin-home__title'>{isVietnamese ? 'Tổng quan Dashboard' : 'Dashboard Overview'}</h1>
+          <p className='admin-home__subtitle'>
+            {isVietnamese
+              ? 'Theo dõi nhanh sức khỏe sàn, đơn hàng và doanh thu trong ngày.'
+              : "Quickly monitor marketplace health, orders, and daily revenue."}
           </p>
-        )}
-        <p className='text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2'>
-          Order statistics use merged shop orders until backend ships{' '}
-          <code className='text-[11px]'>GET /orders/admin/*</code> (see API_GAPS_AND_RECOMMENDATIONS.md).
-        </p>
+        </div>
+        <div className='admin-home__hero-meta'>
+          <div className='admin-home__chip'>{isVietnamese ? `Mẫu đơn: ${ordersCount}` : `Orders sample: ${ordersCount}`}</div>
+          <div className='admin-home__chip'>{isVietnamese ? `Mẫu sản phẩm: ${productsCount}` : `Products sample: ${productsCount}`}</div>
+          <Link to={ROUTES.ADMIN_ORDERS} className='admin-home__hero-link'>
+            {isVietnamese ? 'Mở quản lý đơn hàng' : 'Open Order Manager'}
+          </Link>
+        </div>
       </header>
 
-      <section className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-        {(isLoading ? Array.from({ length: 6 }) : metricCards).map((metric, idx) => (
-          <article
-            key={isLoading ? idx : (metric as { label: string }).label}
-            className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/5 flex flex-col gap-3'
-          >
+      {isError && (
+        <p className='rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'>
+          {error instanceof Error ? error.message : isVietnamese ? 'Không tải được dữ liệu dashboard.' : 'Failed to load dashboard data.'}
+        </p>
+      )}
+
+      <p className='rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700'>
+        {isVietnamese ? 'Thống kê đơn hàng đang dùng dữ liệu gộp từ các shop cho đến khi backend có API' : 'Order statistics use merged shop orders until backend ships'}{' '}
+        <code className='text-[11px]'>GET /orders/admin/*</code> (see API_GAPS_AND_RECOMMENDATIONS.md).
+      </p>
+
+      <section className='admin-home__metrics'>
+        {(isLoading ? skeletonMetrics : metricCards).map((metric, idx) => (
+          <article key={isLoading ? idx : metric.label} className='admin-home__metric-card'>
             {isLoading ? (
               <div className='h-24 animate-pulse rounded-xl bg-gray-100' />
             ) : (
               <>
                 <div className='flex items-center justify-between'>
-                  <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${(metric as { accent: string }).accent}`}>
-                    <StatIcon variant={(metric as { icon: string }).icon} accent={(metric as { accent: string }).accent} />
+                  <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${metric.accent}`}>
+                    <StatIcon variant={metric.icon} accent={metric.accent} />
                   </div>
                 </div>
                 <div className='flex flex-col gap-1'>
-                  <span className='text-xs font-medium text-gray-500'>{(metric as { label: string }).label}</span>
-                  <strong className='text-2xl font-bold text-neutral-900'>{(metric as { value: string }).value}</strong>
-                  <span className='text-xs font-medium text-emerald-600'>{(metric as { change: string }).change}</span>
+                  <span className='text-xs font-medium text-gray-500'>{metric.label}</span>
+                  <strong className='text-2xl font-bold text-neutral-900'>{metric.value}</strong>
+                  <span className='text-xs font-medium text-emerald-600'>{metric.hint}</span>
                 </div>
               </>
             )}
@@ -191,15 +218,15 @@ export default function AdminHome() {
         ))}
       </section>
 
-      <section className='grid gap-6 xl:grid-cols-2'>
-        <div className='rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/5 flex flex-col gap-4'>
-          <header>
-            <h2 className='text-base font-semibold text-neutral-900'>Orders (last ~30 days, sample)</h2>
-            <p className='text-sm text-neutral-500'>Bucketed counts from merged shop orders</p>
+      <section className='admin-home__insights'>
+        <article className='admin-home__panel'>
+          <header className='admin-home__panel-head'>
+            <h2>{isVietnamese ? 'Đơn hàng (~30 ngày gần nhất, mẫu)' : 'Orders (last ~30 days, sample)'}</h2>
+            <p>{isVietnamese ? 'Số lượng theo cụm từ dữ liệu đơn gộp' : 'Bucketed counts from merged shop orders'}</p>
           </header>
-          <div className='flex items-end gap-3 h-60 border-b border-gray-100 pb-3 relative'>
+          <div className='admin-home__chart'>
             {orderTrend.length === 0 && !isLoading ? (
-              <p className='text-sm text-gray-500'>No orders in sample window.</p>
+              <p className='text-sm text-gray-500'>{isVietnamese ? 'Không có đơn trong khoảng dữ liệu mẫu.' : 'No orders in sample window.'}</p>
             ) : (
               orderTrend.map((point) => (
                 <div key={point.day} className='flex flex-1 flex-col items-center gap-2'>
@@ -212,16 +239,16 @@ export default function AdminHome() {
               ))
             )}
           </div>
-        </div>
+        </article>
 
-        <div className='rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/5 flex flex-col gap-4'>
-          <header>
-            <h2 className='text-base font-semibold text-neutral-900'>Top shops by revenue (sample)</h2>
-            <p className='text-sm text-neutral-500'>From merged orders across shops</p>
+        <article className='admin-home__panel'>
+          <header className='admin-home__panel-head'>
+            <h2>{isVietnamese ? 'Top cửa hàng theo doanh thu (mẫu)' : 'Top shops by revenue (sample)'}</h2>
+            <p>{isVietnamese ? 'Từ đơn hàng gộp toàn bộ shop' : 'From merged orders across shops'}</p>
           </header>
           <div className='flex flex-col gap-4'>
             {topShops.length === 0 && !isLoading ? (
-              <p className='text-sm text-gray-500'>No revenue data yet.</p>
+              <p className='text-sm text-gray-500'>{isVietnamese ? 'Chưa có dữ liệu doanh thu.' : 'No revenue data yet.'}</p>
             ) : (
               topShops.map((shop) => (
                 <div key={shop.name} className='flex flex-col gap-2'>
@@ -239,43 +266,43 @@ export default function AdminHome() {
               ))
             )}
           </div>
-        </div>
+        </article>
       </section>
 
-      <section className='flex flex-col gap-6'>
-        <div className='rounded-2xl border border-gray-100 bg-white shadow-sm shadow-black/5'>
-          <div className='flex items-center justify-between border-b border-gray-100 px-6 py-4'>
+      <section className='admin-home__tables'>
+        <article className='admin-home__table-panel'>
+          <div className='admin-home__table-head'>
             <div>
-              <h2 className='text-base font-semibold text-neutral-900'>Latest orders</h2>
-              <p className='text-sm text-neutral-500'>Recent orders (merged sample)</p>
+              <h2>{isVietnamese ? 'Đơn hàng gần đây' : 'Latest orders'}</h2>
+              <p>{isVietnamese ? 'Đơn mới nhất (dữ liệu mẫu gộp)' : 'Recent orders (merged sample)'}</p>
             </div>
             <Link to={ROUTES.ADMIN_ORDERS} className='text-sm font-medium text-stone-600 hover:text-stone-900'>
-              View all
+              {isVietnamese ? 'Xem tất cả' : 'View all'}
             </Link>
           </div>
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[720px] text-sm'>
               <thead>
                 <tr className='bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500'>
-                  <th className='px-6 py-3'>Order</th>
-                  <th className='px-6 py-3'>Shop</th>
-                  <th className='px-6 py-3'>Product</th>
-                  <th className='px-6 py-3'>Amount</th>
-                  <th className='px-6 py-3'>Status</th>
-                  <th className='px-6 py-3'>Date</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Đơn hàng' : 'Order'}</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Cửa hàng' : 'Shop'}</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Sản phẩm' : 'Product'}</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Giá trị' : 'Amount'}</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Trạng thái' : 'Status'}</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Ngày tạo' : 'Date'}</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
                     <td colSpan={6} className='px-6 py-8 text-center text-gray-500'>
-                      Loading…
+                      {isVietnamese ? 'Đang tải...' : 'Loading...'}
                     </td>
                   </tr>
                 ) : (data?.ordersSample.length ?? 0) === 0 ? (
                   <tr>
                     <td colSpan={6} className='px-6 py-8 text-center text-gray-500'>
-                      No orders in sample.
+                      {isVietnamese ? 'Không có đơn trong dữ liệu mẫu.' : 'No orders in sample.'}
                     </td>
                   </tr>
                 ) : (
@@ -285,18 +312,18 @@ export default function AdminHome() {
                     return (
                       <tr key={order.orderId} className='border-b border-gray-100 last:border-b-0'>
                         <td className='px-6 py-4 font-medium text-gray-900'>{id}</td>
-                        <td className='px-6 py-4 text-gray-700'>{order.shopName ?? '—'}</td>
+                        <td className='px-6 py-4 text-gray-700'>{order.shopName ?? '-'}</td>
                         <td className='px-6 py-4 text-gray-700'>{adminOrderUtils.firstLineItemName(order)}</td>
                         <td className='px-6 py-4 text-gray-900'>{fmtMoney(adminOrderUtils.orderTotal(order))}</td>
                         <td className='px-6 py-4'>
                           <span className={`inline-flex items-center rounded-xl border px-3 py-1 text-xs font-medium ${statusStyles[tone]}`}>
-                            {order.status ?? '—'}
+                            {order.status ?? '-'}
                           </span>
                         </td>
                         <td className='px-6 py-4 text-gray-500'>
                           {order.createdDate
-                            ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(order.createdDate))
-                            : '—'}
+                            ? new Intl.DateTimeFormat(isVietnamese ? 'vi-VN' : 'en-US', { dateStyle: 'medium' }).format(new Date(order.createdDate))
+                            : '-'}
                         </td>
                       </tr>
                     )
@@ -305,16 +332,20 @@ export default function AdminHome() {
               </tbody>
             </table>
           </div>
-        </div>
+        </article>
 
-        <div className='rounded-2xl border border-gray-100 bg-white shadow-sm shadow-black/5'>
-          <div className='flex items-center justify-between border-b border-gray-100 px-6 py-4'>
+        <article className='admin-home__table-panel'>
+          <div className='admin-home__table-head'>
             <div>
-              <h2 className='text-base font-semibold text-neutral-900'>Recent products</h2>
-              <p className='text-sm text-neutral-500'>From GetAllProducts — moderation workflow is not yet modeled in API</p>
+              <h2>{isVietnamese ? 'Sản phẩm gần đây' : 'Recent products'}</h2>
+              <p>
+                {isVietnamese
+                  ? 'Từ GetAllProducts - luồng kiểm duyệt chưa được backend mô hình hóa đầy đủ'
+                  : 'From GetAllProducts - moderation workflow is not yet modeled in API'}
+              </p>
             </div>
             <Link to={`${ROUTES.ADMIN}/products`} className='text-sm font-medium text-stone-600 hover:text-stone-900'>
-              Product list
+              {isVietnamese ? 'Danh sách sản phẩm' : 'Product list'}
             </Link>
           </div>
           <div className='overflow-x-auto'>
@@ -322,23 +353,22 @@ export default function AdminHome() {
               <thead>
                 <tr className='bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500'>
                   <th className='px-6 py-3'>SKU / ID</th>
-                  <th className='px-6 py-3'>Name</th>
-                  <th className='px-6 py-3'>Shop</th>
-                  <th className='px-6 py-3'>Price</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Tên' : 'Name'}</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Cửa hàng' : 'Shop'}</th>
+                  <th className='px-6 py-3'>{isVietnamese ? 'Giá' : 'Price'}</th>
                 </tr>
               </thead>
               <tbody>
                 {(data?.productsSample ?? []).map((product) => {
-                  const pid = product.productId || product.id || '—'
-                  const shop =
-                    (product.shopId && data?.shopNameById[product.shopId]) || product.shopId || '—'
+                  const pid = product.productId || product.id || '-'
+                  const shop = (product.shopId && data?.shopNameById[product.shopId]) || product.shopId || '-'
                   return (
                     <tr key={pid} className='border-b border-gray-100 last:border-b-0'>
                       <td className='px-6 py-4 font-mono text-xs text-gray-600'>{product.globalSku || pid}</td>
-                      <td className='px-6 py-4 font-medium text-gray-900'>{product.productName ?? '—'}</td>
+                      <td className='px-6 py-4 font-medium text-gray-900'>{product.productName ?? '-'}</td>
                       <td className='px-6 py-4 text-gray-700'>{shop}</td>
                       <td className='px-6 py-4 text-gray-900'>
-                        {product.basePrice != null ? fmtMoney(Number(product.basePrice)) : '—'}
+                        {product.basePrice != null ? fmtMoney(Number(product.basePrice)) : '-'}
                       </td>
                     </tr>
                   )
@@ -346,7 +376,7 @@ export default function AdminHome() {
               </tbody>
             </table>
           </div>
-        </div>
+        </article>
       </section>
     </div>
   )
