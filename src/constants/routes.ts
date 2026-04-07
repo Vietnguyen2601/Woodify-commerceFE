@@ -8,8 +8,10 @@ export const ROUTES = {
   HOME: '/',
   CATALOG: '/catalog',
   PRODUCT: (id: string) => `/product/${id}`,
+  SHOP: (shopId: string) => `/shop/${shopId}`,
   CART: '/cart',
   CHECKOUT: '/checkout',
+  CHECKOUT_MULTISHOP: '/checkout-multishop',
 
   // Auth routes
   LOGIN: '/login',
@@ -27,6 +29,7 @@ export const ROUTES = {
 
   // Seller routes
   SELLER: '/seller',
+  SELLER_REGISTRATION: '/seller/registration',
   SELLER_REGISTER: '/seller/register',
   SELLER_DASHBOARD: '/seller/dashboard',
   SELLER_ORDERS: '/seller/orders',

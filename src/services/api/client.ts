@@ -1,10 +1,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios'
-import { API_BASE_URL } from '@/constants'
+import { API_BASE_URL } from '@/constants/api.endpoints'
 import { APP_CONFIG } from '@/constants/app.config'
 
-/**
- * Create configured Axios instance
- */
 const createApiClient = (): AxiosInstance => {
   const client = axios.create({
     baseURL: API_BASE_URL,
@@ -15,49 +12,48 @@ const createApiClient = (): AxiosInstance => {
     },
   })
 
-  // Request interceptor - with HttpOnly Cookies, no manual token needed
+  // Request interceptor - HttpOnly Cookies, no manual token needed
   client.interceptors.request.use(
-    (config) => {
-      return config
-    },
+    (config) => config,
     (error) => Promise.reject(error)
   )
 
-  // Response interceptor - handle errors
+  // Response interceptor - unwrap data, handle errors
   client.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      const data = response.data
+      return data?.data !== undefined ? data.data : data
+    },
     async (error: AxiosError) => {
-      // Handle network error (backend not available)
       if (!error.response) {
-        const networkError: any = new Error('Lỗi hệ thống, vui lòng thử lại sau')
+        const networkError: any = new Error(
+          error.code === 'ECONNABORTED'
+            ? 'Hết thời gian chờ. Backend không phản hồi.'
+            : `Lỗi hệ thống: ${error.message}. Vui lòng kiểm tra kết nối hoặc liên hệ hỗ trợ.`
+        )
         networkError.isNetworkError = true
         return Promise.reject(networkError)
       }
 
-      // Handle 401 Unauthorized
       if (error.response?.status === 401) {
         const requestUrl = error.config?.url || ''
-        
-        // For /auth/me endpoint, return empty response instead of rejecting
-        // This prevents console error logging while still allowing catch to handle it
+        // For /auth/me, resolve with null so callers detect unauthenticated state.
+        // Must return null directly — returning { data: null } is truthy and bypasses
+        // the !response guard in fetchAuthenticatedUser.
         if (requestUrl.includes('/auth/me')) {
-          // Return a fake successful response that will resolve as empty
-          // The caller will detect this and handle as unauthenticated
-          return Promise.resolve({
-            data: null,
-            status: 401,
-            statusText: 'Unauthorized',
-            headers: {},
-            config: error.config!
-          } as any)
+          return null
         }
-        
-        // For other endpoints, redirect to login
         localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.USER)
         window.location.href = '/login'
       }
 
-      return Promise.reject(error)
+      const message =
+        (error.response?.data as any)?.message || error.message || 'An error occurred'
+      return Promise.reject({
+        status: error.response?.status,
+        message,
+        data: error.response?.data,
+      })
     }
   )
 
@@ -67,26 +63,22 @@ const createApiClient = (): AxiosInstance => {
 export const apiClient = createApiClient()
 
 /**
- * Type-safe API wrapper functions
+ * Type-safe API wrapper — interceptor already unwraps data.data, so wrappers
+ * are thin casts that give callers the correct generic return type.
  */
-const unwrapNestedData = <T,>(data: any): T => {
-  // If response has nested data structure { status, message, data: {...} }, unwrap it
-  return data?.data !== undefined ? data.data : data
-}
-
 export const api = {
   get: <T,>(url: string, config?: AxiosRequestConfig) =>
-    apiClient.get<T>(url, config).then((res) => unwrapNestedData<T>(res.data)),
+    apiClient.get<T>(url, config) as unknown as Promise<T>,
 
   post: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    apiClient.post<T>(url, data, config).then((res) => unwrapNestedData<T>(res.data)),
+    apiClient.post<T>(url, data, config) as unknown as Promise<T>,
 
   put: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    apiClient.put<T>(url, data, config).then((res) => unwrapNestedData<T>(res.data)),
+    apiClient.put<T>(url, data, config) as unknown as Promise<T>,
 
   patch: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    apiClient.patch<T>(url, data, config).then((res) => unwrapNestedData<T>(res.data)),
+    apiClient.patch<T>(url, data, config) as unknown as Promise<T>,
 
   delete: <T,>(url: string, config?: AxiosRequestConfig) =>
-    apiClient.delete<T>(url, config).then((res) => unwrapNestedData<T>(res.data)),
+    apiClient.delete<T>(url, config) as unknown as Promise<T>,
 }

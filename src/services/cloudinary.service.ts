@@ -1,6 +1,8 @@
-const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/dp73ww7yl/image/upload'
-const CLOUDINARY_UPLOAD_PRESET = 'fe_unsigned_upload'
-const CLOUDINARY_ASSET_FOLDER = 'fe-uploads'
+// Read Cloudinary config from environment variables
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+const CLOUDINARY_ASSET_FOLDER = import.meta.env.VITE_CLOUDINARY_ASSET_FOLDER || 'fe-uploads'
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`
 
 interface CloudinaryUploadSuccess {
   secure_url: string

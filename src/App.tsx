@@ -3,14 +3,17 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Catalog from './pages/Catalog'
 import Product from './pages/Product'
+import Shop from './pages/Shop'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
+import CheckoutMultiShop from './pages/CheckoutMultiShop'
 import { Payment } from './pages/Payment'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
 import SellerDashboard from './pages/seller/SellerDashboard'
 import SellerRegistration from './pages/seller/SellerRegistration'
+import SellerRegister from './pages/seller/SellerRegister'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import UploadImageDemo from './pages/UploadImageDemo'
 import Header from './components/layout/Header/Header'
@@ -58,15 +61,18 @@ export default function App() {
           <Route path='/' element={<Home />} />
           <Route path='/catalog' element={<Catalog />} />
           <Route path='/product/:id' element={<Product />} />
+          <Route path='/shop/:shopId' element={<Shop />} />
           <Route path='/cart' element={<Cart />} />
           <Route path='/checkout' element={<Checkout />} />
+          <Route path='/checkout-multishop' element={<CheckoutMultiShop />} />
           <Route path='/payment' element={<Payment />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />
           <Route path='/auth/register' element={<Register />} />
           <Route path='/profile/*' element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path='/seller/register' element={<SellerRegistration />} />
+          <Route path='/seller/registration' element={<SellerRegistration />} />
+          <Route path='/seller/register' element={<SellerRegister />} />
           <Route path='/seller/*' element={<SellerDashboard />} />
           <Route path='/admin/*' element={<AdminDashboard />} />
           <Route path='/upload-demo' element={<UploadImageDemo />} />

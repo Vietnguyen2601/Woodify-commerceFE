@@ -207,11 +207,11 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
   }
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-5 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm'>
+    <form onSubmit={handleSubmit} className='mx-auto w-full max-w-3xl space-y-5 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm'>
       <div className='flex flex-col gap-1'>
         <p className='text-xs font-semibold uppercase tracking-wide text-stone-500'>Thêm danh mục</p>
         <h2 className='text-xl font-semibold text-gray-900'>Tạo mới cấu trúc phân loại</h2>
-        <p className='text-sm text-gray-500'>Gán danh mục cha và trạng thái hoạt động để giữ dữ liệu nhất quán.</p>
+        <p className='text-sm text-gray-500'>Gán danh mục cha phù hợp để giữ dữ liệu nhất quán.</p>
       </div>
 
       {feedback && (
@@ -391,31 +391,6 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
           {formErrors.description && <p className='text-xs text-rose-500'>{formErrors.description}</p>}
         </div>
 
-        <div className='space-y-2'>
-          <p className='text-sm font-medium text-gray-700'>Trạng thái hiển thị</p>
-          <div className='inline-flex rounded-2xl border border-gray-200 bg-gray-50 p-1 text-sm font-semibold text-gray-600'>
-            <button
-              type='button'
-              className={`flex-1 rounded-2xl px-4 py-2 transition ${
-                formState.isActive ? 'bg-white text-stone-900 shadow-sm' : 'text-gray-500'
-              }`}
-              onClick={() => setFormState((prev) => ({ ...prev, isActive: true }))}
-              disabled={isPending}
-            >
-              Hoạt động
-            </button>
-            <button
-              type='button'
-              className={`flex-1 rounded-2xl px-4 py-2 transition ${
-                !formState.isActive ? 'bg-white text-stone-900 shadow-sm' : 'text-gray-500'
-              }`}
-              onClick={() => setFormState((prev) => ({ ...prev, isActive: false }))}
-              disabled={isPending}
-            >
-              Tạm ẩn
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className='flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-gray-200 pt-4'>

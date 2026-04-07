@@ -20,19 +20,19 @@ export const productService = {
     return api.get<Product>(API_ENDPOINTS.PRODUCTS.DETAIL(id))
   },
 
-  /**
-   * Search products
-   */
-  searchProducts: async (query: string): Promise<Product[]> => {
-    return api.get<Product[]>(API_ENDPOINTS.PRODUCTS.SEARCH, {
-      params: { q: query },
-    })
-  },
+  // /**
+  //  * Search products
+  //  */
+  // searchProducts: async (query: string): Promise<Product[]> => {
+  //   return api.get<Product[]>(API_ENDPOINTS.PRODUCTS.SEARCH, {
+  //     params: { q: query },
+  //   })
+  // },
 
-  /**
-   * Get product categories
-   */
-  getCategories: async (): Promise<string[]> => {
-    return api.get<string[]>(API_ENDPOINTS.PRODUCTS.CATEGORIES)
-  },
+  // /**
+  //  * Get product categories
+  //  */
+  // getCategories: async (): Promise<string[]> => {
+  //   return api.get<string[]>(API_ENDPOINTS.PRODUCTS.CATEGORIES)
+  // },
 }

@@ -79,6 +79,124 @@ export interface InventoryItem {
   safety: number
 }
 
+// ── ProductMaster (API) ───────────────────────────────────────────────────────
+
+export type ProductStatus =
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'PUBLISHED'
+  | 'ARCHIVED'
+  | 'REJECTED'
+  | 'DELETED'
+export type ModerationStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface ProductImage {
+  imageId: string
+  imageType: string
+  referenceId: string
+  sortOrder: number
+  originalUrl: string
+  publicId: string | null
+  createdAt: string
+}
+
+export interface ProductDetailVersion {
+  versionId: string
+  versionNumber: number
+  versionName: string
+  price: number
+  stockQuantity: number
+  woodType: string
+  weightGrams: number
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  isActive: boolean
+  createdAt: string
+  images: ProductImage[]
+}
+
+export interface ProductDetail {
+  productId: string
+  shopId: string
+  shopName: string | null
+  categoryId: string
+  categoryName: string
+  name: string
+  globalSku: string
+  description: string
+  status: ProductStatus
+  moderationStatus: ModerationStatus | null
+  moderatedAt: string | null
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
+  images: ProductImage[]
+  versions: ProductDetailVersion[]
+}
+
+export interface ProductMaster {
+  productId: string
+  shopId: string
+  shopName: string | null
+  categoryId: string
+  categoryName: string
+  name: string
+  globalSku: string
+  description: string
+  status: ProductStatus
+  moderationStatus: ModerationStatus
+  moderatedAt: string | null
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
+  thumbnailUrl: string | null
+}
+
+export interface CreateProductMasterRequest {
+  shopId: string
+  categoryId: string
+  name: string
+  description: string
+}
+
+// ── ProductVersion (API) ──────────────────────────────────────────────────────
+
+export interface ProductVersion {
+  versionId: string
+  productId: string
+  sellerSku: string
+  versionNumber: number
+  versionName: string
+  price: number
+  stockQuantity: number
+  woodType: string
+  weightGrams: number
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  thumbnailUrl: string | null
+}
+
+export interface CreateProductVersionRequest {
+  productId: string
+  sellerSku: string
+  versionNumber: number
+  versionName: string
+  price: number
+  stockQuantity: number
+  woodType: string
+  weightGrams: number
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  isActive: boolean
+}
+
 export interface Certificate {
   id: string
   type: string

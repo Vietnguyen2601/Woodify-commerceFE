@@ -1,8 +1,60 @@
-import React from 'react'
-import { Outlet } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Outlet, useNavigate } from 'react-router-dom'
 import SellerSidebar from './SellerSidebar'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useShopStore } from '@/store/shopStore'
+import { shopService } from '@/services'
+import { ROUTES } from '@/constants/routes'
 
 export default function SellerLayout() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { shop, isLoading, setShop, setLoading } = useShopStore()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (authLoading) return
+
+    if (!isAuthenticated || !user?.accountId) {
+      navigate(ROUTES.LOGIN, { replace: true })
+      return
+    }
+
+    if (shop) return
+
+    setLoading(true)
+    shopService
+      .getShopByOwnerId(user.accountId)
+      .then((shopData) => {
+        if (shopData) {
+          setShop(shopData)
+        } else {
+          navigate(ROUTES.SELLER_REGISTRATION, { replace: true })
+        }
+      })
+      .catch((error) => {
+        if (error?.status === 404) {
+          navigate(ROUTES.SELLER_REGISTRATION, { replace: true })
+        } else {
+          console.error('Không thể tải thông tin cửa hàng:', error)
+          navigate(ROUTES.SELLER_REGISTRATION, { replace: true })
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [authLoading, isAuthenticated, user?.accountId])
+
+  if (authLoading || isLoading) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-stone-50'>
+        <div className='flex flex-col items-center gap-3'>
+          <div className='h-8 w-8 animate-spin rounded-full border-4 border-amber-800 border-t-transparent' />
+          <p className='text-sm text-stone-500'>Đang tải thông tin cửa hàng...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!shop) return null
+
   return (
     <div className='min-h-screen w-full bg-stone-100 text-stone-900'>
       <div className='flex min-h-screen'>
@@ -12,11 +64,19 @@ export default function SellerLayout() {
           <header className='border-b border-amber-800/20 bg-white px-6 py-4 shadow-sm md:px-8 lg:px-10'>
             <div className='flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
               <div className='flex items-center gap-4'>
-                <div className='h-14 w-14 rounded-2xl border border-amber-900/20 bg-stone-50' aria-hidden='true' />
+                {shop.logoUrl ? (
+                  <img
+                    src={shop.logoUrl}
+                    alt={shop.name}
+                    className='h-14 w-14 rounded-2xl border border-amber-900/20 object-cover'
+                  />
+                ) : (
+                  <div className='h-14 w-14 rounded-2xl border border-amber-900/20 bg-stone-50' aria-hidden='true' />
+                )}
                 <div>
                   <p className='text-xs font-semibold uppercase tracking-wider text-stone-500'>Woodify Seller Center</p>
                   <div className='flex items-center gap-3'>
-                    <h1 className='text-lg font-semibold text-stone-900'>Kênh người bán style</h1>
+                    <h1 className='text-lg font-semibold text-stone-900'>{shop.name}</h1>
                     <span className='rounded-md bg-amber-800 px-2 py-0.5 text-[11px] font-medium text-white'>Beta</span>
                   </div>
                 </div>

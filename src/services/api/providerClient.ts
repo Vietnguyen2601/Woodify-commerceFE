@@ -1,10 +1,10 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios'
-import { SHOP_SERVICE_URL } from '@/constants/api.endpoints'
+import { SHIPMENT_SERVICE_URL } from '@/constants/api.endpoints'
 import { APP_CONFIG } from '@/constants/app.config'
 
-const createShopServiceClient = (): AxiosInstance => {
+const createProviderServiceClient = (): AxiosInstance => {
   const client = axios.create({
-    baseURL: SHOP_SERVICE_URL,
+    baseURL: SHIPMENT_SERVICE_URL,
     timeout: 10000,
     withCredentials: true,
     headers: {
@@ -53,24 +53,24 @@ const createShopServiceClient = (): AxiosInstance => {
   return client
 }
 
-export const shopServiceClient = createShopServiceClient()
+export const providerServiceClient = createProviderServiceClient()
 
 /**
  * Type-safe API wrapper — interceptor already unwraps data.data.
  */
-export const shopApi = {
+export const providerApi = {
   get: <T,>(url: string, config?: AxiosRequestConfig) =>
-    shopServiceClient.get<T>(url, config) as unknown as Promise<T>,
+    providerServiceClient.get<T>(url, config) as unknown as Promise<T>,
 
   post: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    shopServiceClient.post<T>(url, data, config) as unknown as Promise<T>,
+    providerServiceClient.post<T>(url, data, config) as unknown as Promise<T>,
 
   put: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    shopServiceClient.put<T>(url, data, config) as unknown as Promise<T>,
+    providerServiceClient.put<T>(url, data, config) as unknown as Promise<T>,
 
   patch: <T,>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
-    shopServiceClient.patch<T>(url, data, config) as unknown as Promise<T>,
+    providerServiceClient.patch<T>(url, data, config) as unknown as Promise<T>,
 
   delete: <T,>(url: string, config?: AxiosRequestConfig) =>
-    shopServiceClient.delete<T>(url, config) as unknown as Promise<T>,
+    providerServiceClient.delete<T>(url, config) as unknown as Promise<T>,
 }
