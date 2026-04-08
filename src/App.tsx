@@ -28,7 +28,7 @@ import './styles/payment.css'
 
 export default function App() {
   const location = useLocation()
-  const cartItemCount = useCart((state) => state.items.reduce((sum, item) => sum + item.qty, 0))
+  const cartItemCount = useCart((state) => state.items.reduce((sum, item) => sum + item.quantity, 0))
   const isProfileRoute = location.pathname.startsWith('/profile')
   const isSellerRoute = location.pathname.startsWith('/seller')
   const isAdminRoute = location.pathname.startsWith('/admin')

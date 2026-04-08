@@ -24,7 +24,7 @@ interface CartItem {
   id: string
   name: string
   price: number
-  qty: number
+  quantity: number
   image?: string
 }
 
@@ -43,10 +43,10 @@ export default function Checkout() {
 
   // Mock cart items data
   const cartItems: CartItem[] = [
-    { id: '1', name: 'Bàn Ăn Gỗ Sồi Tự Nhiên', price: 12500000, qty: 1 },
-    { id: '2', name: 'Ghế Gỗ Cao Cấp (Bộ 4)', price: 8900000, qty: 1 },
-    { id: '3', name: 'Kệ Sách Gỗ Óc Chó', price: 5600000, qty: 1 },
-    { id: '4', name: 'Ghế Sofa Gỗ Tần Bì', price: 15200000, qty: 1 }
+    { id: '1', name: 'Bàn Ăn Gỗ Sồi Tự Nhiên', price: 12500000, quantity: 1 },
+    { id: '2', name: 'Ghế Gỗ Cao Cấp (Bộ 4)', price: 8900000, quantity: 1 },
+    { id: '3', name: 'Kệ Sách Gỗ Óc Chó', price: 5600000, quantity: 1 },
+    { id: '4', name: 'Ghế Sofa Gỗ Tần Bì', price: 15200000, quantity: 1 }
   ]
 
   const shippingOptions = [
@@ -55,7 +55,7 @@ export default function Checkout() {
     { id: 'install', title: 'Giao hàng & lắp đặt', subtitle: '1-2 ngày làm việc', price: 1000000 }
   ]
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shippingFee = shippingOptions.find(o => o.id === shippingMethod)?.price || 0
   const vat = subtotal * 0.1
   const total = subtotal + shippingFee + vat
@@ -275,7 +275,7 @@ export default function Checkout() {
                           −
                         </button>
                         <span className='w-4 text-center text-xs' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                          {item.qty}
+                          {item.quantity}
                         </span>
                         <button className='w-5 h-5 flex items-center justify-center bg-gray-100 rounded text-gray-600 hover:bg-gray-200 text-xs' style={{ fontFamily: 'Arimo, sans-serif' }}>
                           +

@@ -132,6 +132,7 @@ export function useAuth() {
 
   return {
     user,
+    accountId: user?.accountId || '',
     isLoading,
     isAuthenticated: !!user,
     error,

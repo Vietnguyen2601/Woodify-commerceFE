@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { MapPin, Store, MessageSquare, CreditCard, Tag, X } from 'lucide-react'
 import {
   ShopCart,
@@ -17,13 +17,115 @@ import {
   formatCurrency,
   AVAILABLE_SHIPPING_METHODS
 } from '@/data/checkout-mock-data'
+import type { CartItemDto } from '@/types'
 
 export default function Checkout() {
-  const [shopCarts, setShopCarts] = useState<ShopCart[]>(MOCK_SHOP_CARTS)
+  // Load checkout data from Cart page
+  const getInitialShopCarts = (): ShopCart[] => {
+    try {
+      const checkoutData = localStorage.getItem('checkoutData')
+      const checkoutItems = localStorage.getItem('checkoutItems')
+      
+      if (checkoutData) {
+        const data = JSON.parse(checkoutData)
+        // Transform cart items into ShopCart format
+        return data.selectedByShop.map((shop: any) => {
+          const items = shop.items.map((item: CartItemDto) => ({
+            cart_item_id: item.cartItemId,
+            product_id: item.versionId,
+            shop_id: item.shopId,
+            product_name: item.productMasterName,
+            product_image: item.thumbnailUrl,
+            variant_name: item.productVersionName,
+            price: item.price,
+            quantity: item.quantity,
+            subtotal: item.totalPrice,
+          }))
+          
+          return {
+            shop_id: shop.shopId,
+            shop_name: shop.shopName,
+            items,
+            selected_shipping_method: 'STANDARD' as const,
+            shipping_methods: AVAILABLE_SHIPPING_METHODS,
+            shipping_fee: 0,
+            note_to_seller: '',
+            subtotal: shop.totalPrice,
+            total: shop.totalPrice,
+          }
+        })
+      }
+      
+      // Fallback to checkoutItems if checkoutData not available
+      if (checkoutItems) {
+        const items: CartItemDto[] = JSON.parse(checkoutItems)
+        const groupedByShop = new Map<string, CartItemDto[]>()
+        
+        items.forEach((item) => {
+          if (!groupedByShop.has(item.shopId)) {
+            groupedByShop.set(item.shopId, [])
+          }
+          groupedByShop.get(item.shopId)!.push(item)
+        })
+        
+        return Array.from(groupedByShop.entries()).map(([shopId, shopItems]) => {
+          const totalPrice = shopItems.reduce((sum, item) => sum + item.totalPrice, 0)
+          
+          return {
+            shop_id: shopId,
+            shop_name: shopItems[0].shopName,
+            items: shopItems.map((item) => ({
+              cart_item_id: item.cartItemId,
+              product_id: item.versionId,
+              shop_id: item.shopId,
+              product_name: item.productMasterName,
+              product_image: item.thumbnailUrl,
+              variant_name: item.productVersionName,
+              price: item.price,
+              quantity: item.quantity,
+              subtotal: item.totalPrice,
+            })),
+            selected_shipping_method: 'STANDARD' as const,
+            shipping_methods: AVAILABLE_SHIPPING_METHODS,
+            shipping_fee: 0,
+            note_to_seller: '',
+            subtotal: totalPrice,
+            total: totalPrice,
+          }
+        })
+      }
+      
+      // Use mock data if no checkout data available
+      return MOCK_SHOP_CARTS
+    } catch (error) {
+      console.error('Failed to load checkout data:', error)
+      return MOCK_SHOP_CARTS
+    }
+  }
+
+  const [shopCarts, setShopCarts] = useState<ShopCart[]>(getInitialShopCarts())
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher>()
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD')
   const [voucherCode, setVoucherCode] = useState('')
   const [voucherError, setVoucherError] = useState('')
+  const [showAddressModal, setShowAddressModal] = useState(false)
+  const [deliveryAddress, setDeliveryAddress] = useState(MOCK_DELIVERY_ADDRESS)
+  const [tempAddress, setTempAddress] = useState({
+    address_line: MOCK_DELIVERY_ADDRESS.address_line,
+    city: MOCK_DELIVERY_ADDRESS.city,
+    district: MOCK_DELIVERY_ADDRESS.district,
+    ward: MOCK_DELIVERY_ADDRESS.ward
+  })
+
+  // Clean up localStorage after loading
+  useEffect(() => {
+    // Keep data during this session, but clear after component unmounts
+    return () => {
+      // Optional: uncomment to clear after checkout complete
+      // localStorage.removeItem('checkoutData')
+      // localStorage.removeItem('checkoutItems')
+    }
+  }, [])
 
   const summary: CheckoutSummary = useMemo(
     () => calculateCheckoutSummary(shopCarts, appliedVoucher),
@@ -72,9 +174,27 @@ export default function Checkout() {
     setVoucherError('')
   }
 
+  const handleOpenAddressModal = () => {
+    setTempAddress({
+      address_line: deliveryAddress.address_line,
+      city: deliveryAddress.city,
+      district: deliveryAddress.district,
+      ward: deliveryAddress.ward
+    })
+    setShowAddressModal(true)
+  }
+
+  const handleConfirmAddress = () => {
+    setDeliveryAddress({
+      ...deliveryAddress,
+      ...tempAddress
+    })
+    setShowAddressModal(false)
+  }
+
   const handlePlaceOrder = () => {
     const orderData = {
-      delivery_address: MOCK_DELIVERY_ADDRESS,
+      delivery_address: deliveryAddress,
       shop_carts: shopCarts,
       payment_method: paymentMethod,
       voucher: appliedVoucher,
@@ -135,6 +255,7 @@ export default function Checkout() {
                   </h2>
                 </div>
                 <button
+                  onClick={handleOpenAddressModal}
                   className='text-sm font-semibold rounded-md px-3 py-1 transition-colors'
                   style={{
                     color: '#8B5A3C',
@@ -153,20 +274,9 @@ export default function Checkout() {
 
               {/* Address Info */}
               <div className='space-y-2'>
-                <div className='flex items-center gap-2'>
-                  <p className='font-semibold text-gray-900' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                    {MOCK_DELIVERY_ADDRESS.recipient_name}
-                  </p>
-                  <span className='text-xs px-2 py-1 rounded-full text-white' style={{ backgroundColor: '#4A7C2E' }}>
-                    Mặc định
-                  </span>
-                  <span className='text-sm text-gray-600'>
-                    {MOCK_DELIVERY_ADDRESS.phone}
-                  </span>
-                </div>
-                <p className='text-xs text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                  {MOCK_DELIVERY_ADDRESS.address_line}, {MOCK_DELIVERY_ADDRESS.ward},{' '}
-                  {MOCK_DELIVERY_ADDRESS.district}, {MOCK_DELIVERY_ADDRESS.city}
+                <p className='text-sm text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                  {deliveryAddress.address_line}, {deliveryAddress.ward},{' '}
+                  {deliveryAddress.district}, {deliveryAddress.city}
                 </p>
               </div>
             </div>
@@ -534,6 +644,102 @@ export default function Checkout() {
           </aside>
         </div>
       </div>
+
+      {/* Address Modal */}
+      {showAddressModal && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <div className='w-[735px] bg-white rounded-2xl shadow-[0px_8px_10px_-6px_rgba(0,0,0,0.10)] shadow-xl outline outline-[0.80px] outline-offset-[-0.80px] outline-stone-400/20 p-8 space-y-6'>
+            {/* Header */}
+            <div className='flex items-start gap-3'>
+              <div className='w-12 h-12 bg-gradient-to-b from-stone-400 to-orange-300 rounded-2xl flex justify-center items-center flex-shrink-0'>
+                <div className='w-6 h-6 relative overflow-hidden'>
+                  <div className='w-4 h-5 left-[4px] top-[2px] absolute outline outline-2 outline-offset-[-1px] outline-white' />
+                  <div className='w-1.5 h-1.5 left-[9px] top-[7px] absolute outline outline-2 outline-offset-[-1px] outline-white' />
+                </div>
+              </div>
+              <div>
+                <h2 className='text-slate-800 text-2xl font-bold font-arimo leading-8'>Thông tin giao hàng</h2>
+                <p className='text-gray-600 text-sm font-normal font-arimo leading-5'>Chúng tôi sẽ giao hàng đến địa chỉ của bạn</p>
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <div className='space-y-4'>
+              {/* Địa chỉ */}
+              <div className='space-y-2'>
+                <label className='flex items-center gap-2 text-gray-700 text-sm font-normal font-arimo'>
+                  <div className='w-4 h-4 overflow-hidden'>
+                    <div className='w-2.5 h-3.5 outline outline-[1.33px] outline-offset-[-0.67px] outline-stone-400' />
+                  </div>
+                  Địa chỉ giao hàng
+                </label>
+                <input
+                  type='text'
+                  value={tempAddress.address_line}
+                  onChange={(e) => setTempAddress({ ...tempAddress, address_line: e.target.value })}
+                  className='w-full h-12 px-4 py-3 rounded-[10px] outline outline-[0.80px] outline-offset-[-0.80px] outline-gray-300 text-base font-arimo focus:outline-2 focus:outline-orange-300'
+                  placeholder='Nhập địa chỉ'
+                />
+              </div>
+
+              {/* Row: Thành phố, Quận/Huyện, Phường/Xã */}
+              <div className='grid grid-cols-3 gap-4'>
+                {/* Thành phố */}
+                <div className='space-y-2'>
+                  <label className='text-gray-700 text-sm font-normal font-arimo'>Thành phố</label>
+                  <input
+                    type='text'
+                    value={tempAddress.city}
+                    onChange={(e) => setTempAddress({ ...tempAddress, city: e.target.value })}
+                    className='w-full h-12 px-4 py-3 rounded-[10px] outline outline-[0.80px] outline-offset-[-0.80px] outline-gray-300 text-base font-arimo focus:outline-2 focus:outline-orange-300'
+                    placeholder='Hà Nội'
+                  />
+                </div>
+
+                {/* Quận/Huyện */}
+                <div className='space-y-2'>
+                  <label className='text-gray-700 text-sm font-normal font-arimo'>Quận/Huyện</label>
+                  <input
+                    type='text'
+                    value={tempAddress.district}
+                    onChange={(e) => setTempAddress({ ...tempAddress, district: e.target.value })}
+                    className='w-full h-12 px-4 py-3 rounded-[10px] outline outline-[0.80px] outline-offset-[-0.80px] outline-gray-300 text-base font-arimo focus:outline-2 focus:outline-orange-300'
+                    placeholder='Ba Đình'
+                  />
+                </div>
+
+                {/* Phường/Xã */}
+                <div className='space-y-2'>
+                  <label className='text-gray-700 text-sm font-normal font-arimo'>Phường/Xã</label>
+                  <input
+                    type='text'
+                    value={tempAddress.ward}
+                    onChange={(e) => setTempAddress({ ...tempAddress, ward: e.target.value })}
+                    className='w-full h-12 px-4 py-3 rounded-[10px] outline outline-[0.80px] outline-offset-[-0.80px] outline-gray-300 text-base font-arimo focus:outline-2 focus:outline-orange-300'
+                    placeholder='Phường XYZ'
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className='flex gap-3'>
+              <button
+                onClick={handleConfirmAddress}
+                className='flex-1 h-14 bg-gradient-to-b from-stone-400 to-orange-300 rounded-2xl text-center text-white text-base font-bold font-arimo leading-6 hover:from-stone-500 hover:to-orange-400 transition-all'
+              >
+                Xác nhận
+              </button>
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className='flex-1 h-14 border-2 border-gray-300 rounded-2xl text-center text-gray-700 text-base font-bold font-arimo leading-6 hover:bg-gray-50 transition-all'
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

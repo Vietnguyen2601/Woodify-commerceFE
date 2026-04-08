@@ -1,207 +1,302 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { useCart } from '../store/cartStore'
-import { currency } from '../utils/format'
+import React, { useCallback, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
+import { useCart } from '@/store/cartStore'
+import { cartService } from '@/services/cart.service'
+import type { CartItemDto, CartResponse } from '@/types'
+import { currency } from '@/utils/format'
+import { ROUTES } from '@/constants/routes'
 
-type CartMeta = {
+// Get accountId from localStorage (stored during login)
+const getAccountId = (): string => {
+  try {
+    const userData = localStorage.getItem('user_data')
+    if (userData) {
+      const user = JSON.parse(userData)
+      return user.accountId || ''
+    }
+  } catch (e) {
+    console.error('Failed to parse user_data:', e)
+  }
+  return ''
+}
+
+interface ShopGroup {
   shopId: string
   shopName: string
-  shopVoucher: string
-  shippingNote: string
-  shippingEta: string
-  variant: string
-  image: string
+  items: CartItemDto[]
+  totalPrice: number
 }
 
-type Suggestion = {
-  id: string
-  title: string
-  image: string
-  badge: string
-  price: string
+interface CartApiError {
+  message?: string
 }
 
-type CartLineItem = CartMeta & {
-  id: string
-  title: string
-  price: number
-  qty: number
-}
-
-type ShopGroup = {
-  shopId: string
-  shopName: string
-  shopVoucher: string
-  shippingNote: string
-  items: CartLineItem[]
-}
-
-const defaultMeta: CartMeta = {
-  shopId: 'default-shop',
-  shopName: 'Nhà Cửa 4.0',
-  shopVoucher: 'Giảm 10% cho đơn từ 300K',
-  shippingNote: 'Đồng giá vận chuyển 15K toàn quốc',
-  shippingEta: 'Giao trước 14 Th01',
-  variant: 'Phân loại: Tiêu chuẩn',
-  image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80'
-}
-
-const productMeta: Record<string, CartMeta> = {
-  p1: {
-    shopId: 'shop-urban',
-    shopName: 'Urban Craft Official',
-    shopVoucher: 'Mã giảm 40K cho đơn từ 499K',
-    shippingNote: 'Freeship Xtra+ cho đơn 0Đ',
-    shippingEta: 'Dự kiến giao 10 - 12 Th01',
-    variant: 'Kích thước: 180cm | Màu: Trầm',
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=500&q=80'
-  },
-  p2: {
-    shopId: 'shop-sora',
-    shopName: 'Sora Living',
-    shopVoucher: 'Voucher 25K mọi đơn',
-    shippingNote: 'Giảm 20K phí ship nội thành',
-    shippingEta: 'Dự kiến giao 08 - 10 Th01',
-    variant: 'Mặt kính khói | Size M',
-    image: 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=500&q=80'
-  },
-  p3: {
-    shopId: 'shop-hikari',
-    shopName: 'Hikari Home Decor',
-    shopVoucher: 'Tặng 50K cho đơn từ 799K',
-    shippingNote: 'Ưu đãi phí ship 0Đ toàn quốc',
-    shippingEta: 'Dự kiến giao 12 - 15 Th01',
-    variant: 'Size Queen | Gỗ Óc Chó',
-    image: 'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=500&q=80'
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof AxiosError) {
+    return error.response?.data?.message || error.message || 'Đã xảy ra lỗi'
   }
-}
-
-const suggestionProducts: Suggestion[] = [
-  {
-    id: 's1',
-    title: 'Combo Decor Góc Chill',
-    image: 'https://images.unsplash.com/photo-1486304873000-235643847519?auto=format&fit=crop&w=400&q=80',
-    badge: '-35%',
-    price: '299.000đ'
-  },
-  {
-    id: 's2',
-    title: 'Đèn Bàn Gốm Kyoto',
-    image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80',
-    badge: 'FREESHIP',
-    price: '489.000đ'
-  },
-  {
-    id: 's3',
-    title: 'Ghế Thư Giãn Mây',
-    image: 'https://images.unsplash.com/photo-1470246973918-29a93221c455?auto=format&fit=crop&w=400&q=80',
-    badge: '-20%',
-    price: '1.250.000đ'
-  },
-  {
-    id: 's4',
-    title: 'Set Gương Tre Nordic',
-    image: 'https://images.unsplash.com/photo-1469395446868-fb6a048d5ca3?auto=format&fit=crop&w=400&q=80',
-    badge: 'MỚI',
-    price: '349.000đ'
-  },
-  {
-    id: 's5',
-    title: 'Tủ Đầu Giường Lisse',
-    image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80',
-    badge: '-15%',
-    price: '1.050.000đ'
-  },
-  {
-    id: 's6',
-    title: 'Thảm Cotton Terra',
-    image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80',
-    badge: 'HOT',
-    price: '590.000đ'
+  if (error instanceof Error) {
+    return error.message
   }
-]
+  return 'Đã xảy ra lỗi không xác định'
+}
 
 export default function Cart() {
-  const items = useCart(s => s.items)
-  const remove = useCart(s => s.remove)
-  const setQty = useCart(s => s.setQty)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const accountId = getAccountId()
+
+  // Zustand store for UI state
+  const cartItems = useCart((s) => s.items)
+  const setCartItems = useCart((s) => s.setItems)
+  const setCartError = useCart((s) => s.setError)
+  const removeCartItem = useCart((s) => s.removeItem)
+  const updateQuantity = useCart((s) => s.updateQuantity)
+  const cartErrorMsg = useCart((s) => s.error)
+
+  // Selection state for checkout
   const [selected, setSelected] = React.useState<string[]>([])
-  const selectionInitialized = React.useRef(false)
+  const selectionInitializedRef = useRef(false)
 
-  const enrichedItems = React.useMemo<CartLineItem[]>(() => items.map(item => ({
-    ...item,
-    ...(productMeta[item.id] ?? defaultMeta)
-  })), [items])
+  // Fetch cart data
+  const {
+    data: cartData,
+    isPending: isLoadingCart,
+    error: cartError,
+    refetch: refetchCart,
+  } = useQuery<CartResponse, AxiosError>({
+    queryKey: ['cart', accountId],
+    queryFn: () => cartService.getCart(accountId),
+    enabled: !!accountId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  })
 
-  React.useEffect(() => {
-    setSelected(prev => {
-      const ids = new Set(items.map(i => i.id))
-      const stillValid = prev.filter(id => ids.has(id))
-      if (!selectionInitialized.current && items.length > 0) {
-        selectionInitialized.current = true
-        return items.map(i => i.id)
+  // Handle cart data updates
+  useEffect(() => {
+    if (cartData?.items) {
+      setCartItems(cartData.items)
+      setCartError(null)
+    }
+  }, [cartData, setCartItems, setCartError])
+
+  // Handle cart errors
+  useEffect(() => {
+    if (cartError) {
+      setCartError(getErrorMessage(cartError))
+    }
+  }, [cartError, setCartError])
+
+  // Update quantity mutation
+  const updateQtyMutation = useMutation<CartItemDto, AxiosError, { cartItemId: string; quantity: number }>({
+    mutationFn: ({ cartItemId, quantity }) =>
+      cartService.updateCartItem(accountId, cartItemId, quantity),
+    onSuccess: (data: CartItemDto) => {
+      updateQuantity(data.cartItemId, data.quantity)
+      queryClient.invalidateQueries({ queryKey: ['cart', accountId] })
+    },
+    onError: (error: AxiosError) => {
+      setCartError(getErrorMessage(error))
+    },
+  })
+
+  // Remove item mutation
+  const removeItemMutation = useMutation<void, AxiosError, string>({
+    mutationFn: (cartItemId: string) =>
+      cartService.removeCartItem(accountId, cartItemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart', accountId] })
+    },
+    onError: (error: AxiosError) => {
+      setCartError(getErrorMessage(error))
+    },
+  })
+
+  // Clear cart mutation
+  const clearCartMutation = useMutation<void, AxiosError, void>({
+    mutationFn: () => cartService.clearCart(accountId),
+    onSuccess: () => {
+      useCart.setState({ items: [] })
+      queryClient.invalidateQueries({ queryKey: ['cart', accountId] })
+      setSelected([])
+    },
+    onError: (error: AxiosError) => {
+      setCartError(getErrorMessage(error))
+    },
+  })
+
+  // Initialize selection when cart loads
+  useEffect(() => {
+    setSelected((prev) => {
+      const ids = new Set(cartItems.map((i) => i.cartItemId))
+      const stillValid = prev.filter((id) => ids.has(id))
+
+      if (!selectionInitializedRef.current && cartItems.length > 0) {
+        selectionInitializedRef.current = true
+        return cartItems.map((i) => i.cartItemId)
       }
       return stillValid
     })
-    if (items.length === 0) {
-      selectionInitialized.current = false
-    }
-  }, [items])
 
+    if (cartItems.length === 0) {
+      selectionInitializedRef.current = false
+    }
+  }, [cartItems])
+
+  // Group items by shop
   const groupedShops = React.useMemo<ShopGroup[]>(() => {
     const map = new Map<string, ShopGroup>()
-    enrichedItems.forEach(item => {
+
+    cartItems.forEach((item) => {
       const key = item.shopId
       if (!map.has(key)) {
         map.set(key, {
           shopId: item.shopId,
           shopName: item.shopName,
-          shopVoucher: item.shopVoucher,
-          shippingNote: item.shippingNote,
-          items: []
+          items: [],
+          totalPrice: 0,
         })
       }
-      map.get(key)?.items.push(item)
+
+      const shop = map.get(key)!
+      shop.items.push(item)
+      shop.totalPrice += item.totalPrice
     })
+
     return Array.from(map.values())
-  }, [enrichedItems])
+  }, [cartItems])
 
-  const allSelected = items.length > 0 && selected.length === items.length
+  // Selection logic
+  const allSelected = cartItems.length > 0 && selected.length === cartItems.length
 
-  const toggleAll = () => {
+  const toggleAll = useCallback(() => {
     if (allSelected) {
       setSelected([])
     } else {
-      setSelected(items.map(i => i.id))
+      setSelected(cartItems.map((i) => i.cartItemId))
     }
-  }
+  }, [allSelected, cartItems])
 
-  const toggleShop = (shopItems: CartLineItem[]) => {
-    const ids = shopItems.map(i => i.id)
-    const isFullySelected = ids.every(id => selected.includes(id))
+  const toggleShop = useCallback((shopItems: CartItemDto[]) => {
+    const ids = shopItems.map((i) => i.cartItemId)
+    const isFullySelected = ids.every((id) => selected.includes(id))
+
     if (isFullySelected) {
-      setSelected(prev => prev.filter(id => !ids.includes(id)))
+      setSelected((prev) => prev.filter((id) => !ids.includes(id)))
     } else {
-      setSelected(prev => Array.from(new Set([...prev, ...ids])))
+      setSelected((prev) => Array.from(new Set([...prev, ...ids])))
+    }
+  }, [selected])
+
+  const toggleItem = useCallback((cartItemId: string) => {
+    setSelected((prev) =>
+      prev.includes(cartItemId)
+        ? prev.filter((x) => x !== cartItemId)
+        : [...prev, cartItemId]
+    )
+  }, [])
+
+  // Handlers
+  const handleDeleteSelected = async () => {
+    const toDelete = selected.slice()
+    setSelected([])
+
+    for (const cartItemId of toDelete) {
+      removeItemMutation.mutate(cartItemId)
     }
   }
 
-  const toggleItem = (id: string) => {
-    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  const handleQuantityChange = (cartItemId: string, newQty: number) => {
+    const qty = Math.max(1, newQty)
+    updateQtyMutation.mutate({ cartItemId, quantity: qty })
   }
 
-  const handleDeleteSelected = () => {
-    selected.forEach(remove)
-    setSelected([])
+  const handleCheckout = () => {
+    if (selected.length === 0) {
+      setCartError('Vui lòng chọn ít nhất một sản phẩm')
+      return
+    }
+
+    // Get selected items
+    const selectedItems = cartItems.filter((item) =>
+      selected.includes(item.cartItemId)
+    )
+
+    // Calculate total price of selected items
+    const selectedTotal = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0)
+
+    // Group selected items by shop
+    const selectedByShop = new Map<string, CartItemDto[]>()
+    selectedItems.forEach((item) => {
+      const shopId = item.shopId
+      if (!selectedByShop.has(shopId)) {
+        selectedByShop.set(shopId, [])
+      }
+      selectedByShop.get(shopId)!.push(item)
+    })
+
+    // Prepare checkout data with all necessary information
+    const checkoutData = {
+      accountId,
+      selectedItems,
+      selectedByShop: Array.from(selectedByShop.entries()).map(([shopId, items]) => ({
+        shopId,
+        shopName: items[0].shopName,
+        items,
+        totalPrice: items.reduce((sum, item) => sum + item.totalPrice, 0),
+      })),
+      selectedTotal,
+      selectedCount: selectedItems.length,
+    }
+
+    // Store complete checkout data
+    localStorage.setItem('checkoutData', JSON.stringify(checkoutData))
+    // Keep old key for backwards compatibility
+    localStorage.setItem('checkoutItems', JSON.stringify(selectedItems))
+
+    navigate(ROUTES.CHECKOUT_MULTISHOP)
   }
 
-  const handleQuantityChange = (id: string, qty: number) => {
-    setQty(id, Math.max(1, qty))
+  const selectedTotal = cartItems
+    .filter((item) => selected.includes(item.cartItemId))
+    .reduce((sum, item) => sum + item.totalPrice, 0)
+
+  // Loading state
+  if (isLoadingCart) {
+    return (
+      <div className='bg-stone-100 min-h-screen flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-800 mb-4'></div>
+          <p className='text-gray-600'>Đang tải giỏ hàng...</p>
+        </div>
+      </div>
+    )
   }
 
-  const selectedTotal = enrichedItems
-    .filter(item => selected.includes(item.id))
-    .reduce((sum, item) => sum + item.price * item.qty, 0)
+  // Error state
+  if (cartError) {
+    return (
+      <div className='bg-stone-100 min-h-screen flex items-center justify-center'>
+        <div className='bg-white rounded-md border-2 border-red-500 p-6 max-w-md text-center'>
+          <p className='text-red-600 font-semibold mb-4'>Lỗi tải giỏ hàng</p>
+          <p className='text-gray-600 mb-4'>{getErrorMessage(cartError)}</p>
+          <button
+            onClick={() => refetchCart()}
+            className='px-6 py-2 bg-yellow-800 text-white rounded hover:bg-yellow-900'
+          >
+            Thử lại
+          </button>
+          <Link
+            to={ROUTES.HOME}
+            className='ml-3 px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400'
+          >
+            Về trang chủ
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='bg-stone-100 min-h-screen'>
@@ -216,6 +311,7 @@ export default function Cart() {
                 checked={allSelected}
                 onChange={toggleAll}
                 className='w-4 h-4 rounded cursor-pointer flex-shrink-0'
+                style={{ accentColor: '#8B5A3C' }}
               />
               <span className='text-gray-600 text-sm font-medium flex-shrink-0'>Sản Phẩm</span>
             </div>
@@ -243,86 +339,113 @@ export default function Cart() {
         </div>
       </div>
 
-      <main className='w-full max-w-[1352px] mx-auto px-56 pt-16'>
+      <main className='w-full max-w-[1352px] mx-auto'>
         <div className='flex flex-col gap-3 pb-3'>
-
           {/* Empty Cart */}
-          {items.length === 0 && (
+          {cartItems.length === 0 && (
             <div className='w-full p-12 bg-white rounded-md border border-gray-200 text-center'>
               <p className='text-gray-600 mb-4'>Giỏ hàng trống. Khám phá thêm deal hot ngay!</p>
-              <Link to='/catalog' className='inline-block px-6 py-2 bg-yellow-800 text-white rounded hover:bg-yellow-900'>
+              <Link
+                to={ROUTES.CATALOG}
+                className='inline-block px-6 py-2 bg-yellow-800 text-white rounded hover:bg-yellow-900'
+              >
                 Tiếp tục mua sắm
               </Link>
             </div>
           )}
 
           {/* Shop Groups */}
-          {groupedShops.map(shop => {
-            const shopSelectedCount = shop.items.filter(item => selected.includes(item.id)).length
-            const isShopFullySelected = shop.items.every(item => selected.includes(item.id))
+          {groupedShops.map((shop) => {
+            const shopSelectedCount = shop.items.filter((item) =>
+              selected.includes(item.cartItemId)
+            ).length
+            const isShopFullySelected = shop.items.every((item) =>
+              selected.includes(item.cartItemId)
+            )
 
             return (
-              <div key={shop.shopId} className='w-full bg-white rounded-md border border-gray-200 overflow-hidden'>
+              <div
+                key={shop.shopId}
+                className='w-full bg-white rounded-md border border-gray-200 overflow-hidden'
+              >
                 {/* Shop Header */}
-                <div className='px-3 py-2.5 bg-orange-50 border-b border-gray-200 flex items-center gap-3'>
+                <div className='px-3 py-2.5 bg-yellow-50 border-b border-gray-200 flex items-center gap-3'>
                   <input
                     type='checkbox'
                     checked={isShopFullySelected}
                     onChange={() => toggleShop(shop.items)}
                     className='w-4 h-4 rounded cursor-pointer flex-shrink-0'
+                    style={{ accentColor: '#8B5A3C' }}
                   />
-                  <span className='text-orange-600 text-sm font-medium'>Yêu thích</span>
-                  <span className='text-gray-900 text-sm font-semibold flex-1'>{shop.shopName}</span>
-                  <span className='px-2 py-1 rounded border border-orange-400 text-orange-600 text-xs font-medium flex-shrink-0'>
+                  <span className='text-gray-900 text-sm font-semibold flex-1'>
+                    {shop.shopName}
+                  </span>
+                  <span className='px-2 py-1 rounded border border-yellow-800 text-yellow-800 text-xs font-medium flex-shrink-0'>
                     {shopSelectedCount} đã chọn
                   </span>
                 </div>
 
                 {/* Product Items */}
                 <div className='divide-y divide-gray-100'>
-                  {shop.items.map(item => (
-                    <div key={item.id} className='px-3 py-3 flex items-start gap-3'>
+                  {shop.items.map((item) => (
+                    <div key={item.cartItemId} className='px-3 py-3 flex items-start gap-3'>
                       {/* Checkbox + Product Info */}
                       <div className='flex items-start gap-3 flex-1 min-w-0'>
                         <input
                           type='checkbox'
-                          checked={selected.includes(item.id)}
-                          onChange={() => toggleItem(item.id)}
+                          checked={selected.includes(item.cartItemId)}
+                          onChange={() => toggleItem(item.cartItemId)}
                           className='w-4 h-4 rounded cursor-pointer flex-shrink-0 mt-1'
+                          style={{ accentColor: '#8B5A3C' }}
                         />
                         <img
-                          src={item.image}
-                          alt={item.title}
-                          className='w-16 h-16 rounded border border-gray-200 flex-shrink-0'
+                          src={item.thumbnailUrl}
+                          alt={item.productVersionName}
+                          className='w-16 h-16 rounded border border-gray-200 flex-shrink-0 object-cover'
                         />
                         <div className='flex-1 min-w-0'>
-                          <div className='text-gray-900 text-sm font-medium leading-5 line-clamp-2'>{item.title}</div>
-                          <div className='text-gray-500 text-xs font-normal leading-4 mt-1'>{item.variant}</div>
-                          <div className='text-gray-400 text-xs font-normal leading-4'>Phân loại hàng: Fuji Night (80x30)</div>
+                          <div className='text-gray-900 text-sm font-medium leading-5 line-clamp-2'>
+                            {item.productMasterName}
+                          </div>
+                          <div className='text-gray-500 text-xs font-normal leading-4 mt-1'>
+                            {item.productVersionName}
+                          </div>
+                          {item.isOutOfStock && (
+                            <div className='text-red-600 text-xs font-semibold mt-1'>
+                              Hết hàng
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {/* Đơn Giá */}
                       <div className='w-20 text-center flex-shrink-0 pt-1'>
-                        <div className='text-gray-900 text-sm font-medium'>{currency(item.price)}</div>
+                        <div className='text-gray-900 text-sm font-medium'>
+                          {currency(item.price)}
+                        </div>
                       </div>
 
                       {/* Số Lượng */}
                       <div className='w-24 flex justify-center flex-shrink-0'>
                         <div className='w-24 h-7 rounded border border-gray-300 flex items-center gap-1'>
                           <button
-                            onClick={() => handleQuantityChange(item.id, item.qty - 1)}
-                            disabled={item.qty === 1}
+                            onClick={() =>
+                              handleQuantityChange(item.cartItemId, item.quantity - 1)
+                            }
+                            disabled={item.quantity === 1}
                             className='w-7 h-7 flex items-center justify-center text-gray-600 disabled:opacity-30 hover:bg-gray-100 text-lg'
                           >
                             −
                           </button>
                           <div className='flex-1 h-7 flex items-center justify-center text-gray-900 text-sm font-medium'>
-                            {item.qty}
+                            {item.quantity}
                           </div>
                           <button
-                            onClick={() => handleQuantityChange(item.id, item.qty + 1)}
-                            className='w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg'
+                            onClick={() =>
+                              handleQuantityChange(item.cartItemId, item.quantity + 1)
+                            }
+                            disabled={updateQtyMutation.isPending}
+                            className='w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg disabled:opacity-50'
                           >
                             +
                           </button>
@@ -331,20 +454,25 @@ export default function Cart() {
 
                       {/* Số Tiền */}
                       <div className='w-20 text-center flex-shrink-0 pt-1'>
-                        <div className='text-orange-600 text-sm font-semibold'>{currency(item.price * item.qty)}</div>
+                        <div className='text-yellow-800 text-sm font-semibold'>
+                          {currency(item.totalPrice)}
+                        </div>
                       </div>
 
                       {/* Thao Tác */}
                       <div className='w-40 flex-shrink-0 pt-1'>
                         <div className='flex items-center gap-3 flex-wrap'>
                           <button
-                            onClick={() => remove(item.id)}
-                            className='text-orange-600 text-xs font-medium hover:text-orange-700 whitespace-nowrap'
+                            onClick={() =>
+                              removeItemMutation.mutate(item.cartItemId)
+                            }
+                            disabled={removeItemMutation.isPending}
+                            className='text-yellow-800 text-xs font-medium hover:text-yellow-900 disabled:opacity-50 whitespace-nowrap'
                           >
                             Xóa
                           </button>
                           <div className='w-px h-4 bg-gray-300'></div>
-                          <button className='text-orange-600 text-xs font-medium hover:text-orange-700 whitespace-nowrap'>
+                          <button className='text-yellow-800 text-xs font-medium hover:text-yellow-900 whitespace-nowrap'>
                             Tìm sản phẩm tương tự
                           </button>
                         </div>
@@ -353,21 +481,7 @@ export default function Cart() {
                   ))}
                 </div>
 
-                {/* Shop Footer - Voucher & Shipping */}
-                <div className='px-3 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-6'>
-                  <button className='flex items-center gap-1.5 text-orange-600 text-sm font-medium hover:text-orange-700'>
-                    <span>🎁</span>
-                    <span>Thêm Shop Voucher</span>
-                  </button>
-                  <button className='text-blue-600 text-sm font-medium hover:text-blue-700'>
-                    Gửi yêu cầu hoàn tiền
-                  </button>
-                  <div className='flex items-center gap-1.5 text-gray-600 text-sm flex-1'>
-                    <span>🎉</span>
-                    <span>Giảm 500.000đ phí vận chuyển đơn tối thiểu 0đ</span>
-                    <button className='text-blue-600 font-medium hover:text-blue-700'>Tìm hiểu thêm</button>
-                  </div>
-                </div>
+                
               </div>
             )
           })}
@@ -385,12 +499,16 @@ export default function Cart() {
                 checked={allSelected}
                 onChange={toggleAll}
                 className='w-4 h-4 rounded cursor-pointer'
+                style={{ accentColor: '#8B5A3C' }}
               />
-              <span className='text-gray-900 text-xs font-medium'>Chọn Tất Cả ({items.length})</span>
+              <span className='text-gray-900 text-xs font-medium'>
+                Chọn Tất Cả ({cartItems.length})
+              </span>
             </label>
             <button
               onClick={handleDeleteSelected}
-              className='text-gray-900 text-xs font-medium hover:text-red-600 whitespace-nowrap'
+              disabled={selected.length === 0 || removeItemMutation.isPending}
+              className='text-gray-900 text-xs font-medium hover:text-red-600 disabled:opacity-50 whitespace-nowrap'
             >
               Xóa
             </button>
@@ -411,13 +529,17 @@ export default function Cart() {
               <div className='text-gray-600 text-xs font-normal'>
                 Tổng cộng ({selected.length} sản phẩm):
               </div>
-              <div className='text-orange-600 text-xl font-bold'>
+              <div className='text-yellow-800 text-xl font-bold'>
                 {currency(selectedTotal)}
               </div>
             </div>
 
             {/* Buy Button */}
-            <button className='px-8 py-2 bg-orange-600 text-white rounded text-xs font-medium hover:bg-orange-700 transition flex-shrink-0'>
+            <button
+              onClick={handleCheckout}
+              disabled={selected.length === 0}
+              className='px-8 py-2 bg-yellow-800 text-white rounded text-xs font-medium hover:bg-yellow-900 disabled:opacity-50 disabled:cursor-not-allowed transition flex-shrink-0'
+            >
               Mua Hàng
             </button>
           </div>
