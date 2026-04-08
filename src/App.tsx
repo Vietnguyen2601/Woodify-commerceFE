@@ -8,6 +8,8 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import CheckoutMultiShop from './pages/CheckoutMultiShop'
 import { Payment } from './pages/Payment'
+import PaymentSuccess from './pages/payment/PaymentSuccess'
+import PaymentCancel from './pages/payment/PaymentCancel'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
@@ -66,6 +68,8 @@ export default function App() {
           <Route path='/checkout' element={<Checkout />} />
           <Route path='/checkout-multishop' element={<CheckoutMultiShop />} />
           <Route path='/payment' element={<Payment />} />
+          <Route path='/payment/success' element={<PaymentSuccess />} />
+          <Route path='/payment/cancel' element={<PaymentCancel />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />

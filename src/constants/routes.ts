@@ -12,6 +12,8 @@ export const ROUTES = {
   CART: '/cart',
   CHECKOUT: '/checkout',
   CHECKOUT_MULTISHOP: '/checkout-multishop',
+  PAYMENT_SUCCESS: '/payment/success',
+  PAYMENT_CANCEL: '/payment/cancel',
 
   // Auth routes
   LOGIN: '/login',

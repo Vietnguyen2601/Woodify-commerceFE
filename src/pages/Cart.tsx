@@ -204,155 +204,224 @@ export default function Cart() {
     .reduce((sum, item) => sum + item.price * item.qty, 0)
 
   return (
-    <div className='cart-page'>
-
-      <main className='cart-main'>
-        <section className='cart-table-wrapper'>
-          <div className='cart-table'>
-            <div className='cart-table__head'>
-              <div className='cart-table__head-product'>
-                <label className='cart-checkbox'>
-                  <input type='checkbox' checked={allSelected} onChange={toggleAll} />
-                  <span>Chọn tất cả ({items.length})</span>
-                </label>
-                <span className='cart-table__hint'>Sản phẩm</span>
-              </div>
-              <div>Đơn giá</div>
-              <div>Số lượng</div>
-              <div>Số tiền</div>
-              <div>Thao tác</div>
+    <div className='bg-stone-100 min-h-screen'>
+      {/* Table Header - Full Width */}
+      <div className='sticky top-0 z-30 w-full bg-white border-b border-gray-200'>
+        <div className='w-full max-w-[1352px] mx-auto px-56 py-3'>
+          <div className='flex items-center gap-3'>
+            {/* Checkbox + Sản Phẩm */}
+            <div className='flex items-center gap-2 flex-1 min-w-0'>
+              <input
+                type='checkbox'
+                checked={allSelected}
+                onChange={toggleAll}
+                className='w-4 h-4 rounded cursor-pointer flex-shrink-0'
+              />
+              <span className='text-gray-600 text-sm font-medium flex-shrink-0'>Sản Phẩm</span>
             </div>
 
-            {items.length === 0 && (
-              <div className='cart-empty'>
-                <p>Giỏ hàng trống. Khám phá thêm deal hot ngay!</p>
-                <Link to='/catalog' className='cart-cta ghost'>Tiếp tục mua sắm</Link>
-              </div>
-            )}
+            {/* Đơn Giá */}
+            <div className='w-20 text-center flex-shrink-0'>
+              <span className='text-gray-600 text-sm font-medium'>Đơn Giá</span>
+            </div>
 
-            {groupedShops.map(shop => (
-              <article className='cart-shop' key={shop.shopId}>
-                <div className='cart-shop__header'>
-                  <label className='cart-checkbox'>
-                    <input
-                      type='checkbox'
-                      checked={shop.items.every(item => selected.includes(item.id))}
-                      onChange={() => toggleShop(shop.items)}
-                    />
-                    <span>
-                      {shop.shopName}
-                      <span className='cart-shop__favorite'>Yêu thích+</span>
-                    </span>
-                  </label>
-                  <Link to='/profile' className='cart-link'>Trò chuyện</Link>
+            {/* Số Lượng */}
+            <div className='w-24 text-center flex-shrink-0'>
+              <span className='text-gray-600 text-sm font-medium'>Số Lượng</span>
+            </div>
+
+            {/* Số Tiền */}
+            <div className='w-20 text-center flex-shrink-0'>
+              <span className='text-gray-600 text-sm font-medium'>Số Tiền</span>
+            </div>
+
+            {/* Thao Tác */}
+            <div className='w-40 flex-shrink-0'>
+              <span className='text-gray-600 text-sm font-medium'>Thao Tác</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main className='w-full max-w-[1352px] mx-auto px-56 pt-16'>
+        <div className='flex flex-col gap-3 pb-3'>
+
+          {/* Empty Cart */}
+          {items.length === 0 && (
+            <div className='w-full p-12 bg-white rounded-md border border-gray-200 text-center'>
+              <p className='text-gray-600 mb-4'>Giỏ hàng trống. Khám phá thêm deal hot ngay!</p>
+              <Link to='/catalog' className='inline-block px-6 py-2 bg-yellow-800 text-white rounded hover:bg-yellow-900'>
+                Tiếp tục mua sắm
+              </Link>
+            </div>
+          )}
+
+          {/* Shop Groups */}
+          {groupedShops.map(shop => {
+            const shopSelectedCount = shop.items.filter(item => selected.includes(item.id)).length
+            const isShopFullySelected = shop.items.every(item => selected.includes(item.id))
+
+            return (
+              <div key={shop.shopId} className='w-full bg-white rounded-md border border-gray-200 overflow-hidden'>
+                {/* Shop Header */}
+                <div className='px-3 py-2.5 bg-orange-50 border-b border-gray-200 flex items-center gap-3'>
+                  <input
+                    type='checkbox'
+                    checked={isShopFullySelected}
+                    onChange={() => toggleShop(shop.items)}
+                    className='w-4 h-4 rounded cursor-pointer flex-shrink-0'
+                  />
+                  <span className='text-orange-600 text-sm font-medium'>Yêu thích</span>
+                  <span className='text-gray-900 text-sm font-semibold flex-1'>{shop.shopName}</span>
+                  <span className='px-2 py-1 rounded border border-orange-400 text-orange-600 text-xs font-medium flex-shrink-0'>
+                    {shopSelectedCount} đã chọn
+                  </span>
                 </div>
 
-                {shop.items.map(item => (
-                  <div className='cart-row' key={item.id}>
-                    <div className='cart-row__product'>
-                      <label className='cart-checkbox'>
+                {/* Product Items */}
+                <div className='divide-y divide-gray-100'>
+                  {shop.items.map(item => (
+                    <div key={item.id} className='px-3 py-3 flex items-start gap-3'>
+                      {/* Checkbox + Product Info */}
+                      <div className='flex items-start gap-3 flex-1 min-w-0'>
                         <input
                           type='checkbox'
                           checked={selected.includes(item.id)}
                           onChange={() => toggleItem(item.id)}
+                          className='w-4 h-4 rounded cursor-pointer flex-shrink-0 mt-1'
                         />
-                      </label>
-                      <img src={item.image} alt={item.title} className='cart-row__thumb' />
-                      <div>
-                        <div className='cart-row__title'>{item.title}</div>
-                        <div className='cart-row__variant'>{item.variant}</div>
-                        <div className='cart-row__meta'>{item.shippingEta}</div>
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className='w-16 h-16 rounded border border-gray-200 flex-shrink-0'
+                        />
+                        <div className='flex-1 min-w-0'>
+                          <div className='text-gray-900 text-sm font-medium leading-5 line-clamp-2'>{item.title}</div>
+                          <div className='text-gray-500 text-xs font-normal leading-4 mt-1'>{item.variant}</div>
+                          <div className='text-gray-400 text-xs font-normal leading-4'>Phân loại hàng: Fuji Night (80x30)</div>
+                        </div>
+                      </div>
+
+                      {/* Đơn Giá */}
+                      <div className='w-20 text-center flex-shrink-0 pt-1'>
+                        <div className='text-gray-900 text-sm font-medium'>{currency(item.price)}</div>
+                      </div>
+
+                      {/* Số Lượng */}
+                      <div className='w-24 flex justify-center flex-shrink-0'>
+                        <div className='w-24 h-7 rounded border border-gray-300 flex items-center gap-1'>
+                          <button
+                            onClick={() => handleQuantityChange(item.id, item.qty - 1)}
+                            disabled={item.qty === 1}
+                            className='w-7 h-7 flex items-center justify-center text-gray-600 disabled:opacity-30 hover:bg-gray-100 text-lg'
+                          >
+                            −
+                          </button>
+                          <div className='flex-1 h-7 flex items-center justify-center text-gray-900 text-sm font-medium'>
+                            {item.qty}
+                          </div>
+                          <button
+                            onClick={() => handleQuantityChange(item.id, item.qty + 1)}
+                            className='w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg'
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Số Tiền */}
+                      <div className='w-20 text-center flex-shrink-0 pt-1'>
+                        <div className='text-orange-600 text-sm font-semibold'>{currency(item.price * item.qty)}</div>
+                      </div>
+
+                      {/* Thao Tác */}
+                      <div className='w-40 flex-shrink-0 pt-1'>
+                        <div className='flex items-center gap-3 flex-wrap'>
+                          <button
+                            onClick={() => remove(item.id)}
+                            className='text-orange-600 text-xs font-medium hover:text-orange-700 whitespace-nowrap'
+                          >
+                            Xóa
+                          </button>
+                          <div className='w-px h-4 bg-gray-300'></div>
+                          <button className='text-orange-600 text-xs font-medium hover:text-orange-700 whitespace-nowrap'>
+                            Tìm sản phẩm tương tự
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div className='cart-row__price'>{currency(item.price)}</div>
-                    <div className='cart-row__qty'>
-                      <button onClick={() => handleQuantityChange(item.id, item.qty - 1)} disabled={item.qty === 1}>-</button>
-                      <input
-                        type='number'
-                        min={1}
-                        value={item.qty}
-                        onChange={e => {
-                          const nextValue = Number(e.target.value)
-                          if (!Number.isNaN(nextValue)) {
-                            handleQuantityChange(item.id, nextValue)
-                          }
-                        }}
-                      />
-                      <button onClick={() => handleQuantityChange(item.id, item.qty + 1)}>+</button>
-                    </div>
-                    <div className='cart-row__total'>{currency(item.price * item.qty)}</div>
-                    <div className='cart-row__actions'>
-                      <button onClick={() => remove(item.id)} className='cart-link'>Xóa</button>
-                      <Link to='/catalog' className='cart-link muted'>Tìm sản phẩm tương tự</Link>
-                    </div>
-                  </div>
-                ))}
-
-                <div className='cart-shop__footer'>
-                  <div className='cart-shop__voucher'>
-                    <span className='badge'>Voucher Shop</span>
-                    <p>{shop.shopVoucher}</p>
-                    <button className='cart-link'>Xem thêm voucher ▸</button>
-                  </div>
-                  <div className='cart-shop__shipping'>
-                    <span className='badge ghost'>Ưu đãi vận chuyển</span>
-                    <p>{shop.shippingNote}</p>
-                  </div>
+                  ))}
                 </div>
-              </article>
-            ))}
-          </div>
 
-          <section className='cart-voucher'>
-            <div>
-              <h3>Voucher</h3>
-              <p>Chọn ngay mã giảm giá để tiết kiệm hơn</p>
-            </div>
-            <button className='cart-link strong'>Chọn hoặc nhập mã ▸</button>
-            <label className='cart-checkbox cart-xu-option'>
-              <input type='checkbox' disabled />
-              <span>Dùng Xu (Hiện chưa khả dụng)</span>
-            </label>
-          </section>
-        </section>
-
-        <section className='cart-suggestion'>
-          <div className='cart-section-heading'>
-            <div>
-              <p className='eyebrow'>DÀNH RIÊNG CHO BẠN</p>
-              <h3>Có thể bạn cũng thích</h3>
-            </div>
-            <Link to='/catalog' className='cart-link strong'>Xem tất cả →</Link>
-          </div>
-          <div className='cart-suggestion__grid'>
-            {suggestionProducts.map(product => (
-              <div className='suggestion-card' key={product.id}>
-                <div className='suggestion-card__media'>
-                  <img src={product.image} alt={product.title} />
-                  <span className='suggestion-card__badge'>{product.badge}</span>
-                </div>
-                <div className='suggestion-card__body'>
-                  <p>{product.title}</p>
-                  <strong>{product.price}</strong>
+                {/* Shop Footer - Voucher & Shipping */}
+                <div className='px-3 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-6'>
+                  <button className='flex items-center gap-1.5 text-orange-600 text-sm font-medium hover:text-orange-700'>
+                    <span>🎁</span>
+                    <span>Thêm Shop Voucher</span>
+                  </button>
+                  <button className='text-blue-600 text-sm font-medium hover:text-blue-700'>
+                    Gửi yêu cầu hoàn tiền
+                  </button>
+                  <div className='flex items-center gap-1.5 text-gray-600 text-sm flex-1'>
+                    <span>🎉</span>
+                    <span>Giảm 500.000đ phí vận chuyển đơn tối thiểu 0đ</span>
+                    <button className='text-blue-600 font-medium hover:text-blue-700'>Tìm hiểu thêm</button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
+            )
+          })}
+        </div>
       </main>
 
-      <div className='cart-action-bar'>
-        <label className='cart-checkbox'>
-          <input type='checkbox' checked={allSelected} onChange={toggleAll} />
-          <span>Chọn tất cả ({items.length})</span>
-        </label>
-        <button className='cart-link' onClick={handleDeleteSelected}>Xóa</button>
-        <button className='cart-link'>Lưu vào mục Đã thích</button>
-        <div className='cart-action-bar__summary'>
-          <span>Tổng thanh toán:</span>
-          <strong>{currency(selectedTotal)}</strong>
+      {/* Sticky Footer */}
+      <div className='sticky bottom-0 z-40 w-full bg-white border-t-2 border-gray-200 shadow-md'>
+        <div className='w-full max-w-[1352px] mx-auto px-56 py-2.5 flex items-center justify-between gap-4'>
+          {/* Left Section */}
+          <div className='flex items-center gap-2 flex-shrink-0'>
+            <label className='flex items-center gap-2 cursor-pointer whitespace-nowrap'>
+              <input
+                type='checkbox'
+                checked={allSelected}
+                onChange={toggleAll}
+                className='w-4 h-4 rounded cursor-pointer'
+              />
+              <span className='text-gray-900 text-xs font-medium'>Chọn Tất Cả ({items.length})</span>
+            </label>
+            <button
+              onClick={handleDeleteSelected}
+              className='text-gray-900 text-xs font-medium hover:text-red-600 whitespace-nowrap'
+            >
+              Xóa
+            </button>
+            <div className='w-px h-3 bg-gray-300'></div>
+            <button className='text-gray-900 text-xs font-medium hover:text-blue-600 whitespace-nowrap'>
+              Bỏ sản phẩm không hoạt động
+            </button>
+            <div className='w-px h-3 bg-gray-300'></div>
+            <button className='text-gray-900 text-xs font-medium hover:text-blue-600 whitespace-nowrap'>
+              Lưu vào mục Đã thích
+            </button>
+          </div>
+
+          {/* Right Section */}
+          <div className='flex items-center gap-4 flex-shrink-0'>
+            {/* Total Section */}
+            <div className='flex flex-col gap-0.5 text-right whitespace-nowrap'>
+              <div className='text-gray-600 text-xs font-normal'>
+                Tổng cộng ({selected.length} sản phẩm):
+              </div>
+              <div className='text-orange-600 text-xl font-bold'>
+                {currency(selectedTotal)}
+              </div>
+            </div>
+
+            {/* Buy Button */}
+            <button className='px-8 py-2 bg-orange-600 text-white rounded text-xs font-medium hover:bg-orange-700 transition flex-shrink-0'>
+              Mua Hàng
+            </button>
+          </div>
         </div>
-        <button className='cart-cta primary'>Mua Hàng</button>
       </div>
     </div>
   )
