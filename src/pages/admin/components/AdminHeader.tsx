@@ -24,15 +24,6 @@ export default function AdminHeader() {
       <div className='mx-2 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 backdrop-blur-[1px]'>
         <div className='flex flex-wrap items-center justify-between gap-4'>
           <div className='flex min-w-0 items-center gap-3'>
-            <button
-              type='button'
-              aria-label={t.menu}
-              className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-black/20 bg-white/20 text-gray-900 transition-colors hover:bg-black/10'
-            >
-              <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='#2f2418' strokeWidth='1.8' strokeLinecap='round'>
-                <path d='M4 7h16M4 12h16M4 17h16' />
-              </svg>
-            </button>
 
             <div className='min-w-0'>
               <p className='truncate text-[11px] font-semibold uppercase tracking-[0.2em] text-white/85'>{t.subtitle}</p>

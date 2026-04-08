@@ -1,6 +1,6 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useDebounce } from '@/hooks'
+import { useDebounce, useAppLanguage } from '@/hooks'
 import { categoryService, queryKeys } from '@/services'
 import type { CategoryDTO } from '@/types'
 import CategoryCreateForm from './CategoryCreateForm'
@@ -13,10 +13,10 @@ const STATUS_BADGE: Record<'true' | 'false', string> = {
   false: 'bg-amber-50 text-amber-700 border border-amber-200',
 }
 
-const formatDate = (isoDate?: string | null) => {
-  if (!isoDate) return 'Chưa xác định'
+const formatDate = (isoDate: string | null | undefined, locale: string, fallback: string) => {
+  if (!isoDate) return fallback
   try {
-    return new Intl.DateTimeFormat('vi-VN', {
+    return new Intl.DateTimeFormat(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -26,9 +26,121 @@ const formatDate = (isoDate?: string | null) => {
   }
 }
 
+type CategoryTexts = {
+  searchLabel: string
+  searchPlaceholder: string
+  statusLabel: string
+  statusAll: string
+  statusActive: string
+  statusInactive: string
+  addLabel: string
+  pageTitle: string
+  pageSubtitle: string
+  metricsTotal: string
+  metricsRoot: string
+  metricsActive: string
+  rootSectionTitle: string
+  rootSectionDesc: string
+  rootCountLabel: string
+  rootLoadError: string
+  rootEmpty: string
+  rootSelectAction: string
+  rootSubCount: string
+  statusActiveLabel: string
+  statusInactiveLabel: string
+  subSectionTitle: string
+  subSectionDesc: string
+  addChild: string
+  selectRootPrompt: string
+  childEmpty: string
+  detailEmpty: string
+  detailSectionTitle: string
+  detailQuickInfo: string
+  detailIdLabel: string
+  detailDescriptionLabel: string
+  detailDescriptionNone: string
+  detailParent: string
+  detailRootParent: string
+  detailStatusLabel: string
+  detailChildrenCount: string
+  detailCreatedAt: string
+  detailUpdatedAt: string
+  timelineTitle: string
+  timelineCreated: string
+  timelineUpdated: string
+  timelineStatus: string
+  editCategory: string
+  dateUnknown: string
+}
+
 export default function CategoryManager() {
+  const { isVietnamese } = useAppLanguage()
   const [searchTerm, setSearchTerm] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all')
+
+  const t = React.useMemo<CategoryTexts>(
+    () => ({
+      searchLabel: isVietnamese ? 'Tìm kiếm' : 'Search',
+      searchPlaceholder: isVietnamese ? 'Tìm nhanh theo tên hoặc mô tả danh mục' : 'Search by name or description...',
+      statusLabel: isVietnamese ? 'Trạng thái' : 'Status',
+      statusAll: isVietnamese ? 'Tất cả' : 'All',
+      statusActive: isVietnamese ? 'Hoạt động' : 'Active',
+      statusInactive: isVietnamese ? 'Tạm dừng' : 'Inactive',
+      addLabel: isVietnamese ? 'Thêm' : 'Add',
+      pageTitle: isVietnamese ? 'Quản lý danh mục' : 'Category Management',
+      pageSubtitle: isVietnamese
+        ? 'Quản trị danh mục đa cấp với bố cục ngang trực quan hơn.'
+        : 'Manage multi-level categories with a clear horizontal layout.',
+      metricsTotal: isVietnamese ? 'Tổng số danh mục' : 'Total categories',
+      metricsRoot: isVietnamese ? 'Danh mục gốc' : 'Root categories',
+      metricsActive: isVietnamese ? 'Đang hoạt động' : 'Active categories',
+      rootSectionTitle: isVietnamese ? 'Danh mục gốc' : 'Root categories',
+      rootSectionDesc: isVietnamese
+        ? '6 thẻ ngang. Cuộn để xem thêm hoặc chọn bằng dropdown.'
+        : 'Six cards across. Scroll to see more or pick from the dropdown.',
+      rootCountLabel: isVietnamese ? 'mục hiển thị' : 'items shown',
+      rootLoadError: isVietnamese ? 'Không thể tải danh mục. Vui lòng thử lại.' : 'Unable to load categories. Please try again.',
+      rootEmpty: isVietnamese
+        ? 'Không có danh mục gốc phù hợp với bộ lọc hiện tại.'
+        : 'No root categories match the current filters.',
+      rootSelectAction: isVietnamese ? 'Chọn danh mục' : 'Select category',
+      rootSubCount: isVietnamese ? 'danh mục con' : 'subcategories',
+      statusActiveLabel: isVietnamese ? 'Đang hoạt động' : 'Active',
+      statusInactiveLabel: isVietnamese ? 'Tạm dừng' : 'Inactive',
+      subSectionTitle: isVietnamese ? 'Danh mục con' : 'Subcategories',
+      subSectionDesc: isVietnamese
+        ? 'Hiển thị cấp 1 của danh mục gốc đang chọn.'
+        : 'Showing level-1 categories under the selected root.',
+      addChild: isVietnamese ? 'Thêm danh mục con' : 'Add subcategory',
+      selectRootPrompt: isVietnamese
+        ? 'Chọn một danh mục gốc ở phía trên để xem danh mục con.'
+        : 'Select a root category above to view its subcategories.',
+      childEmpty: isVietnamese
+        ? 'Chưa có danh mục con. Nhấn "Thêm danh mục con" để tạo mới.'
+        : 'No subcategories yet. Click "Add subcategory" to create one.',
+      detailEmpty: isVietnamese
+        ? 'Chọn danh mục gốc hoặc danh mục con để xem chi tiết.'
+        : 'Select a root or subcategory to view details.',
+      detailSectionTitle: isVietnamese ? 'Danh mục đang xem' : 'Selected category',
+      detailQuickInfo: isVietnamese ? 'Thông tin nhanh' : 'Quick info',
+      detailIdLabel: isVietnamese ? 'Mã' : 'ID',
+      detailDescriptionLabel: isVietnamese ? 'Mô tả' : 'Description',
+      detailDescriptionNone: isVietnamese ? 'Chưa có mô tả' : 'No description',
+      detailParent: isVietnamese ? 'Danh mục cha' : 'Parent category',
+      detailRootParent: isVietnamese ? 'Danh mục gốc' : 'Root category',
+      detailStatusLabel: isVietnamese ? 'Trạng thái' : 'Status',
+      detailChildrenCount: isVietnamese ? 'Số danh mục con' : 'Subcategory count',
+      detailCreatedAt: isVietnamese ? 'Ngày tạo' : 'Created at',
+      detailUpdatedAt: isVietnamese ? 'Cập nhật gần nhất' : 'Last updated',
+      timelineTitle: isVietnamese ? 'Timeline' : 'Timeline',
+      timelineCreated: isVietnamese ? 'Tạo' : 'Created',
+      timelineUpdated: isVietnamese ? 'Cập nhật' : 'Updated',
+      timelineStatus: isVietnamese ? 'Tình trạng' : 'Status',
+      editCategory: isVietnamese ? 'Chỉnh sửa danh mục' : 'Edit category',
+      dateUnknown: isVietnamese ? 'Chưa xác định' : 'Unknown',
+    }),
+    [isVietnamese]
+  )
   const [selectedRootId, setSelectedRootId] = React.useState<string | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null)
   const [isCreateFormOpen, setIsCreateFormOpen] = React.useState(false)
@@ -161,7 +273,7 @@ export default function CategoryManager() {
     const active = categories.filter((cat) => cat.isActive).length
     return [
       {
-        label: 'Tổng số danh mục',
+        label: t.metricsTotal,
         value: total,
         iconBg: 'bg-blue-50',
         icon: (
@@ -172,7 +284,7 @@ export default function CategoryManager() {
         ),
       },
       {
-        label: 'Danh mục gốc',
+        label: t.metricsRoot,
         value: root,
         iconBg: 'bg-purple-50',
         icon: (
@@ -182,7 +294,7 @@ export default function CategoryManager() {
         ),
       },
       {
-        label: 'Đang hoạt động',
+        label: t.metricsActive,
         value: active,
         iconBg: 'bg-green-50',
         icon: (
@@ -192,7 +304,7 @@ export default function CategoryManager() {
         ),
       },
     ]
-  }, [categories])
+  }, [categories, t.metricsActive, t.metricsRoot, t.metricsTotal])
 
   const handleRootSelect = (categoryId: string) => {
     setSelectedRootId(categoryId)
@@ -242,130 +354,105 @@ export default function CategoryManager() {
     <div className='space-y-6'>
       <header className='flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4'>
         <div>
-          <p className='text-xs font-semibold uppercase tracking-[0.28em] text-gray-500'>Woodify Admin</p>
-          <h1 className='text-[22px] font-semibold text-gray-900'>Quản lý danh mục</h1>
-          <p className='mt-1 text-sm text-gray-500'>Quản trị danh mục đa cấp với bố cục ngang trực quan hơn.</p>
+          <h1 className='text-[22px] font-semibold text-gray-900'>{t.pageTitle}</h1>
+          <p className='mt-1 text-sm text-gray-500'>{t.pageSubtitle}</p>
+        </div>
+        <div className='flex items-center gap-2'>
+          <button
+            type='button'
+            className='inline-flex h-10 items-center gap-2 rounded-lg bg-stone-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+            onClick={() => openCreateForm(null)}
+          >
+            <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+              <path d='M12 6v12M6 12h12' strokeLinecap='round' />
+            </svg>
+            {t.addLabel}
+          </button>
         </div>
       </header>
 
-      <div className='rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'>
-        <div className='flex flex-wrap items-center gap-3 md:gap-4'>
-          <div className='relative flex-1 min-w-[240px]'>
-            <span className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400'>
-              <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                <circle cx='11' cy='11' r='7' />
-                <path d='m16.5 16.5 4 4' strokeLinecap='round' />
-              </svg>
-            </span>
-            <input
-              type='search'
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder='Tìm nhanh theo tên hoặc mô tả danh mục'
-              className='h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-10 text-sm text-gray-900 placeholder:text-gray-500 transition focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-200'
-            />
-            {isSearching && (
-              <span className='pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400'>
-                <svg className='h-4 w-4 animate-spin' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                  <circle cx='12' cy='12' r='9' strokeOpacity='0.25' />
-                  <path d='M21 12a9 9 0 0 0-9-9' strokeLinecap='round' />
-                </svg>
-              </span>
-            )}
-          </div>
-
-          <label className='flex-1 min-w-[200px] text-xs font-medium text-gray-600'>
-            <span className='mb-1 block text-[11px] uppercase tracking-wide text-gray-500'>Trạng thái</span>
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
-              className='h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 transition focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200'
-            >
-              <option value='all'>Tất cả</option>
-              <option value='active'>Đang hoạt động</option>
-              <option value='inactive'>Tạm dừng</option>
-            </select>
-          </label>
-
-          <div className='ml-auto flex items-center gap-2'>
-            <button
-              type='button'
-              className='inline-flex h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-200'
-              onClick={() => refetch()}
-            >
-              <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                <path d='M4 4v6h6' strokeLinecap='round' strokeLinejoin='round' />
-                <path d='M20 20v-6h-6' strokeLinecap='round' strokeLinejoin='round' />
-                <path d='M5 19a9 9 0 0 0 14-2.1M19 5A9 9 0 0 0 5 7.1' strokeLinecap='round' />
-              </svg>
-              Làm mới
-            </button>
-            <button
-              type='button'
-              className='inline-flex h-11 items-center gap-2 rounded-xl bg-stone-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
-              onClick={() => openCreateForm(null)}
-            >
-              <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                <path d='M12 6v12M6 12h12' strokeLinecap='round' />
-              </svg>
-              Thêm danh mục
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className='rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'>
-        <div className='flex flex-wrap items-center gap-4'>
-          <div className='flex-1 min-w-[220px]'>
-            <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Selected box</p>
-            <p className='text-sm text-gray-500'>Chọn nhanh bất kỳ danh mục nào trong cây để highlight và scroll.</p>
-          </div>
-          <label className='flex-1 min-w-[260px] text-xs font-medium text-gray-700'>
-            <span className='sr-only'>Chọn danh mục</span>
-            <select
-              className='h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 transition focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200'
-              value={selectedHierarchyValue}
-              onChange={(event) => handleQuickSelect(event.target.value)}
-            >
-              <option value=''>Danh mục gốc &gt; danh mục con</option>
-              {hierarchyOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
-
       <div className='grid gap-4 md:grid-cols-3'>
         {metrics.map((metric) => (
-          <div key={metric.label} className='rounded-xl border border-gray-100 bg-white/90 p-4 shadow-sm'>
+          <div key={metric.label} className='rounded-xl border border-gray-100 bg-white p-4 shadow-sm'>
             <div className='flex items-center justify-between gap-3'>
               <div>
                 <p className='text-xs font-medium uppercase tracking-wide text-gray-500'>{metric.label}</p>
                 <p className='mt-1 text-xl font-semibold text-gray-900'>{isLoading ? '...' : metric.value}</p>
               </div>
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${metric.iconBg}`}>{metric.icon}</span>
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${metric.iconBg}`}>
+                {metric.icon}
+              </span>
             </div>
           </div>
         ))}
       </div>
 
+      <div className='rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'>
+        <div className='flex gap-4 items-start justify-between'>
+          {/* Search - Left */}
+          <div className='flex-[0.5] flex flex-col space-y-2'>
+            <label className='text-xs font-medium text-gray-700'>{t.searchLabel || 'Search'}</label>
+            <div className='relative'>
+              <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
+                <svg className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.5'>
+                  <circle cx='11' cy='11' r='7' />
+                  <path d='m16.5 16.5 4 4' strokeLinecap='round' />
+                </svg>
+              </span>
+              <input
+                type='text'
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={t.searchPlaceholder}
+                className='h-10 w-full appearance-none rounded-xl border border-gray-200 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none'
+                style={{ paddingLeft: '3rem' }}
+              />
+              {isSearching && (
+                <span className='pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400'>
+                  <svg className='h-4 w-4 animate-spin' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+                    <circle cx='12' cy='12' r='9' strokeOpacity='0.25' />
+                    <path d='M21 12a9 9 0 0 0-9-9' strokeLinecap='round' />
+                  </svg>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Filters + Actions - Right */}
+          <div className='flex gap-3 items-start mr-2'>
+            <div className='w-[120px] rounded-xl border border-gray-200 bg-white p-3'>
+              <label className='mb-1 block text-xs font-medium text-gray-600'>{t.statusLabel}</label>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
+                className='h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'
+              >
+                <option value='all'>{t.statusAll}</option>
+                <option value='active'>{t.statusActive}</option>
+                <option value='inactive'>{t.statusInactive}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <section className='space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
         <div className='flex flex-wrap items-center justify-between gap-3'>
           <div>
-            <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Danh mục gốc</p>
-            <p className='text-sm text-gray-600'>6 thẻ ngang. Cuộn để xem thêm hoặc chọn bằng dropdown.</p>
+            <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{t.rootSectionTitle}</p>
+            <p className='text-sm text-gray-600'>{t.rootSectionDesc}</p>
           </div>
-          <span className='text-xs font-semibold text-gray-400'>{filteredRootCategories.length} mục hiển thị</span>
+          <span className='text-xs font-semibold text-gray-400'>
+            {filteredRootCategories.length} {t.rootCountLabel}
+          </span>
         </div>
-        {isError && <p className='text-sm text-red-500'>Không thể tải danh mục. Vui lòng thử lại.</p>}
+        {isError && <p className='text-sm text-red-500'>{t.rootLoadError}</p>}
         <RootCategoryGrid
           categories={filteredRootCategories}
           highlightIds={highlightRootIds}
           isLoading={isLoading}
           selectedId={selectedRootId}
+          texts={t}
           onSelect={handleRootSelect}
         />
       </section>
@@ -376,11 +463,17 @@ export default function CategoryManager() {
           isLoading={isLoading}
           parentCategory={categories.find((cat) => cat.categoryId === selectedRootId) ?? null}
           selectedId={selectedCategoryId}
+          texts={t}
           onSelect={handleChildSelect}
           onAddChild={openCreateForm}
         />
 
-        <CategoryDetailPanel category={selectedCategory} onAddChild={openCreateForm} />
+        <CategoryDetailPanel
+          category={selectedCategory}
+          onAddChild={openCreateForm}
+          texts={t}
+          locale={isVietnamese ? 'vi-VN' : 'en-US'}
+        />
       </div>
 
       {isCreateFormOpen && (
@@ -390,7 +483,7 @@ export default function CategoryManager() {
               type='button'
               onClick={closeCreateForm}
               className='absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow hover:text-gray-800'
-              aria-label='Đóng form tạo danh mục'
+              aria-label={isVietnamese ? 'Đóng form tạo danh mục' : 'Close category form'}
             >
               <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
                 <path d='M6 6l12 12M18 6l-12 12' strokeLinecap='round' />
@@ -425,7 +518,7 @@ function buildCategoryTree(categories: CategoryDTO[]): CategoryNode[] {
     }
   })
 
-  const sortNodes = (nodes: CategoryNode[]) =>
+  const sortNodes = (nodes: CategoryNode[]): CategoryNode[] =>
     nodes
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((node) => ({ ...node, children: sortNodes(node.children) }))
@@ -476,10 +569,11 @@ interface RootCategoryGridProps {
   selectedId: string | null
   highlightIds: Set<string>
   isLoading: boolean
+  texts: CategoryTexts
   onSelect: (categoryId: string) => void
 }
 
-function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, onSelect }: RootCategoryGridProps) {
+function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, texts, onSelect }: RootCategoryGridProps) {
   if (isLoading) {
     return (
       <div className='grid min-w-[960px] grid-cols-6 gap-4 overflow-x-auto pb-2 lg:min-w-0 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2'>
@@ -491,7 +585,7 @@ function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, onS
   }
 
   if (!categories.length) {
-    return <p className='text-sm text-gray-500'>Không có danh mục gốc phù hợp với bộ lọc hiện tại.</p>
+    return <p className='text-sm text-gray-500'>{texts.rootEmpty}</p>
   }
 
   return (
@@ -515,14 +609,14 @@ function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, onS
                 <span className={`inline-flex rounded-xl px-2 py-0.5 text-[11px] font-semibold ${
                   STATUS_BADGE[category.isActive ? 'true' : 'false']
                 } ${isSelected ? 'bg-white/20 text-white' : ''}`}>
-                  {category.isActive ? 'Active' : 'Inactive'}
+                  {category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel}
                 </span>
               </div>
               <p className={`mt-2 text-sm ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                {category.subCategoriesCount} danh mục con
+                {category.subCategoriesCount} {texts.rootSubCount}
               </p>
               <span className={`mt-auto inline-flex items-center text-sm font-semibold ${isSelected ? 'text-white' : 'text-stone-900'}`}>
-                Chọn danh mục
+                {texts.rootSelectAction}
                 <svg className='ml-1 h-4 w-4' viewBox='0 0 16 16' fill='none' stroke='currentColor' strokeWidth='1.4'>
                   <path d='M6 4l4 4-4 4' strokeLinecap='round' strokeLinejoin='round' />
                 </svg>
@@ -540,17 +634,18 @@ interface SubCategoryPanelProps {
   parentCategory: CategoryDTO | null
   selectedId: string | null
   isLoading: boolean
+  texts: CategoryTexts
   onSelect: (categoryId: string) => void
   onAddChild: (parentId: string | null) => void
 }
 
-function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, onSelect, onAddChild }: SubCategoryPanelProps) {
+function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, texts, onSelect, onAddChild }: SubCategoryPanelProps) {
   return (
     <section className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
       <div className='flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4'>
         <div>
-          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Danh mục con</p>
-          <p className='text-sm text-gray-600'>Hiển thị cấp 1 của danh mục gốc đang chọn.</p>
+          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{texts.subSectionTitle}</p>
+          <p className='text-sm text-gray-600'>{texts.subSectionDesc}</p>
         </div>
         {parentCategory && (
           <button
@@ -561,12 +656,12 @@ function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, o
             <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
               <path d='M12 6v12M6 12h12' strokeLinecap='round' />
             </svg>
-            Thêm danh mục con
+            {texts.addChild}
           </button>
         )}
       </div>
 
-      {!parentCategory && <p className='mt-4 text-sm text-gray-500'>Chọn một danh mục gốc ở phía trên để xem danh mục con.</p>}
+      {!parentCategory && <p className='mt-4 text-sm text-gray-500'>{texts.selectRootPrompt}</p>}
 
       {parentCategory && (
         <div className='mt-4'>
@@ -594,14 +689,14 @@ function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, o
                       <span className={`rounded-lg px-2 py-0.5 text-[11px] font-semibold ${
                         STATUS_BADGE[category.isActive ? 'true' : 'false']
                       } ${isSelected ? 'bg-white/20 text-white' : ''}`}>
-                        {category.isActive ? 'Active' : 'Inactive'}
+                        {category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel}
                       </span>
                     </div>
                     <p className={`mt-2 text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                      {category.description || 'Chưa có mô tả'}
+                      {category.description || texts.detailDescriptionNone}
                     </p>
                     <p className={`mt-3 text-sm font-medium ${isSelected ? 'text-white' : 'text-stone-900'}`}>
-                      {category.subCategoriesCount} danh mục con
+                      {category.subCategoriesCount} {texts.rootSubCount}
                     </p>
                   </button>
                 )
@@ -609,7 +704,7 @@ function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, o
             </div>
           ) : (
             <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500'>
-              Chưa có danh mục con. Nhấn "Thêm danh mục con" để tạo mới.
+              {texts.childEmpty}
             </div>
           )}
         </div>
@@ -618,11 +713,21 @@ function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, o
   )
 }
 
-function CategoryDetailPanel({ category, onAddChild }: { category: CategoryDTO | null; onAddChild: (parentId: string | null) => void }) {
+function CategoryDetailPanel({
+  category,
+  onAddChild,
+  texts,
+  locale,
+}: {
+  category: CategoryDTO | null
+  onAddChild: (parentId: string | null) => void
+  texts: CategoryTexts
+  locale: string
+}) {
   if (!category) {
     return (
       <section className='flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm'>
-        Chọn danh mục gốc hoặc danh mục con để xem chi tiết.
+        {texts.detailEmpty}
       </section>
     )
   }
@@ -631,41 +736,43 @@ function CategoryDetailPanel({ category, onAddChild }: { category: CategoryDTO |
     <section className='space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
       <div className='flex items-start justify-between gap-3 border-b border-gray-100 pb-4'>
         <div>
-          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Danh mục đang xem</p>
+          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{texts.detailSectionTitle}</p>
           <h2 className='text-xl font-semibold text-gray-900'>{category.name}</h2>
-          <p className='mt-1 text-sm text-gray-500'>{category.description || 'Chưa có mô tả'}</p>
+          <p className='mt-1 text-sm text-gray-500'>{category.description || texts.detailDescriptionNone}</p>
         </div>
         <span className={`inline-flex rounded-2xl px-3 py-1 text-xs font-semibold ${STATUS_BADGE[category.isActive ? 'true' : 'false']}`}>
-          {category.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
+          {category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel}
         </span>
       </div>
       <div className='space-y-4'>
         <div className='flex flex-wrap items-center justify-between gap-3'>
-          <h3 className='text-sm font-semibold text-gray-900'>Thông tin nhanh</h3>
-          <span className='text-xs text-gray-500'>Mã #{category.categoryId}</span>
+          <h3 className='text-sm font-semibold text-gray-900'>{texts.detailQuickInfo}</h3>
+          <span className='text-xs text-gray-500'>
+            {texts.detailIdLabel} #{category.categoryId}
+          </span>
         </div>
 
         <div className='flex flex-wrap gap-4 overflow-x-auto pb-2 lg:flex-nowrap'>
-          <DetailCard label='Mô tả' value={category.description || 'Chưa có mô tả'} tone='muted' />
-          <DetailCard label='Trạng thái' value={category.isActive ? 'Đang hoạt động' : 'Tạm dừng'} highlight />
+          <DetailCard label={texts.detailDescriptionLabel} value={category.description || texts.detailDescriptionNone} tone='muted' />
+          <DetailCard label={texts.detailStatusLabel} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} highlight />
           <DetailCard
-            label='Danh mục cha'
-            value={category.parentCategoryName ?? 'Danh mục gốc'}
+            label={texts.detailParent}
+            value={category.parentCategoryName ?? texts.detailRootParent}
           />
-          <DetailCard label='Số danh mục con' value={`${category.subCategoriesCount}`} />
-          <DetailCard label='Ngày tạo' value={formatDate(category.createdAt)} />
-          <DetailCard label='Cập nhật gần nhất' value={formatDate(category.updatedAt)} />
+          <DetailCard label={texts.detailChildrenCount} value={`${category.subCategoriesCount}`} />
+          <DetailCard label={texts.detailCreatedAt} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
+          <DetailCard label={texts.detailUpdatedAt} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
         </div>
       </div>
 
       <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4'>
-        <h3 className='text-sm font-semibold text-gray-900'>Timeline</h3>
+        <h3 className='text-sm font-semibold text-gray-900'>{texts.timelineTitle}</h3>
         <div className='mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
-          <TimelineItem label='Tạo' value={formatDate(category.createdAt)} />
+          <TimelineItem label={texts.timelineCreated} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
           <span className='hidden lg:block h-px flex-1 bg-gray-200' />
-          <TimelineItem label='Cập nhật' value={formatDate(category.updatedAt)} />
+          <TimelineItem label={texts.timelineUpdated} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
           <span className='hidden lg:block h-px flex-1 bg-gray-200' />
-          <TimelineItem label='Tình trạng' value={category.isActive ? 'Active' : 'Inactive'} />
+          <TimelineItem label={texts.timelineStatus} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} />
         </div>
       </div>
 
@@ -678,7 +785,7 @@ function CategoryDetailPanel({ category, onAddChild }: { category: CategoryDTO |
             <path d='m12.5 5.5 6 6L9 21l-6 .5.5-6z' strokeLinejoin='round' />
             <path d='M4 21h16' strokeLinecap='round' />
           </svg>
-          Chỉnh sửa danh mục
+          {texts.editCategory}
         </button>
         <button
           type='button'
@@ -688,7 +795,7 @@ function CategoryDetailPanel({ category, onAddChild }: { category: CategoryDTO |
           <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
             <path d='M12 6v12M6 12h12' strokeLinecap='round' />
           </svg>
-          Thêm danh mục con
+          {texts.addChild}
         </button>
       </div>
     </section>

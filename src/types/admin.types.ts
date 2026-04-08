@@ -6,15 +6,20 @@ export type ShopStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING' | 'REJECTED'
 
 export interface AdminShopDto {
   shopId: string
-  shopName: string
+  name: string
   ownerId: string
   description?: string | null
   status?: ShopStatus | string
-  createdDate?: string
+  rating?: number
+  reviewCount?: number
+  totalProducts?: number
+  totalOrders?: number
   createdAt?: string
-  logo?: string | null
-  coverImage?: string | null
-  address?: string | null
+  updatedAt?: string | null
+  logoUrl?: string | null
+  coverImageUrl?: string | null
+  defaultPickupAddress?: string | null
+  defaultProvider?: string | null
 }
 
 export interface UpdateShopStatusPayload {
@@ -32,6 +37,17 @@ export interface AccountDto {
   address?: string
   phoneNumber?: string
   role?: string
+}
+
+export interface UpdateAccountStatusPayload {
+  isActive: boolean
+}
+
+export interface RoleDto {
+  id: string
+  name: string
+  description?: string
+  permissions?: string[]
 }
 
 export type OrderStatusApi = 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | string
@@ -127,4 +143,45 @@ export interface ProvidersPageDto {
   totalItems: number
   pageNumber: number
   pageSize: number
+}
+
+export interface CategoryDto {
+  id?: string
+  categoryId?: string
+  name: string
+  parentCategoryId?: string | null
+  imageUrl?: string
+  description?: string
+  isActive?: boolean
+  createdDate?: string
+  children?: CategoryDto[]
+}
+
+export interface ProductModerationDto {
+  productId: string
+  id: string
+  productName: string
+  shopId: string
+  shopName?: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  submittedAt?: string
+  createdDate?: string
+  basePrice?: number
+  globalSku?: string
+  categoryId?: string
+  moderationNote?: string
+}
+
+export interface ProductApprovalPayload {
+  action: 'APPROVE' | 'REJECT'
+  moderationNote?: string
+}
+
+export interface ProductVersionDto {
+  id?: string
+  versionId?: string
+  productId?: string
+  versionNumber?: number
+  isActive?: boolean
+  createdDate?: string
 }

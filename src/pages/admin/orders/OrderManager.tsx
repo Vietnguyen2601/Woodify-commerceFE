@@ -34,6 +34,7 @@ const styleForStatus = (status?: string) => {
 export default function OrderManager() {
   const { isVietnamese } = useAppLanguage()
 
+  const [searchTerm, setSearchTerm] = React.useState('')
   const [orderStatus, setOrderStatus] = React.useState('')
   const [shopId, setShopId] = React.useState('')
   const [dateFrom, setDateFrom] = React.useState('')
@@ -42,40 +43,36 @@ export default function OrderManager() {
   const pageSize = 20
 
   const t = {
-    eyebrow: isVietnamese ? 'V?n h�nh don h�ng' : 'Order operations',
-    title: isVietnamese ? 'Qu?n l� don h�ng' : 'Order Management',
+    eyebrow: isVietnamese ? 'Vận hành đơn hàng' : 'Order operations',
+    title: isVietnamese ? 'Quản lý đơn hàng' : 'Order Management',
     subtitle: isVietnamese
-      ? 'Theo d�i don c?a merchant, tr?ng th�i giao h�ng v� di?m ngh?n x? l�.'
+      ? 'Theo dõi đơn của merchant, trạng thái giao hàng và điểm nghẽn xử lý.'
       : 'Track merchant orders, monitor delivery states and quickly investigate issue clusters.',
-    sourceInfo: isVietnamese
-      ? 'Uu ti�n API admin orders; n?u chua c� s? g?p t? GET /orders/Shop/{shopId} (xem API gaps).'
-      : 'Uses admin order list when available; otherwise merges GET /orders/Shop/{shopId} (see API gaps).',
-    aggregate: isVietnamese
-      ? '�ang hi?n th? d? li?u g?p - b? l?c v� ph�n trang ch?y ph�a client.'
-      : 'Showing aggregated data - filters and pagination run on the client for this mode.',
-    loadFailed: isVietnamese ? 'Kh�ng t?i du?c danh s�ch don h�ng' : 'Failed to load orders',
-    filterTitle: isVietnamese ? 'L?c don h�ng' : 'Filter orders',
-    filterSub: isVietnamese ? 'L?c theo tr?ng th�i, shop v� kho?ng ng�y.' : 'Refine by status, shop and date range.',
-    clear: isVietnamese ? 'X�a b? l?c' : 'Clear filters',
-    status: isVietnamese ? 'Tr?ng th�i don' : 'Order Status',
-    shop: isVietnamese ? 'C?a h�ng' : 'Shop',
-    from: isVietnamese ? 'T? ng�y' : 'Date From',
-    to: isVietnamese ? '�?n ng�y' : 'Date To',
-    allStatus: isVietnamese ? 'T?t c? tr?ng th�i' : 'All statuses',
-    allShop: isVietnamese ? 'T?t c? c?a h�ng' : 'All shops',
-    showing: isVietnamese ? '�ang hi?n th?' : 'Showing',
-    of: isVietnamese ? 'trong t?ng' : 'of',
-    orders: isVietnamese ? 'don h�ng' : 'orders',
+    loadFailed: isVietnamese ? 'Không tải được danh sách đơn hàng' : 'Failed to load orders',
+    filterTitle: isVietnamese ? 'Lọc đơn hàng' : 'Filter orders',
+    filterSub: isVietnamese ? 'Lọc theo trạng thái, shop và khoảng ngày.' : 'Refine by status, shop and date range.',
+    clear: isVietnamese ? 'Xóa bộ lọc' : 'Clear filters',
+    searchLabel: isVietnamese ? 'Tìm kiếm' : 'Search',
+    searchPlaceholder: isVietnamese ? 'Tìm theo mã đơn, shop hoặc trạng thái...' : 'Search by order code, shop, or status...',
+    status: isVietnamese ? 'Trạng thái đơn' : 'Order Status',
+    shop: isVietnamese ? 'Cửa hàng' : 'Shop',
+    from: isVietnamese ? 'Từ ngày' : 'Date From',
+    to: isVietnamese ? 'Đến ngày' : 'Date To',
+    allStatus: isVietnamese ? 'Tất cả trạng thái' : 'All statuses',
+    allShop: isVietnamese ? 'Tất cả cửa hàng' : 'All shops',
+    showing: isVietnamese ? 'Đang hiển thị' : 'Showing',
+    of: isVietnamese ? 'trong tổng' : 'of',
+    orders: isVietnamese ? 'đơn hàng' : 'orders',
     page: isVietnamese ? 'Trang' : 'Page',
-    total: isVietnamese ? 'T?ng' : 'Total',
-    order: isVietnamese ? '�on h�ng' : 'Order',
-    amount: isVietnamese ? 'Gi� tr?' : 'Total',
-    placed: isVietnamese ? 'Ng�y t?o' : 'Placed',
-    details: isVietnamese ? 'Chi ti?t' : 'Details',
-    loading: isVietnamese ? '�ang t?i...' : 'Loading...',
-    noOrders: isVietnamese ? 'Kh�ng t�m th?y don h�ng.' : 'No orders found.',
-    apiDetails: isVietnamese ? 'API: d�ng s?n ph?m trong don' : 'API: order line items',
-    previous: isVietnamese ? 'Tru?c' : 'Previous',
+    total: isVietnamese ? 'Tổng' : 'Total',
+    order: isVietnamese ? 'Đơn hàng' : 'Order',
+    amount: isVietnamese ? 'Giá trị' : 'Total',
+    placed: isVietnamese ? 'Ngày tạo' : 'Placed',
+    details: isVietnamese ? 'Chi tiết' : 'Details',
+    loading: isVietnamese ? 'Đang tải...' : 'Loading...',
+    noOrders: isVietnamese ? 'Không tìm thấy đơn hàng.' : 'No orders found.',
+    apiDetails: isVietnamese ? 'API: dòng sản phẩm trong đơn' : 'API: order line items',
+    previous: isVietnamese ? 'Trước' : 'Previous',
     next: isVietnamese ? 'Sau' : 'Next',
   }
 
@@ -108,6 +105,16 @@ export default function OrderManager() {
   const orders = data?.orders ?? []
   const totalItems = data?.totalItems ?? 0
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const filteredOrders = React.useMemo(() => {
+    if (!searchTerm.trim()) return orders
+    const q = searchTerm.trim().toLowerCase()
+    return orders.filter((order) => {
+      const code = String(order.orderCode || order.orderId || '').toLowerCase()
+      const shop = String(order.shopName || order.shopId || '').toLowerCase()
+      const status = String(order.status || '').toLowerCase()
+      return code.includes(q) || shop.includes(q) || status.includes(q)
+    })
+  }, [orders, searchTerm])
 
   const metrics = React.useMemo(() => {
     const list = orders
@@ -115,10 +122,10 @@ export default function OrderManager() {
     const pending = list.filter((o) => (o.status || '').toUpperCase().includes('PEND')).length
     const delivered = list.filter((o) => (o.status || '').toUpperCase().includes('DELIVER')).length
     return [
-      { label: isVietnamese ? '�on theo trang' : 'Orders (page)', value: String(list.length), iconBg: 'bg-blue-50' },
+      { label: isVietnamese ? 'Đơn theo trang' : 'Orders (page)', value: String(list.length), iconBg: 'bg-blue-50' },
       { label: isVietnamese ? 'Doanh thu trang' : 'Page revenue', value: fmtMoney(revenue), iconBg: 'bg-green-50' },
-      { label: isVietnamese ? 'Ch? x? l� (trang)' : 'Pending (page)', value: String(pending), iconBg: 'bg-orange-50' },
-      { label: isVietnamese ? '�� giao (trang)' : 'Delivered (page)', value: String(delivered), iconBg: 'bg-purple-50' },
+      { label: isVietnamese ? 'Chờ xử lý (trang)' : 'Pending (page)', value: String(pending), iconBg: 'bg-orange-50' },
+      { label: isVietnamese ? 'Đã giao (trang)' : 'Delivered (page)', value: String(delivered), iconBg: 'bg-purple-50' },
     ]
   }, [orders, isVietnamese])
 
@@ -134,109 +141,149 @@ export default function OrderManager() {
   }
 
   return (
-    <div className='admin-order'>
-      <header className='admin-order__hero'>
-        <div>
-          <p className='admin-order__eyebrow'>{t.eyebrow}</p>
-          <h1 className='admin-order__title'>{t.title}</h1>
-          <p className='admin-order__subtitle'>{t.subtitle}</p>
-          <p className='mt-2 text-sm text-gray-500'>{t.sourceInfo}</p>
-        </div>
-        <div className='admin-order__hero-badges'>
-          <span className='admin-order__badge'>{t.page} {page} / {totalPages}</span>
-          <span className='admin-order__badge'>{t.total} {totalItems} {t.orders}</span>
-        </div>
-        {data?.source === 'aggregate' && (
-          <p className='w-full rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800'>
-            {t.aggregate}
-          </p>
-        )}
+    <div className='space-y-6 px-0'>
+      <section className='space-y-1'>
+        <h1 className='text-2xl font-bold text-gray-900'>{t.title}</h1>
+        <p className='text-sm text-gray-500'>{t.subtitle}</p>
+        <p className='mt-2 text-sm text-gray-400'>{t.sourceInfo}</p>
         {isError && (
-          <p className='w-full rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600'>
-            {error instanceof Error ? error.message : t.loadFailed}
-          </p>
+          <p className='text-sm text-red-600'>{error instanceof Error ? error.message : t.loadFailed}</p>
         )}
-      </header>
+        {data?.source === 'aggregate' && (
+          <p className='mt-2 text-xs text-amber-700'>{t.aggregate}</p>
+        )}
+      </section>
 
-      <section className='admin-order__metrics'>
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
         {metrics.map((metric) => (
-          <article key={metric.label} className='admin-order__metric-card'>
-            <div className='flex items-start justify-between gap-3'>
+          <div key={metric.label} className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
+            <div className='flex items-center justify-between'>
               <div>
                 <p className='text-sm text-gray-500'>{metric.label}</p>
-                <p className='text-2xl font-bold text-gray-900'>{isLoading ? '...' : metric.value}</p>
+                <p className='text-2xl font-bold text-gray-900'>{isLoading ? '…' : metric.value}</p>
               </div>
-              <span className={`admin-order__metric-dot ${metric.iconBg}`} />
+              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${metric.iconBg}`}>
+                <span className='text-lg font-bold text-gray-400'>·</span>
+              </span>
             </div>
-          </article>
+          </div>
         ))}
+      </div>
+
+      <section className='rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
+        <div className='space-y-6'>
+          <div className='flex flex-col space-y-2'>
+            <label className='text-xs font-semibold uppercase tracking-wide text-gray-600'>{t.searchLabel}</label>
+            <div className='relative max-w-md'>
+              <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
+                <svg className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.5'>
+                  <circle cx='11' cy='11' r='7' />
+                  <path d='m16.5 16.5 4 4' strokeLinecap='round' />
+                </svg>
+              </span>
+              <input
+                type='text'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                className='h-10 w-full appearance-none rounded-xl border border-gray-200 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none'
+                style={{ paddingLeft: '3rem' }}
+              />
+            </div>
+          </div>
+
+          {/* Main Filters */}
+          <div className='grid gap-6 md:grid-cols-2 xl:grid-cols-4'>
+            {/* Status Box */}
+            <div className='rounded-lg border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 shadow-sm hover:border-gray-300 hover:shadow-md transition-all'>
+              <label className='mb-3 block text-xs font-semibold uppercase tracking-wide text-gray-600'>{t.status}</label>
+              <select
+                value={orderStatus}
+                onChange={(e) => setOrderStatus(e.target.value)}
+                className='w-full h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50'
+              >
+                <option value=''>{t.allStatus}</option>
+                <option value='PENDING'>PENDING</option>
+                <option value='CONFIRMED'>CONFIRMED</option>
+                <option value='SHIPPED'>SHIPPED</option>
+                <option value='DELIVERED'>DELIVERED</option>
+                <option value='CANCELLED'>CANCELLED</option>
+              </select>
+            </div>
+
+            {/* Shop Box */}
+            <div className='rounded-lg border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 shadow-sm hover:border-gray-300 hover:shadow-md transition-all'>
+              <label className='mb-3 block text-xs font-semibold uppercase tracking-wide text-gray-600'>{t.shop}</label>
+              <select
+                value={shopId}
+                onChange={(e) => setShopId(e.target.value)}
+                className='w-full h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50'
+              >
+                <option value=''>{t.allShop}</option>
+                {shops.map((s: AdminShopDto) => (
+                  <option key={s.shopId} value={s.shopId}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Date From Box */}
+            <div className='rounded-lg border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 shadow-sm hover:border-gray-300 hover:shadow-md transition-all'>
+              <label className='mb-3 block text-xs font-semibold uppercase tracking-wide text-gray-600'>{t.from}</label>
+              <input
+                type='date'
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className='w-full h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50'
+              />
+            </div>
+
+            {/* Date To Box */}
+            <div className='rounded-lg border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 shadow-sm hover:border-gray-300 hover:shadow-md transition-all'>
+              <label className='mb-3 block text-xs font-semibold uppercase tracking-wide text-gray-600'>{t.to}</label>
+              <input
+                type='date'
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className='w-full h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50'
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section className='admin-order__filters'>
-        <div className='admin-order__filter-head'>
-          <div>
-            <h2 className='text-base font-semibold text-gray-900'>{t.filterTitle}</h2>
-            <p className='text-sm text-gray-500'>{t.filterSub}</p>
-          </div>
-          <button type='button' onClick={clearFilters} className='admin-order__clear-btn'>
-            {t.clear}
-          </button>
+      {/* Active Filters Display */}
+      {(orderStatus || shopId || dateFrom || dateTo) && (
+        <div className='flex flex-wrap gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4'>
+          {orderStatus && (
+            <div className='flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2'>
+              <span className='text-xs font-medium text-gray-600'>{t.status}:</span>
+              <span className='text-sm font-semibold text-gray-900'>{orderStatus}</span>
+            </div>
+          )}
+          {shopId && (
+            <div className='flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2'>
+              <span className='text-xs font-medium text-gray-600'>{t.shop}:</span>
+              <span className='text-sm font-semibold text-gray-900'>{shops.find(s => s.shopId === shopId)?.name || shopId}</span>
+            </div>
+          )}
+          {dateFrom && (
+            <div className='flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2'>
+              <span className='text-xs font-medium text-gray-600'>{t.from}:</span>
+              <span className='text-sm font-semibold text-gray-900'>{dateFrom}</span>
+            </div>
+          )}
+          {dateTo && (
+            <div className='flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2'>
+              <span className='text-xs font-medium text-gray-600'>{t.to}:</span>
+              <span className='text-sm font-semibold text-gray-900'>{dateTo}</span>
+            </div>
+          )}
         </div>
-
-        <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-5'>
-          <div className='space-y-2 xl:col-span-1'>
-            <label className='text-xs font-medium text-gray-700'>{t.status}</label>
-            <select
-              value={orderStatus}
-              onChange={(e) => setOrderStatus(e.target.value)}
-              className='admin-order__field'
-            >
-              <option value=''>{t.allStatus}</option>
-              <option value='PENDING'>PENDING</option>
-              <option value='CONFIRMED'>CONFIRMED</option>
-              <option value='SHIPPED'>SHIPPED</option>
-              <option value='DELIVERED'>DELIVERED</option>
-              <option value='CANCELLED'>CANCELLED</option>
-            </select>
-          </div>
-          <div className='space-y-2 xl:col-span-2'>
-            <label className='text-xs font-medium text-gray-700'>{t.shop}</label>
-            <select
-              value={shopId}
-              onChange={(e) => setShopId(e.target.value)}
-              className='admin-order__field'
-            >
-              <option value=''>{t.allShop}</option>
-              {shops.map((s: AdminShopDto) => (
-                <option key={s.shopId} value={s.shopId}>
-                  {s.shopName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>{t.from}</label>
-            <input
-              type='date'
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className='admin-order__field'
-            />
-          </div>
-          <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>{t.to}</label>
-            <input
-              type='date'
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className='admin-order__field'
-            />
-          </div>
-        </div>
-      </section>
+      )}
 
       <p className='text-sm text-gray-600'>
-        {t.showing} <span className='font-semibold text-gray-900'>{orders.length}</span> {t.of}{' '}
+        {t.showing} <span className='font-semibold text-gray-900'>{filteredOrders.length}</span> {t.of}{' '}
         <span className='font-semibold text-gray-900'>{totalItems}</span> {t.orders}
         {totalPages > 1 && (
           <span className='ml-2'>
@@ -245,7 +292,7 @@ export default function OrderManager() {
         )}
       </p>
 
-      <section className='admin-order__table-wrap'>
+      <section className='rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden'>
         <div className='overflow-x-auto'>
           <table className='min-w-full divide-y divide-gray-100 text-sm'>
             <thead className='bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500'>
@@ -265,14 +312,14 @@ export default function OrderManager() {
                     {t.loading}
                   </td>
                 </tr>
-              ) : orders.length === 0 ? (
+              ) : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className='px-6 py-8 text-center text-gray-500'>
                     {t.noOrders}
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
+                filteredOrders.map((order) => (
                   <tr key={order.orderId} className='hover:bg-gray-50/75'>
                     <td className='whitespace-nowrap px-6 py-4 font-mono text-sm'>
                       {order.orderCode || order.orderId}
@@ -295,20 +342,23 @@ export default function OrderManager() {
       </section>
 
       {totalPages > 1 && (
-        <div className='admin-order__pager'>
+        <div className='flex gap-3 justify-center'>
           <button
             type='button'
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className='admin-order__pager-btn'
+            className='rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:bg-gray-50 disabled:text-gray-400 hover:border-gray-300 disabled:hover:border-gray-200'
           >
             {t.previous}
           </button>
+          <span className='flex items-center text-sm text-gray-600'>
+            {t.page} {page} / {totalPages}
+          </span>
           <button
             type='button'
             disabled={page >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className='admin-order__pager-btn'
+            className='rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:bg-gray-50 disabled:text-gray-400 hover:border-gray-300 disabled:hover:border-gray-200'
           >
             {t.next}
           </button>

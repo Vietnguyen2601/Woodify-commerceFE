@@ -100,6 +100,7 @@ const orderStatusTone = (status?: string): keyof typeof statusStyles => {
 
 export default function AdminHome() {
   const { isVietnamese } = useAppLanguage()
+  const [revenueRange, setRevenueRange] = React.useState<'day' | 'month' | 'quarter' | 'year'>('month')
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.admin.snapshot(),
@@ -162,6 +163,62 @@ export default function AdminHome() {
   const ordersCount = data?.ordersSample.length ?? 0
   const productsCount = data?.productsSample.length ?? 0
   const skeletonMetrics = Array.from({ length: 6 })
+  const revenueSeries = React.useMemo(() => {
+    if (revenueRange === 'day') {
+      return {
+        labels: isVietnamese ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        gross: [56, 44, 62, 51, 70, 58, 46],
+        commission: [16, 12, 19, 15, 22, 18, 13],
+        net: [40, 32, 43, 36, 48, 40, 33],
+      }
+    }
+    if (revenueRange === 'year') {
+      return {
+        labels: ['2022', '2023', '2024', '2025', '2026'],
+        gross: [520, 610, 480, 690, 560],
+        commission: [140, 165, 120, 180, 150],
+        net: [380, 445, 360, 510, 410],
+      }
+    }
+    if (revenueRange === 'quarter') {
+      return {
+        labels: ['Q1-2026', 'Q2-2026', 'Q3-2026', 'Q4-2026'],
+        gross: [180, 210, 160, 230],
+        commission: [50, 60, 45, 70],
+        net: [130, 150, 115, 160],
+      }
+    }
+    return {
+      labels: isVietnamese
+        ? ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12']
+        : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      gross: [62, 48, 70, 52, 80, 60, 68, 54, 76, 58, 72, 64],
+      commission: [18, 14, 22, 16, 24, 19, 20, 16, 23, 17, 21, 19],
+      net: [44, 34, 48, 36, 56, 41, 48, 38, 53, 41, 51, 45],
+    }
+  }, [isVietnamese, revenueRange])
+  const revenueChart = React.useMemo(() => {
+    const width = Math.max(600, (revenueSeries.labels.length - 1) * 160)
+    const height = 140
+    const pad = 0
+    const max = Math.max(1, ...revenueSeries.gross, ...revenueSeries.net)
+    const step = (width - pad * 2) / (revenueSeries.labels.length - 1)
+    const toPath = (values: number[]) =>
+      values
+        .map((v, i) => {
+          const x = pad + i * step
+          const y = height - pad - (v / max) * (height - pad * 2)
+          return `${i === 0 ? 'M' : 'L'}${x},${y}`
+        })
+        .join(' ')
+    const toArea = (values: number[]) => {
+      const line = toPath(values)
+      const lastX = pad + (values.length - 1) * step
+      const baseY = height - pad
+      return `${line} L${lastX},${baseY} L${pad},${baseY} Z`
+    }
+    return { width, height, toPath, toArea }
+  }, [revenueSeries])
 
   return (
     <div className='admin-home'>
@@ -175,13 +232,6 @@ export default function AdminHome() {
               : "Quickly monitor marketplace health, orders, and daily revenue."}
           </p>
         </div>
-        <div className='admin-home__hero-meta'>
-          <div className='admin-home__chip'>{isVietnamese ? `Mẫu đơn: ${ordersCount}` : `Orders sample: ${ordersCount}`}</div>
-          <div className='admin-home__chip'>{isVietnamese ? `Mẫu sản phẩm: ${productsCount}` : `Products sample: ${productsCount}`}</div>
-          <Link to={ROUTES.ADMIN_ORDERS} className='admin-home__hero-link'>
-            {isVietnamese ? 'Mở quản lý đơn hàng' : 'Open Order Manager'}
-          </Link>
-        </div>
       </header>
 
       {isError && (
@@ -190,81 +240,64 @@ export default function AdminHome() {
         </p>
       )}
 
-      <p className='rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700'>
-        {isVietnamese ? 'Thống kê đơn hàng đang dùng dữ liệu gộp từ các shop cho đến khi backend có API' : 'Order statistics use merged shop orders until backend ships'}{' '}
-        <code className='text-[11px]'>GET /orders/admin/*</code> (see API_GAPS_AND_RECOMMENDATIONS.md).
-      </p>
-
-      <section className='admin-home__metrics'>
-        {(isLoading ? skeletonMetrics : metricCards).map((metric, idx) => (
-          <article key={isLoading ? idx : metric.label} className='admin-home__metric-card'>
-            {isLoading ? (
-              <div className='h-24 animate-pulse rounded-xl bg-gray-100' />
-            ) : (
-              <>
-                <div className='flex items-center justify-between'>
-                  <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${metric.accent}`}>
-                    <StatIcon variant={metric.icon} accent={metric.accent} />
-                  </div>
-                </div>
-                <div className='flex flex-col gap-1'>
-                  <span className='text-xs font-medium text-gray-500'>{metric.label}</span>
-                  <strong className='text-2xl font-bold text-neutral-900'>{metric.value}</strong>
-                  <span className='text-xs font-medium text-emerald-600'>{metric.hint}</span>
-                </div>
-              </>
-            )}
-          </article>
-        ))}
-      </section>
-
       <section className='admin-home__insights'>
         <article className='admin-home__panel'>
           <header className='admin-home__panel-head'>
-            <h2>{isVietnamese ? 'Đơn hàng (~30 ngày gần nhất, mẫu)' : 'Orders (last ~30 days, sample)'}</h2>
-            <p>{isVietnamese ? 'Số lượng theo cụm từ dữ liệu đơn gộp' : 'Bucketed counts from merged shop orders'}</p>
+            <div>
+              <h2>{isVietnamese ? 'Xu hướng doanh thu (ví dụ)' : 'Revenue trend (example)'}</h2>
+              <p>{isVietnamese ? 'Tổng tiền hàng, hoa hồng và trả về shop' : 'Gross, commission, and net to shop'}</p>
+            </div>
+            <div className='ml-auto flex items-center gap-2'>
+              {([
+                { key: 'day', label: isVietnamese ? 'Ngày' : 'Day' },
+                { key: 'month', label: isVietnamese ? 'Tháng' : 'Month' },
+                { key: 'quarter', label: isVietnamese ? 'Quý' : 'Quarter' },
+                { key: 'year', label: isVietnamese ? 'Năm' : 'Year' },
+              ] as const).map((range) => (
+                <button
+                  key={range.key}
+                  type='button'
+                  onClick={() => setRevenueRange(range.key)}
+                  className={`rounded-lg border px-3 py-1 text-xs font-semibold transition ${
+                    revenueRange === range.key
+                      ? 'border-stone-800 bg-stone-900 text-white'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
           </header>
-          <div className='admin-home__chart'>
-            {orderTrend.length === 0 && !isLoading ? (
-              <p className='text-sm text-gray-500'>{isVietnamese ? 'Không có đơn trong khoảng dữ liệu mẫu.' : 'No orders in sample window.'}</p>
-            ) : (
-              orderTrend.map((point) => (
-                <div key={point.day} className='flex flex-1 flex-col items-center gap-2'>
-                  <div
-                    className='w-full rounded-full bg-gradient-to-b from-stone-500 to-stone-400 min-h-[4px]'
-                    style={{ height: `${(point.value / maxOrderValue) * 100}%` }}
-                  />
-                  <span className='text-xs text-gray-400'>{point.day}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </article>
-
-        <article className='admin-home__panel'>
-          <header className='admin-home__panel-head'>
-            <h2>{isVietnamese ? 'Top cửa hàng theo doanh thu (mẫu)' : 'Top shops by revenue (sample)'}</h2>
-            <p>{isVietnamese ? 'Từ đơn hàng gộp toàn bộ shop' : 'From merged orders across shops'}</p>
-          </header>
-          <div className='flex flex-col gap-4'>
-            {topShops.length === 0 && !isLoading ? (
-              <p className='text-sm text-gray-500'>{isVietnamese ? 'Chưa có dữ liệu doanh thu.' : 'No revenue data yet.'}</p>
-            ) : (
-              topShops.map((shop) => (
-                <div key={shop.name} className='flex flex-col gap-2'>
-                  <div className='flex items-center justify-between text-sm text-gray-600'>
-                    <span>{shop.name}</span>
-                    <span>{fmtMoney(shop.revenue)}</span>
-                  </div>
-                  <div className='h-3 rounded-full bg-gray-100'>
-                    <div
-                      className='h-full rounded-full bg-gradient-to-r from-stone-500 to-stone-400'
-                      style={{ width: `${(shop.revenue / maxShopRevenue) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))
-            )}
+          <div className='space-y-4'>
+            <div className='flex flex-wrap items-center gap-4 text-xs text-gray-500'>
+              <div className='flex items-center gap-2'>
+                <span className='h-2.5 w-2.5 rounded-full bg-emerald-500' />
+                <span>{isVietnamese ? 'Tổng tiền hàng' : 'Gross revenue'}</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <span className='h-2.5 w-2.5 rounded-full bg-amber-500' />
+                <span>{isVietnamese ? 'Hoa hồng' : 'Commission'}</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <span className='h-2.5 w-2.5 rounded-full bg-blue-500' />
+                <span>{isVietnamese ? 'Trả về shop' : 'Net to shop'}</span>
+              </div>
+            </div>
+            <div className='rounded-xl border border-gray-100 bg-white p-2'>
+              <svg viewBox={`0 0 ${revenueChart.width} ${revenueChart.height}`} className='h-36 w-full'>
+                <path d={revenueChart.toArea(revenueSeries.gross)} fill='rgba(16, 185, 129, 0.12)' />
+                <path d={revenueChart.toArea(revenueSeries.net)} fill='rgba(59, 130, 246, 0.1)' />
+                <path d={revenueChart.toPath(revenueSeries.gross)} stroke='#10b981' strokeWidth='2.25' fill='none' />
+                <path d={revenueChart.toPath(revenueSeries.net)} stroke='#3b82f6' strokeWidth='2.25' fill='none' />
+                <path d={revenueChart.toPath(revenueSeries.commission)} stroke='#f59e0b' strokeWidth='2.25' fill='none' />
+              </svg>
+              <div className='mt-2 flex justify-between px-1 text-[11px] text-gray-400'>
+                {revenueSeries.labels.map((label) => (
+                  <span key={label}>{label}</span>
+                ))}
+              </div>
+            </div>
           </div>
         </article>
       </section>

@@ -159,28 +159,77 @@ export const ADMIN_API = {
   ACCOUNTS: {
     GET_ALL: '/accounts/GetAllAccounts',
     GET_BY_ID: (id: string) => `/accounts/GetAccountById/${encodeURIComponent(id)}`,
+    UPDATE_STATUS: (id: string) => [`/accounts/UpdateAccountStatus/${encodeURIComponent(id)}`, `/accounts/${encodeURIComponent(id)}/status`],
   },
   SHOPS: {
-    GET_ALL_ADMIN: ['/shop/shops/admin/GetAllShops', '/Shops/admin/GetAllShops'],
+    GET_ALL_ADMIN: ['/shop/shops/GetAllShops', '/shop/shops/admin/GetAllShops', '/Shops/GetAllShops', '/Shops/admin/GetAllShops'],
+    GET_BY_ID: (id: string) => [`/shop/shops/GetShopById/${encodeURIComponent(id)}`, `/Shops/GetShopById/${encodeURIComponent(id)}`],
     PATCH_STATUS: (shopId: string) => [`/shop/shops/${encodeURIComponent(shopId)}/status`, `/Shops/${encodeURIComponent(shopId)}/status`],
   },
   PRODUCT_MASTERS: {
     GET_ALL: ['/product/productmasters/GetAllProducts', '/ProductMasters/GetAllProducts'],
+    GET_ALL_ADMIN: ['/product/productmasters/GetAllProductDetails?role=admin', '/ProductMasters/GetAllProductDetails?role=admin'],
     BY_SHOP: (shopId: string) => [
       `/product/productmasters/GetProductByShopId/${encodeURIComponent(shopId)}`,
       `/ProductMasters/GetProductByShopId/${encodeURIComponent(shopId)}`,
     ],
+    PENDING_APPROVAL: ['/product/productmasters/GetPendingApprovalProducts', '/ProductMasters/GetPendingApprovalProducts'],
+    GET_DETAIL: (id: string) => [
+      `/product/productmasters/GetProductDetail/${encodeURIComponent(id)}?role=admin`,
+      `/ProductMasters/GetProductDetail/${encodeURIComponent(id)}?role=admin`,
+    ],
+    MODERATE: (id: string) => [
+      `/product/productmasters/ModerateProduct/${encodeURIComponent(id)}`,
+      `/ProductMasters/ModerateProduct/${encodeURIComponent(id)}`,
+    ],
+  },
+  CATEGORIES: {
+    GET_ALL: ['/product/categories/GetAllCategories', '/categories/GetAllCategories'],
+    GET_ROOT: ['/product/categories/GetRootCategories', '/categories/GetRootCategories'],
+    GET_CHILDREN: (parentId: string) => [
+      `/product/categories/GetSubCategories/${encodeURIComponent(parentId)}`,
+      `/categories/GetSubCategories/${encodeURIComponent(parentId)}`,
+    ],
+    POST_CREATE: ['/product/categories/CreateCategory', '/categories/CreateCategory'],
+    PUT_UPDATE: (id: string) => [
+      `/product/categories/UpdateCategory/${encodeURIComponent(id)}`,
+      `/categories/UpdateCategory/${encodeURIComponent(id)}`,
+    ],
+    DELETE: (id: string) => [
+      `/product/categories/DeleteCategory/${encodeURIComponent(id)}`,
+      `/categories/DeleteCategory/${encodeURIComponent(id)}`,
+    ],
   },
   ORDERS: {
-    /** P0 endpoints from API_GAPS — may not exist yet on backend */
-    ADMIN_ALL: ['/orders/admin/all', '/orders/admin/list'],
-    BY_SHOP: (shopId: string) => [`/orders/Shop/${encodeURIComponent(shopId)}`, `/Orders/Shop/${encodeURIComponent(shopId)}`],
+    /** P0 endpoints from API_GAPS — may not exist yet on backend; returns empty gracefully if unavailable */
+    ADMIN_ALL: [
+      '/orders/admin/all',
+      '/orders/admin/list',
+      '/order/admin/GetAllOrders',
+      '/Order/Admin/GetAllOrders',
+    ],
+    BY_SHOP: (shopId: string) => [
+      `/orders/Shop/${encodeURIComponent(shopId)}`,
+      `/Orders/Shop/${encodeURIComponent(shopId)}`,
+      `/order/GetOrdersByShopId/${encodeURIComponent(shopId)}`,
+      `/Order/GetOrdersByShopId/${encodeURIComponent(shopId)}`,
+    ],
     DETAIL: (orderId: string) => `/orders/${encodeURIComponent(orderId)}`,
   },
   SHIPMENTS: {
-    GET_ALL: ['/shipments/GetAllShipments', '/Shipments/GetAllShipments'],
+    GET_ALL: ['/shipment/shipments/GetAllShipments', '/Shipment/Shipments/GetAllShipments'],
   },
   SHIPMENT_PROVIDERS: {
     LIST: ['/shipment/providers', '/Shipment/providers'],
+  },
+  BANNERS: {
+    GET_ALL: ['/product/images/type/BANNER', '/images/type/BANNER'],
+  },
+  IMAGES: {
+    SAVE: ['/product/images/save', '/images/save'],
+    DELETE: (id: string) => [
+      `/product/images/${encodeURIComponent(id)}`,
+      `/images/${encodeURIComponent(id)}`,
+    ],
   },
 } as const

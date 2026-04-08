@@ -9,12 +9,16 @@ import type {
   AdminOrderListPayload,
   AdminShopDto,
   AdminShopOrderDto,
+  CategoryDto,
   EnrichedAdminOrder,
+  ProductApprovalPayload,
   ProductMasterDto,
+  ProductModerationDto,
   ProvidersPageDto,
   ShipmentDto,
   ShipmentProviderDto,
   ShopStatus,
+  UpdateAccountStatusPayload,
   UpdateShopStatusPayload,
 } from '@/types'
 
@@ -41,12 +45,15 @@ async function getFirstOk<T>(
   let lastErr: unknown
   for (const url of paths) {
     try {
-      const res = await apiClient.get(url, config)
-      return pickData<T>(res.data)
+      const data = await apiClient.get(url, config)
+      // apiClient.interceptors already unwraps .data, so 'data' is the actual data
+      return data as T
     } catch (e: unknown) {
       lastErr = e
       const status = (e as { response?: { status?: number } })?.response?.status
-      if (status === 404) continue
+      // Try next path on 404 (not found) or 5xx (server errors)
+      // Only throw on 4xx client errors (except 404)
+      if (status === 404 || (status && status >= 500)) continue
       throw e
     }
   }
@@ -65,12 +72,14 @@ async function patchFirstOk<T>(paths: readonly string[], body: unknown): Promise
   let lastErr: unknown
   for (const url of paths) {
     try {
-      const res = await shopApi.patch<unknown>(url, body)
-      return pickData<T>(res)
+      const data = await shopApi.patch<unknown>(url, body)
+      // shopApi interceptor already unwraps, so return directly
+      return data as T
     } catch (e: unknown) {
       lastErr = e
       const status = (e as { response?: { status?: number } })?.response?.status
-      if (status === 404) continue
+      // Try next path on 404 (not found) or 5xx (server errors)
+      if (status === 404 || (status && status >= 500)) continue
       throw e
     }
   }
@@ -127,7 +136,9 @@ function applyOrderFilters(orders: EnrichedAdminOrder[], p: AdminOrderListParams
 }
 
 async function fetchOrdersByShopId(shopId: string): Promise<AdminShopOrderDto[]> {
-  const raw = await getFirstOkOrEmpty<unknown>(ADMIN_API.ORDERS.BY_SHOP(shopId))
+  const raw = await getFirstOkOrEmpty<unknown>(ADMIN_API.ORDERS.BY_SHOP(shopId), {
+    validateStatus: () => true, // Accept all status codes for P0 endpoints
+  })
   return coerceArray<AdminShopOrderDto>(raw)
 }
 
@@ -141,7 +152,7 @@ async function aggregateOrdersFromShops(maxShops = 40): Promise<EnrichedAdminOrd
         return rows.map((o) => ({
           ...o,
           shopId: o.shopId ?? shop.shopId,
-          shopName: shop.shopName,
+          shopName: shop.name || 'Unknown',
         }))
       } catch {
         return []
@@ -167,7 +178,10 @@ async function tryAdminOrderList(params: AdminOrderListParams): Promise<AdminOrd
 
   for (const path of ADMIN_API.ORDERS.ADMIN_ALL) {
     try {
-      const res = await apiClient.get(path, { params: query })
+      const res = await apiClient.get(path, {
+        params: query,
+        validateStatus: () => true, // Accept all status codes for P0 endpoints
+      })
       const body = pickData<unknown>(res.data)
       if (body && typeof body === 'object') {
         const obj = body as AdminOrderListPayload
@@ -209,6 +223,29 @@ export const adminService = {
   getAllAccounts: async (): Promise<AccountDto[]> => {
     const raw = await getFirstOkOrEmpty<unknown>([ADMIN_API.ACCOUNTS.GET_ALL])
     return coerceArray<AccountDto>(raw)
+  },
+
+  getAccountsByIds: async (accountIds: string[]): Promise<AccountDto[]> => {
+    if (accountIds.length === 0) return []
+    const unique = [...new Set(accountIds)]
+    try {
+      const results = await Promise.allSettled(
+        unique.map((id) =>
+          apiClient.get<AccountDto>(ADMIN_API.ACCOUNTS.GET_BY_ID(id)).catch(() => null)
+        )
+      )
+      return results
+        .filter((r) => r.status === 'fulfilled' && r.value)
+        .map((r) => (r as PromiseFulfilledResult<AccountDto | null>).value)
+        .filter(Boolean) as AccountDto[]
+    } catch {
+      return []
+    }
+  },
+
+  updateAccountStatus: async (accountId: string, payload: UpdateAccountStatusPayload): Promise<unknown> => {
+    const paths = ADMIN_API.ACCOUNTS.UPDATE_STATUS(accountId) as unknown as readonly string[]
+    return patchFirstOk(paths, payload)
   },
 
   getAllProductMasters: async (): Promise<ProductMasterDto[]> => {
@@ -333,7 +370,7 @@ export const adminService = {
     })
 
     const shopNameById: Record<string, string> = Object.fromEntries(
-      shops.map((s) => [s.shopId, s.shopName])
+      shops.map((s) => [s.shopId, s.name || 'Unknown'])
     )
 
     return {
@@ -359,5 +396,4 @@ export const adminService = {
 export const adminOrderUtils = {
   orderTotal,
   firstLineItemName,
-  parseDate,
 }
