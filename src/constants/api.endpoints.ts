@@ -133,6 +133,8 @@ export const API_ENDPOINTS = {
   WALLET: {
     GET_BY_ACCOUNT_ID: (accountId: string) => `/wallets/account/${accountId}`,
     GET_BY_ID: (walletId: string) => `/wallets/${walletId}`,
+    TOPUP: '/wallets/topup',
+    TRANSACTIONS: (walletId: string) => `/wallets/${walletId}/transactions`,
   },
 
   // ── Image Service ─────────────────────────────────────────────────────────

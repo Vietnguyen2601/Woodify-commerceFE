@@ -1,5 +1,6 @@
 import React from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { ROUTES } from './constants/routes'
 import Home from './pages/Home'
 import Catalog from './pages/Catalog'
 import Product from './pages/Product'
@@ -70,6 +71,10 @@ export default function App() {
           <Route path='/payment' element={<Payment />} />
           <Route path='/payment/success' element={<PaymentSuccess />} />
           <Route path='/payment/cancel' element={<PaymentCancel />} />
+          <Route
+            path={ROUTES.PAYMENT_CALLBACK_CANCEL}
+            element={<Navigate to={`${ROUTES.PROFILE}?tab=wallet`} replace />}
+          />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />

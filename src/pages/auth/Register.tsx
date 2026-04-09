@@ -262,41 +262,63 @@ export default function Register() {
     }
     setShowTermsError(false)
     setRegisterState('loading')
-    const username = email.split('@')[0]
     import('@/services/auth.service').then(({ authService }) => {
-      authService.registerWithOtp({
-        email,
-        password,
-        confirmPassword,
-        username,
-        phone,
-      })
-        .then((res: any) => {
-          // If we reach here without error, registration was successful (with HttpOnly Cookies)
-          // API automatically unwraps nested data structure
-          const userData = res
-          
-          if (userData && (userData.email || userData.accountId)) {
-            // Store only non-sensitive data in localStorage
-            const normalizedUser: StoredUser = {
-              email: userData.email || email,
-              username: userData.username || username,
-              role: userData.role || 'customer',
-              accountId: userData.accountId || userData.id,
+      authService
+        .registerWithOtp({
+          email,
+          password,
+          confirmPassword,
+          username: trimmedUsername,
+          phone: normalizedPhone || undefined,
+        })
+        .then(async (registerRes: unknown) => {
+          // Register may not Set-Cookie the same way as login, so /auth/me returns 401 until
+          // the user signs in again. Mirror the manual login flow to establish the session.
+          try {
+            const loginRes: any = await authService.login({ email, password })
+            const loginData = loginRes?.data ?? loginRes
+            const isSuccessful = Boolean(
+              loginData?.success === true ||
+                loginData?.message?.includes('thành công') ||
+                loginData?.accountId ||
+                loginData?.email
+            )
+            if (isSuccessful && loginData?.email) {
+              const normalizedUser: StoredUser = {
+                email: loginData.email || email,
+                username: loginData.username || loginData.fullName || trimmedUsername,
+                role: loginData.role || 'customer',
+                accountId: loginData.accountId,
+              }
+              persistStoredUser(normalizedUser)
+              queryClient.setQueryData(queryKeys.user(), normalizedUser)
+              setRegisterState('success')
+              nav('/')
+              return
             }
-
-            // Store user display info in localStorage
-            persistStoredUser(normalizedUser)
-            
-            // Store full user data (with accountId) in React Query cache only
-            queryClient.setQueryData(queryKeys.user(), userData)
+          } catch {
+            // Fall through: still persist display data from register response
           }
 
-          // Redirect to home immediately
+          const raw = registerRes as Record<string, unknown> & { user?: Record<string, unknown> }
+          const profile = (raw?.user ?? raw) as Record<string, unknown> | null
+          if (profile && (profile.email || profile.accountId)) {
+            const normalizedUser: StoredUser = {
+              email: String(profile.email || email),
+              username: String(
+                profile.username || profile.fullName || trimmedUsername
+              ),
+              role: (profile.role as StoredUser['role']) || 'customer',
+              accountId: (profile.accountId || profile.id) as string | undefined,
+            }
+            persistStoredUser(normalizedUser)
+            queryClient.setQueryData(queryKeys.user(), normalizedUser)
+          }
+
           setRegisterState('success')
           nav('/')
         })
-        .catch((err) => {
+        .catch(() => {
           setRegisterState('idle')
         })
     })
