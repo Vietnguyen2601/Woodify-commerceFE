@@ -426,7 +426,7 @@ export default function Profile() {
             <div className='rounded-[20px] shadow-md p-8 mb-4' style={{ background: 'linear-gradient(to bottom, #D4B896, #E3DCC8)' }}>
               {/* Avatar */}
               <div className='w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg'>
-                <span className='text-3xl font-bold' style={{ color: '#BE9C73' }}>{(userInfo.name || userInfo.email).charAt(0).toUpperCase()}</span>
+                <span className='text-3xl font-bold' style={{ color: '#BE9C73' }}>{((userInfo?.name || userInfo?.email) ?? 'U').charAt(0).toUpperCase()}</span>
               </div>
               {/* User Info */}
               <div className='text-center'>
@@ -719,7 +719,7 @@ export default function Profile() {
                       <div className='relative'>
                         <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg' style={{ background: 'linear-gradient(to bottom, #D4B896, #E3DCC8)' }}>
                           <span className='text-4xl font-bold' style={{ color: '#BE9C73' }}>
-                            {(userInfo.name || userInfo.email).charAt(0).toUpperCase()}
+                            {((userInfo?.name || userInfo?.email) ?? 'U').charAt(0).toUpperCase()}
                           </span>
                         </div>
                         {isEditing && (

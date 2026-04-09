@@ -13,8 +13,6 @@ import AIOptimizer from './products/AIOptimizer'
 import Revenue from './finance/Revenue'
 import Wallet from './finance/Wallet'
 import BankAccount from './finance/BankAccount'
-import SalesAnalysis from './analytics/SalesAnalysis'
-import Performance from './analytics/Performance'
 import ShopProfile from './shop/ShopProfile'
 import ShopDecoration from './shop/ShopDecoration'
 import ShopSettings from './shop/ShopSettings'
@@ -44,8 +42,6 @@ export default function SellerDashboard() {
         <Route path='finance/wallet' element={<Wallet />} />
         <Route path='finance/bank' element={<BankAccount />} />
 
-        <Route path='analytics/sales' element={<SalesAnalysis />} />
-        <Route path='analytics/performance' element={<Performance />} />
 
         <Route path='shop/profile' element={<ShopProfile />} />
         <Route path='shop/decoration' element={<ShopDecoration />} />

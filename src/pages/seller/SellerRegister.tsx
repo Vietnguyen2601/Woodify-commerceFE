@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { ROUTES } from '@/constants/routes'
-import { providerService, shopService } from '@/services'
+import { providerService, shopService, queryKeys } from '@/services'
 import { uploadImageToCloudinary } from '@/services/cloudinary.service'
 import { useShopStore } from '@/store/shopStore'
 import type { CreateShopPayload, ShippingProvider } from '@/types'
@@ -24,6 +24,7 @@ type MediaFormData = z.infer<typeof mediaSchema>
 
 export default function SellerRegister() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { setShop } = useShopStore()
   const [stepOneData, setStepOneData] = useState<StepOneDraft | null>(null)
   const [isDraftLoading, setIsDraftLoading] = useState(true)
@@ -79,6 +80,9 @@ export default function SellerRegister() {
       return response
     },
     onSuccess: (data) => {
+      // Invalidate user query to refetch with updated role/shop info
+      queryClient.invalidateQueries({ queryKey: queryKeys.user() })
+      
       localStorage.setItem('current_shop', JSON.stringify(data))
       localStorage.removeItem(STEP_ONE_STORAGE_KEY)
       setShop(data)
