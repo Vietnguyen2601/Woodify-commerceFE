@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productMasterService } from '@/services'
+import { useAppLanguage } from '@/hooks'
 import type { ProductMaster, ProductStatus } from '@/types'
 
 const STATUS_TABS: { label: string; value: ProductStatus | 'ALL' }[] = [
@@ -32,8 +33,32 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default function ProductModeration() {
+  const { isVietnamese } = useAppLanguage()
   const [activeTab, setActiveTab] = useState<ProductStatus | 'ALL'>('PENDING_APPROVAL')
   const [search, setSearch] = useState('')
+
+  const t = useMemo(
+    () => ({
+      title: isVietnamese ? 'Kiểm duyệt sản phẩm' : 'Product Moderation',
+      subtitle: isVietnamese ? 'Xem xét và phê duyệt sản phẩm do người bán gửi lên' : 'Review and approve products from sellers',
+      searchLabel: isVietnamese ? 'Tìm kiếm' : 'Search',
+      searchPlaceholder: isVietnamese ? 'Tìm kiếm tên sản phẩm...' : 'Search product name...',
+      pendingLabel: isVietnamese ? 'Chờ duyệt' : 'Pending',
+      allLabel: isVietnamese ? 'Tất cả' : 'All',
+      approvedLabel: isVietnamese ? 'Đã duyệt' : 'Approved',
+      publishedLabel: isVietnamese ? 'Đã đăng' : 'Published',
+      rejectedLabel: isVietnamese ? 'Từ chối' : 'Rejected',
+    }),
+    [isVietnamese]
+  )
+
+  const tabLabelMap = useMemo(() => ({
+    'ALL': t.allLabel,
+    'PENDING_APPROVAL': t.pendingLabel,
+    'APPROVED': t.approvedLabel,
+    'PUBLISHED': t.publishedLabel,
+    'REJECTED': t.rejectedLabel,
+  }), [t])
 
   const { data: allProducts = [], isLoading, isError } = useQuery({
     queryKey: ['admin-all-products'],
@@ -51,18 +76,23 @@ export default function ProductModeration() {
       )
     : tabFiltered
 
-  const tabCount = (val: ProductStatus | 'ALL') =>
-    val === 'ALL' ? allProducts.length : allProducts.filter(p => p.status === val).length
+  const counts = useMemo(() => ({
+    all: allProducts.length,
+    pending: allProducts.filter(p => p.status === 'PENDING_APPROVAL').length,
+    approved: allProducts.filter(p => p.status === 'APPROVED').length,
+    published: allProducts.filter(p => p.status === 'PUBLISHED').length,
+    rejected: allProducts.filter(p => p.status === 'REJECTED').length,
+  }), [allProducts])
 
-  const pendingCount = tabCount('PENDING_APPROVAL')
+  const pendingCount = counts.pending
 
   return (
     <div className='space-y-6'>
       {/* Header */}
       <header className='flex flex-wrap items-center justify-between gap-4'>
         <div>
-          <h1 className='text-2xl font-bold text-gray-900'>Kiểm duyệt sản phẩm</h1>
-          <p className='text-sm text-gray-500'>Xem xét và phê duyệt sản phẩm do người bán gửi lên</p>
+          <h1 className='text-2xl font-bold text-gray-900'>{t.title}</h1>
+          <p className='text-sm text-gray-500'>{t.subtitle}</p>
         </div>
         {pendingCount > 0 && (
           <span className='inline-flex items-center rounded-2xl border border-orange-200 bg-orange-100 px-4 py-2 text-sm font-medium text-orange-700'>
@@ -71,59 +101,70 @@ export default function ProductModeration() {
         )}
       </header>
 
-      {/* Summary cards */}
-      <div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-5'>
         {[
-          { label: 'Chờ duyệt', count: tabCount('PENDING_APPROVAL'), color: 'text-amber-700 bg-amber-50 border-amber-200' },
-          { label: 'Đã duyệt', count: tabCount('APPROVED'), color: 'text-blue-700 bg-blue-50 border-blue-200' },
-          { label: 'Đã đăng', count: tabCount('PUBLISHED'), color: 'text-green-700 bg-green-50 border-green-200' },
-          { label: 'Từ chối', count: tabCount('REJECTED'), color: 'text-red-700 bg-red-50 border-red-200' },
-        ].map(({ label, count, color }) => (
-          <div key={label} className={`rounded-xl border px-4 py-3 ${color}`}>
-            <p className='text-2xl font-bold'>{count}</p>
-            <p className='text-xs font-medium'>{label}</p>
+          { label: t.allLabel, value: counts.all, accent: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: t.pendingLabel, value: counts.pending, accent: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: t.approvedLabel, value: counts.approved, accent: 'text-green-600', bg: 'bg-green-50' },
+          { label: t.publishedLabel, value: counts.published, accent: 'text-indigo-600', bg: 'bg-indigo-50' },
+          { label: t.rejectedLabel, value: counts.rejected, accent: 'text-red-600', bg: 'bg-red-50' },
+        ].map((metric) => (
+          <div key={metric.label} className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
+            <div className='flex items-center justify-between'>
+              <div>
+                <p className='text-sm text-gray-500'>{metric.label}</p>
+                <p className='text-2xl font-bold text-gray-900'>{isLoading ? '…' : metric.value}</p>
+              </div>
+              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${metric.bg}`}>
+                <span className={`text-lg font-bold ${metric.accent}`}>·</span>
+              </span>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Search bar */}
-      <div className='relative max-w-sm'>
-        <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
-          <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-            <circle cx='11' cy='11' r='7' />
-            <path d='m16.5 16.5 4 4' strokeLinecap='round' />
-          </svg>
-        </span>
-        <input
-          type='search'
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder='Tìm kiếm tên sản phẩm...'
-          className='h-10 w-full rounded-xl border border-gray-200 pl-9 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none'
-        />
-      </div>
+      {/* Filters */}
+      <div className='rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
+        <div className='flex gap-4 items-start justify-between'>
+          {/* Search - Left */}
+          <div className='flex-[0.5] flex flex-col space-y-2'>
+            <label className='text-xs font-medium text-gray-700'>{t.searchLabel}</label>
+            <div className='relative'>
+              <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
+                <svg className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.5'>
+                  <circle cx='11' cy='11' r='7' />
+                  <path d='m16.5 16.5 4 4' strokeLinecap='round' />
+                </svg>
+              </span>
+              <input
+                type='text'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                className='h-10 w-full appearance-none rounded-xl border border-gray-200 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none'
+                style={{ paddingLeft: '3rem' }}
+              />
+            </div>
+          </div>
 
-      {/* Status tabs */}
-      <div className='flex flex-wrap gap-2'>
-        {STATUS_TABS.map(tab => (
-          <button
-            key={tab.value}
-            type='button'
-            onClick={() => setActiveTab(tab.value)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-              activeTab === tab.value
-                ? 'border-gray-700 bg-gray-700 text-white'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
-          >
-            {tab.label}
-            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-              activeTab === tab.value ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-            }`}>
-              {tabCount(tab.value)}
-            </span>
-          </button>
-        ))}
+          {/* Status - Right */}
+          <div className='flex gap-3 items-start'>
+            <div className='w-[140px] rounded-xl border border-gray-200 bg-white p-3'>
+              <label className='mb-1 block text-xs font-medium text-gray-600'>{isVietnamese ? 'Trạng thái' : 'Status'}</label>
+              <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value as ProductStatus | 'ALL')}
+                className='h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'
+              >
+                {STATUS_TABS.map((tab) => (
+                  <option key={tab.value} value={tab.value}>
+                    {tabLabelMap[tab.value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Loading */}
@@ -272,7 +313,6 @@ function ProductRow({ product }: { product: ProductMaster }) {
       <td className='px-6 py-4'>
         <div className='flex flex-col items-center gap-1.5'>
           <div className='flex items-center justify-center gap-2'>
-            {/* Approve */}
             <button
               type='button'
               onClick={() => moderate('APPROVED')}
@@ -291,7 +331,6 @@ function ProductRow({ product }: { product: ProductMaster }) {
               </svg>
               Duyệt
             </button>
-
             {/* Reject */}
             <button
               type='button'

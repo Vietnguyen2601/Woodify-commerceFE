@@ -9,6 +9,7 @@ import OrderManager from './orders/OrderManager'
 import ProductModeration from './products/ProductModeration'
 import ShipmentManager from './shipments/ShipmentManager'
 import MarketingPlan from './marketing/MarketingPlan'
+import FinanceManagement from './finance/FinanceManagement'
 import PolicyCenter from './policy/PolicyCenter'
 import AdminProfile from './profile/AdminProfile'
 
@@ -24,6 +25,7 @@ export default function AdminDashboard() {
         <Route path='orders' element={<OrderManager />} />
         <Route path='shipments' element={<ShipmentManager />} />
         <Route path='marketing' element={<MarketingPlan />} />
+        <Route path='finance' element={<FinanceManagement />} />
         <Route path='policies' element={<PolicyCenter />} />
         <Route path='profile' element={<AdminProfile />} />
         <Route path='*' element={<Navigate to='/admin' replace />} />

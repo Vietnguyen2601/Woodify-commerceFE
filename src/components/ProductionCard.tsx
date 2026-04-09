@@ -6,10 +6,18 @@ export interface ProductionCardProduct {
   title: string
   description: string
   price: number
+  originalPrice?: number
   badge?: string
   tags?: string[]
   thumbnailUrl?: string
   shopName?: string | null
+  location?: string
+  rating?: number
+  reviewCount?: number
+  soldCount?: number
+  discount?: number
+  isFeatured?: boolean
+  hasFreeship?: boolean
 }
 
 interface ProductionCardProps {
@@ -26,12 +34,14 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
     }
   }
 
+  const rating = product.rating || 4.8
+  const reviewCount = product.reviewCount || 234
+
   return (
     <article
       className='production-card'
       role={onCardClick ? 'button' : undefined}
       tabIndex={onCardClick ? 0 : undefined}
-      onClick={onCardClick}
       onKeyDown={handleKeyDown}
     >
       <div className='production-card__thumbnail'>
@@ -51,45 +61,54 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
             </svg>
           </div>
         )}
-        {product.badge && <span className='production-card__badge'>{product.badge}</span>}
-      </div>
-
-      <div className='production-card__header'>
-        <h3>{product.title}</h3>
-        {product.shopName && (
-          <p className='production-card__shop'>{product.shopName}</p>
+        {product.discount && (
+          <span className='production-card__discount-badge'>{-Math.round(product.discount)}%</span>
         )}
-        <p className='production-card__description'>{product.description}</p>
+        <div className='production-card__badges'>
+          {product.isFeatured && (
+            <span className='production-card__badge production-card__badge--featured'>
+              ⭐ Nổi bật
+            </span>
+          )}
+          {product.hasFreeship && (
+            <span className='production-card__badge production-card__badge--freeship'>
+              Freeship
+            </span>
+          )}
+        </div>
       </div>
 
-      {product.tags && product.tags.length > 0 && (
-        <ul className='production-card__tags'>
-          {product.tags.map(tag => (
-            <li key={tag}>{tag}</li>
-          ))}
-        </ul>
-      )}
-
-      <div className='production-card__footer'>
-        <div>
-          <span className='production-card__price-label'>Giá tham khảo</span>
-          <strong>{product.price.toLocaleString('vi-VN')} VND</strong>
+      <div className='production-card__content'>
+        <h3 className='production-card__title'>{product.title}</h3>
+        
+        <div className='production-card__price-section'>
+          <strong className='production-card__price'>
+            {product.price.toLocaleString('vi-VN')}₫
+          </strong>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <span className='production-card__original-price'>
+              {product.originalPrice.toLocaleString('vi-VN')}₫
+            </span>
+          )}
         </div>
-        <div className='production-card__actions'>
-          <Link
-            to={`/product/${product.id}`}
-            className='home__ghost-btn'
-            onClick={event => event.stopPropagation()}
-          >
-            Chi tiết
-          </Link>
-          <button
-            type='button'
-            className='home__action-primary'
-            onClick={event => event.stopPropagation()}
-          >
-            Thêm giỏ
-          </button>
+
+        <div className='production-card__meta'>
+          <div className='production-card__rating'>
+            <span className='production-card__rating-value'>⭐ {rating}</span>
+            <span className='production-card__review-count'>({reviewCount})</span>
+            <span className='production-card__sold'>Đã bán {product.soldCount || 456}</span>
+          </div>
+        </div>
+
+        <div className='production-card__seller'>
+          <div className='production-card__seller-row'>
+            <span className='production-card__seller-icon'>🏪</span>
+            <span className='production-card__seller-name'>{product.shopName || 'Shop'}</span>
+          </div>
+          <div className='production-card__seller-row'>
+            <span className='production-card__location-icon'>📍</span>
+            <span className='production-card__location'>{product.location || 'Hà Nội'}</span>
+          </div>
         </div>
       </div>
     </article>

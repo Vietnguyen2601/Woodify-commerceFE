@@ -2,7 +2,9 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ProductionCard, { type ProductionCardProduct } from '../components/ProductionCard'
+import Pagination from '../components/Pagination'
 import { productMasterService, shopService } from '@/services'
+import { mockCatalogProducts, mockShops } from '@/data/catalog-mock-data'
 
 const catalogCategories = [
   { id: 'living', label: 'Không gian phòng khách' },
@@ -29,29 +31,45 @@ export default function Catalog() {
   const [selectedPrice, setSelectedPrice] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
   const [sortOption, setSortOption] = React.useState<SortOption>('dateDesc')
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 9
 
   const { data: rawProducts = [], isLoading, isError } = useQuery({
     queryKey: ['published-products'],
     queryFn: () => productMasterService.getPublishedProducts(),
+    enabled: false, // Tạm vô hiệu hóa API, dùng mock data
   })
 
   const { data: shops = [] } = useQuery({
     queryKey: ['all-shops'],
     queryFn: () => shopService.getAllShops(),
+    enabled: false, // Tạm vô hiệu hóa API, dùng mock data
   })
+
+  // Luôn dùng mock data để test
+  const productsToUse = mockCatalogProducts
+  const shopsToUse = mockShops
 
   const shopMap = React.useMemo(() => {
     const map: Record<string, string> = {}
-    shops.forEach(s => { map[s.shopId] = s.name })
+    shopsToUse.forEach(s => { map[s.shopId] = s.name })
     return map
-  }, [shops])
+  }, [shopsToUse])
 
   const catalogProducts = React.useMemo<CatalogProduct[]>(() => (
-    rawProducts.map((p, index) => ({
+    productsToUse.map((p: any, index) => ({
       id: p.productId,
       title: p.name,
       description: p.description || '',
-      price: 0,
+      price: p.price || 0,
+      originalPrice: p.originalPrice,
+      rating: p.rating,
+      reviewCount: p.reviewCount,
+      soldCount: p.soldCount,
+      location: p.location,
+      discount: p.discount,
+      isFeatured: p.isFeatured,
+      hasFreeship: p.hasFreeship,
       badge: undefined,
       tags: [p.categoryName].filter(Boolean),
       thumbnailUrl: p.thumbnailUrl ?? undefined,
@@ -60,7 +78,7 @@ export default function Catalog() {
       category: catalogCategories[index % catalogCategories.length].id,
       createdAt: p.createdAt,
     }))
-  ), [rawProducts, shopMap])
+  ), [productsToUse, shopMap])
 
   const filteredProducts = React.useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
@@ -94,6 +112,12 @@ export default function Catalog() {
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
         return dateA - dateB
       })
+    } else if (sortOption === 'featured') {
+      // Featured products first
+      result = [...result].sort((a, b) => {
+        if (a.isFeatured === b.isFeatured) return 0
+        return a.isFeatured ? -1 : 1
+      })
     }
 
     return result
@@ -105,13 +129,27 @@ export default function Catalog() {
     setSelectedPrice(null)
     setSearchTerm('')
     setSortOption('dateDesc')
+    setCurrentPage(1)
   }
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [filteredProducts.length])
+
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage)
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
 
   return (
     <div className='catalog-page'>
 
       <main className='catalog__layout'>
         <aside className='catalog__sidebar'>
+          <div className='catalog__sidebar-header'>
+            <p className='catalog__eyebrow'>🔍 Bộ lọc tìm kiếm</p>
+          </div>
+
           <section className='catalog__sidebar-section'>
             <div className='catalog__sidebar-heading'>
               <div>
@@ -136,9 +174,10 @@ export default function Catalog() {
           </section>
 
           <section className='catalog__sidebar-section'>
-            <p className='catalog__eyebrow'>Bộ lọc tìm kiếm</p>
-
-            <label htmlFor='catalog-search' className='catalog__label'>Từ khóa sản phẩm</label>
+            <div>
+              <p className='catalog__eyebrow'>Tìm kiếm</p>
+              <label htmlFor='catalog-search' className='catalog__label'>Từ khóa sản phẩm</label>
+            </div>
             <input
               id='catalog-search'
               type='search'
@@ -148,24 +187,26 @@ export default function Catalog() {
               onChange={event => setSearchTerm(event.target.value)}
             />
 
-            <p className='catalog__label'>Khoảng giá</p>
-            <div className='catalog__pill-group'>
-              {priceFilters.map(filter => (
-                <button
-                  key={filter.id}
-                  type='button'
-                  className={selectedPrice === filter.id ? 'catalog__pill active' : 'catalog__pill'}
-                  onClick={() => setSelectedPrice(prev => prev === filter.id ? null : filter.id)}
-                >
-                  {filter.label}
-                </button>
-              ))}
+            <div style={{ marginTop: '20px' }}>
+              <p className='catalog__eyebrow'>Khoảng giá</p>
+              <div className='catalog__pill-group'>
+                {priceFilters.map(filter => (
+                  <button
+                    key={filter.id}
+                    type='button'
+                    className={selectedPrice === filter.id ? 'catalog__pill active' : 'catalog__pill'}
+                    onClick={() => setSelectedPrice(prev => prev === filter.id ? null : filter.id)}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <button type='button' className='catalog__reset' onClick={handleResetFilters}>Xóa lọc</button>
+            <button type='button' className='catalog__reset' onClick={handleResetFilters}>Xóa tất cả lọc</button>
           </section>
 
-          {shops.length > 0 && (
+          {shopsToUse && shopsToUse.length > 0 && (
             <section className='catalog__sidebar-section'>
               <div className='catalog__sidebar-heading'>
                 <div>
@@ -175,7 +216,7 @@ export default function Catalog() {
                 <button type='button' className='catalog__link' onClick={() => setSelectedShop(null)}>Bỏ chọn</button>
               </div>
               <div className='catalog__pill-group'>
-                {shops.map(shop => (
+                {shopsToUse.map(shop => (
                   <button
                     key={shop.shopId}
                     type='button'
@@ -197,20 +238,48 @@ export default function Catalog() {
               <h1>Bộ sưu tập gỗ tuyển chọn</h1>
               <p className='catalog__subtitle'>Các sản phẩm được tuyển bởi cố vấn của Woodify, phù hợp mọi không gian sống.</p>
             </div>
-            <div className='catalog__sort'>
-              <label htmlFor='catalog-sort'>Sắp xếp</label>
-              <select
-                id='catalog-sort'
-                value={sortOption}
-                onChange={event => setSortOption(event.target.value as SortOption)}
-              >
-                <option value='dateDesc'>Mới nhất</option>
-                <option value='dateAsc'>Cũ nhất</option>
-                <option value='featured'>Nổi bật</option>
-                <option value='priceAsc'>Giá tăng dần</option>
-                <option value='priceDesc'>Giá giảm dần</option>
-              </select>
-            </div>
+            <button type='button' className='catalog__hide-filter' onClick={() => {}}>
+              <span>⏷</span> Ẩn bộ lọc
+            </button>
+          </div>
+
+          <div className='catalog__sort-bar'>
+            <p className='catalog__sort-label'>Sắp xếp</p>
+            <button 
+              type='button'
+              className={`catalog__sort-btn ${sortOption === 'featured' ? 'active' : ''}`}
+              onClick={() => setSortOption('featured')}
+            >
+              Phổ biến
+            </button>
+            <button 
+              type='button'
+              className={`catalog__sort-btn ${sortOption === 'dateDesc' ? 'active' : ''}`}
+              onClick={() => setSortOption('dateDesc')}
+            >
+              Mới nhất
+            </button>
+            <button 
+              type='button'
+              className={`catalog__sort-btn ${sortOption === 'dateAsc' ? 'active' : ''}`}
+              onClick={() => setSortOption('dateAsc')}
+            >
+              Bán chạy
+            </button>
+            <button 
+              type='button'
+              className={`catalog__sort-btn ${sortOption === 'priceAsc' ? 'active' : ''}`}
+              onClick={() => setSortOption('priceAsc')}
+            >
+              Giá thấp - cao
+            </button>
+            <button 
+              type='button'
+              className={`catalog__sort-btn ${sortOption === 'priceDesc' ? 'active' : ''}`}
+              onClick={() => setSortOption('priceDesc')}
+            >
+              Giá cao - thấp
+            </button>
           </div>
 
           <div className='catalog__grid'>
@@ -230,7 +299,7 @@ export default function Catalog() {
                 <p>Không có sản phẩm nào khớp với bộ lọc. Hãy thử điều chỉnh điều kiện tìm kiếm.</p>
               </div>
             ) : (
-              filteredProducts.map(product => (
+              paginatedProducts.map(product => (
                 <ProductionCard
                   key={product.id}
                   product={product}
@@ -239,6 +308,14 @@ export default function Catalog() {
               ))
             )}
           </div>
+
+          {filteredProducts.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </section>
       </main>
     </div>

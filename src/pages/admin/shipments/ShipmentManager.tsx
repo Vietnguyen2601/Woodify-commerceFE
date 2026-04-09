@@ -1,168 +1,203 @@
 import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useAppLanguage } from '@/hooks'
+import { adminService, queryKeys } from '@/services'
+import type { ShipmentDto } from '@/types'
 
-const METRICS = [
-  {
-    label: 'Total Shipments',
-    value: '8',
-    iconBg: 'bg-blue-50',
-    icon: (
-      <svg className='h-5 w-5 text-blue-600' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.6'>
-        <path d='M3 7l9-4 9 4-9 4-9-4z' strokeLinejoin='round' />
-        <path d='M3 7v10l9 4 9-4V7' />
-      </svg>
-    )
-  },
-  {
-    label: 'In Transit',
-    value: '2',
-    iconBg: 'bg-purple-50',
-    icon: (
-      <svg className='h-5 w-5 text-purple-600' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.6'>
-        <path d='M4 12h16M12 4l8 8-8 8' strokeLinecap='round' strokeLinejoin='round' />
-      </svg>
-    )
-  },
-  {
-    label: 'Delivered',
-    value: '2',
-    iconBg: 'bg-green-50',
-    icon: (
-      <svg className='h-5 w-5 text-green-600' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.6'>
-        <path d='m6 12 3 3 9-9' strokeLinecap='round' strokeLinejoin='round' />
-      </svg>
-    )
-  },
-  {
-    label: 'Pending Pickup',
-    value: '1',
-    iconBg: 'bg-orange-50',
-    icon: (
-      <svg className='h-5 w-5 text-orange-600' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.6'>
-        <path d='M5 12h14M5 12l4-4m-4 4 4 4' strokeLinecap='round' strokeLinejoin='round' />
-      </svg>
-    )
+const STATUS_STYLES: Record<string, string> = {
+  DELIVERED: 'border border-green-200 bg-green-100 text-green-700',
+  IN_TRANSIT: 'border border-purple-200 bg-purple-100 text-purple-700',
+  PENDING: 'border border-blue-200 bg-blue-100 text-blue-700',
+  DEFAULT: 'border border-gray-200 bg-gray-100 text-gray-800',
+}
+
+const styleFor = (status?: string) => {
+  const u = (status || '').toUpperCase().replace(/\s+/g, '_')
+  if (u in STATUS_STYLES) return STATUS_STYLES[u]
+  if (u.includes('DELIVER')) return STATUS_STYLES.DELIVERED
+  if (u.includes('TRANSIT')) return STATUS_STYLES.IN_TRANSIT
+  return STATUS_STYLES.DEFAULT
+}
+
+const formatDate = (isoDate: string | null | undefined, locale: string, fallback: string) => {
+  if (!isoDate) return fallback
+  try {
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(isoDate))
+  } catch {
+    return isoDate
   }
-]
-
-type ShipmentType = 'Standard' | 'Bulky' | 'Extra Bulky'
-type ShipmentStatus = 'Delivered' | 'In Transit' | 'Out for Delivery' | 'Pickup Scheduled' | 'Picked Up' | 'Failed' | 'Returned'
-
-type ShipmentRecord = {
-  shipmentCode: string
-  shortCode: string
-  orderId: string
-  provider: string
-  tracking: string
-  weight: string
-  fee: string
-  cod: string
-  type: ShipmentType
-  status: ShipmentStatus
-  pickupDate: string
-  deliveredDate: string
 }
-
-const SHIPMENTS: ShipmentRecord[] = [
-  { shipmentCode: 'SHIP-2026-001847', shortCode: 'SHP-001', orderId: 'ORD-2026-001847', provider: 'FedEx Ground', tracking: 'FDX-8829461039847', weight: '185 lbs', fee: '$45.00', cod: '-', type: 'Extra Bulky', status: 'Delivered', pickupDate: 'Feb 11, 2026', deliveredDate: 'Feb 15, 2026' },
-  { shipmentCode: 'SHIP-2026-001846', shortCode: 'SHP-002', orderId: 'ORD-2026-001846', provider: 'UPS Next Day Air', tracking: 'UPS-7738352984736', weight: '155 lbs', fee: '$85.00', cod: '$689.50', type: 'Bulky', status: 'In Transit', pickupDate: 'Feb 10, 2026', deliveredDate: '-' },
-  { shipmentCode: 'SHIP-2026-001845', shortCode: 'SHP-003', orderId: 'ORD-2026-001845', provider: 'FedEx 2Day', tracking: 'FDX-8829461039848', weight: '65 lbs', fee: '$32.00', cod: '-', type: 'Standard', status: 'Out for Delivery', pickupDate: 'Feb 10, 2026', deliveredDate: '-' },
-  { shipmentCode: 'SHIP-2026-001844', shortCode: 'SHP-004', orderId: 'ORD-2026-001844', provider: 'DHL Express', tracking: 'DHL-9940573058294', weight: '125 lbs', fee: '$55.00', cod: '$890.00', type: 'Bulky', status: 'Pickup Scheduled', pickupDate: 'Feb 12, 2026', deliveredDate: '-' },
-  { shipmentCode: 'SHIP-2026-001843', shortCode: 'SHP-005', orderId: 'ORD-2026-001843', provider: 'FedEx Ground', tracking: 'FDX-8829461039849', weight: '165 lbs', fee: '$48.00', cod: '-', type: 'Bulky', status: 'Delivered', pickupDate: 'Feb 9, 2026', deliveredDate: 'Feb 14, 2026' },
-  { shipmentCode: 'SHIP-2026-001842', shortCode: 'SHP-006', orderId: 'ORD-2026-001842', provider: 'USPS Priority Mail', tracking: 'USPS-4456789012345', weight: '45 lbs', fee: '$18.00', cod: '-', type: 'Standard', status: 'Picked Up', pickupDate: 'Feb 11, 2026', deliveredDate: '-' },
-  { shipmentCode: 'SHIP-2026-001841', shortCode: 'SHP-007', orderId: 'ORD-2026-001841', provider: 'FedEx Ground', tracking: 'FDX-8829461039850', weight: '95 lbs', fee: '$38.00', cod: '-', type: 'Bulky', status: 'Failed', pickupDate: 'Feb 8, 2026', deliveredDate: '-' },
-  { shipmentCode: 'SHIP-2026-001840', shortCode: 'SHP-008', orderId: 'ORD-2026-001840', provider: 'UPS Ground', tracking: 'UPS-7738352984737', weight: '205 lbs', fee: '$65.00', cod: '$2150.00', type: 'Extra Bulky', status: 'Returned', pickupDate: 'Feb 8, 2026', deliveredDate: '-' }
-]
-
-const STATUS_STYLES: Record<ShipmentStatus, string> = {
-  Delivered: 'border border-green-200 bg-green-100 text-green-700',
-  'In Transit': 'border border-purple-200 bg-purple-100 text-purple-700',
-  'Out for Delivery': 'border border-indigo-200 bg-indigo-100 text-indigo-700',
-  'Pickup Scheduled': 'border border-blue-200 bg-blue-100 text-blue-700',
-  'Picked Up': 'border border-cyan-200 bg-cyan-100 text-cyan-700',
-  Failed: 'border border-red-200 bg-red-100 text-red-700',
-  Returned: 'border border-orange-200 bg-orange-100 text-orange-700'
-}
-
-const TYPE_STYLES: Record<ShipmentType, string> = {
-  Standard: 'border border-blue-200 bg-blue-100 text-blue-700',
-  Bulky: 'border border-orange-200 bg-orange-100 text-orange-700',
-  'Extra Bulky': 'border border-red-200 bg-red-100 text-red-700'
-}
-
-const ACTION_BUTTON = 'inline-flex items-center gap-2 rounded-2xl bg-gradient-to-b from-stone-500 to-stone-600 px-4 py-2 text-sm font-semibold text-white shadow'
 
 export default function ShipmentManager() {
+  const { isVietnamese } = useAppLanguage()
+  const [search, setSearch] = React.useState('')
+  const [statusFilter, setStatusFilter] = React.useState('')
+
+  const t = React.useMemo(
+    () => ({
+      title: isVietnamese ? 'Quản lý vận chuyển' : 'Shipment Management',
+      subtitle: isVietnamese ? 'Theo dõi trạng thái đơn vận chuyển và nhà cung cấp.' : 'Track shipment status and providers.',
+      searchLabel: isVietnamese ? 'Tìm kiếm' : 'Search',
+      searchPlaceholder: isVietnamese ? 'Mã vận chuyển, tracking, hoặc đơn hàng...' : 'Shipment id, tracking, or order...',
+      statusLabel: isVietnamese ? 'Trạng thái' : 'Status',
+      statusAll: isVietnamese ? 'Tất cả' : 'All',
+      providersLabel: isVietnamese ? 'Nhà cung cấp' : 'Providers',
+      metricsTotal: isVietnamese ? 'Tổng vận chuyển' : 'Total Shipments',
+      metricsTransit: isVietnamese ? 'Đang vận chuyển (ước tính)' : 'In transit (heuristic)',
+      metricsDelivered: isVietnamese ? 'Đã giao (ước tính)' : 'Delivered (heuristic)',
+      metricsOther: isVietnamese ? 'Khác' : 'Other',
+      showing: isVietnamese ? 'Hiển thị' : 'Showing',
+      shipmentsLabel: isVietnamese ? 'vận chuyển' : 'shipments',
+      tableShipment: isVietnamese ? 'Vận chuyển' : 'Shipment',
+      tableOrder: isVietnamese ? 'Đơn hàng' : 'Order',
+      tableProvider: isVietnamese ? 'Nhà cung cấp' : 'Provider',
+      tableTracking: isVietnamese ? 'Tracking' : 'Tracking',
+      tableStatus: isVietnamese ? 'Trạng thái' : 'Status',
+      tableEta: isVietnamese ? 'Dự kiến' : 'ETA',
+      loading: isVietnamese ? 'Đang tải…' : 'Loading…',
+      empty: isVietnamese ? 'Không có vận chuyển.' : 'No shipments.',
+      loadError: isVietnamese ? 'Không thể tải dữ liệu.' : 'Failed to load.',
+      dash: '—',
+      dateUnknown: isVietnamese ? 'Chưa xác định' : 'Unknown',
+    }),
+    [isVietnamese]
+  )
+
+  const { data: shipments = [], isLoading, isError, error } = useQuery({
+    queryKey: queryKeys.admin.shipments(),
+    queryFn: adminService.getAllShipments,
+    staleTime: 60 * 1000,
+  })
+
+  const { data: providerPage } = useQuery({
+    queryKey: [...queryKeys.admin.shipments(), 'providers'],
+    queryFn: () => adminService.getShipmentProviders(1, 100),
+    staleTime: 120 * 1000,
+  })
+
+  const providerName = React.useMemo(() => {
+    const m = new Map<string, string>()
+    for (const p of providerPage?.items ?? []) {
+      m.set(p.providerId, p.providerName)
+    }
+    return m
+  }, [providerPage])
+
+  const metrics = React.useMemo(() => {
+    const list = shipments
+    const total = list.length
+    const delivered = list.filter((s) => (s.status || '').toUpperCase().includes('DELIVER')).length
+    const transit = list.filter((s) => (s.status || '').toUpperCase().includes('TRANSIT')).length
+    const pending = total - delivered - transit
+    return [
+      { label: t.metricsTotal, value: String(total), iconBg: 'bg-blue-50' },
+      { label: t.metricsTransit, value: String(transit), iconBg: 'bg-purple-50' },
+      { label: t.metricsDelivered, value: String(delivered), iconBg: 'bg-green-50' },
+      { label: t.metricsOther, value: String(Math.max(0, pending)), iconBg: 'bg-orange-50' },
+    ]
+  }, [shipments, t.metricsDelivered, t.metricsOther, t.metricsTotal, t.metricsTransit])
+
+  const filtered = React.useMemo(() => {
+    let list = [...shipments]
+    if (statusFilter) {
+      list = list.filter((s) => (s.status || '').toUpperCase() === statusFilter.toUpperCase())
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      list = list.filter((s) => {
+        const id = (s.shipmentId || s.id || '').toLowerCase()
+        const tid = (s.trackingNumber || '').toLowerCase()
+        const oid = (s.orderId || '').toLowerCase()
+        return id.includes(q) || tid.includes(q) || oid.includes(q)
+      })
+    }
+    return list
+  }, [shipments, statusFilter, search])
+
+  const uniqueStatuses = React.useMemo(() => {
+    const set = new Set<string>()
+    for (const s of shipments) {
+      if (s.status) set.add(s.status)
+    }
+    return [...set].sort()
+  }, [shipments])
+
   return (
     <div className='space-y-6'>
       <header className='space-y-1'>
-        <h1 className='text-2xl font-bold text-gray-900'>Shipment Management</h1>
-        <p className='text-sm text-gray-500'>Monitor and manage all shipment orders</p>
+        <h1 className='text-2xl font-bold text-gray-900'>{t.title}</h1>
+        <p className='text-sm text-gray-500'>{t.subtitle}</p>
+        {isError && (
+          <p className='text-sm text-red-600'>{error instanceof Error ? error.message : t.loadError}</p>
+        )}
       </header>
 
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        {METRICS.map((metric) => (
+        {metrics.map((metric) => (
           <div key={metric.label} className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
             <div className='flex items-center justify-between'>
               <div>
                 <p className='text-sm text-gray-500'>{metric.label}</p>
-                <p className='text-2xl font-bold text-gray-900'>{metric.value}</p>
+                <p className='text-2xl font-bold text-gray-900'>{isLoading ? '…' : metric.value}</p>
               </div>
-              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${metric.iconBg}`}>{metric.icon}</span>
+              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${metric.iconBg}`} />
             </div>
           </div>
         ))}
       </div>
 
       <section className='rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
-        <div className='grid gap-4 lg:grid-cols-[2fr_repeat(3,minmax(0,1fr))]'>
-          <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>Search Shipments</label>
+        <div className='flex gap-4 items-start justify-between'>
+          {/* Search - Left */}
+          <div className='flex-[0.5] flex flex-col space-y-2'>
+            <label className='text-xs font-medium text-gray-700'>{t.searchLabel}</label>
             <div className='relative'>
-              <span className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400'>
-                <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+              <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
+                <svg className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='1.5'>
                   <circle cx='11' cy='11' r='7' />
                   <path d='m16.5 16.5 4 4' strokeLinecap='round' />
                 </svg>
               </span>
               <input
-                type='search'
-                placeholder='Shipment code or tracking number...'
-                className='h-10 w-full rounded-xl border border-gray-200 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none'
+                type='text'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                className='h-10 w-full appearance-none rounded-xl border border-gray-200 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none'
+                style={{ paddingLeft: '3rem' }}
               />
             </div>
           </div>
-          <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>Status</label>
-            <select className='h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'>
-              <option value=''>All statuses</option>
-              <option>Delivered</option>
-              <option>In Transit</option>
-              <option>Out for Delivery</option>
-              <option>Pickup Scheduled</option>
-              <option>Picked Up</option>
-              <option>Failed</option>
-              <option>Returned</option>
-            </select>
-          </div>
-          <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>Provider</label>
-            <select className='h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'>
-              <option value=''>All providers</option>
-              <option>FedEx Ground</option>
-              <option>UPS</option>
-              <option>DHL Express</option>
-              <option>USPS Priority Mail</option>
-            </select>
-          </div>
-          <div className='space-y-2'>
-            <label className='text-xs font-medium text-gray-700'>Date From</label>
-            <input type='date' className='h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none' />
+
+          {/* Filters - Right */}
+          <div className='flex gap-3 items-start'>
+            <div className='w-[120px] rounded-xl border border-gray-200 bg-white p-3'>
+              <label className='mb-1 block text-xs font-medium text-gray-600'>{t.statusLabel}</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className='h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-gray-400 focus:outline-none'
+              >
+                <option value=''>{t.statusAll}</option>
+                {uniqueStatuses.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className='w-[120px] rounded-xl border border-gray-200 bg-white p-3'>
+              <label className='mb-1 block text-xs font-medium text-gray-600'>{t.providersLabel}</label>
+              <div className='h-9 rounded-lg border border-transparent px-3 text-sm font-semibold text-gray-900 flex items-center'>
+                {providerPage?.items.length ?? 0}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <p className='text-sm text-gray-600'>
-        Showing <span className='font-semibold text-gray-900'>{SHIPMENTS.length}</span> shipments
+        {t.showing} <span className='font-semibold text-gray-900'>{filtered.length}</span> {t.shipmentsLabel}
       </p>
 
       <section className='overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm'>
@@ -170,56 +205,49 @@ export default function ShipmentManager() {
           <table className='min-w-full divide-y divide-gray-100 text-sm'>
             <thead className='bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500'>
               <tr>
-                <th className='px-6 py-3 text-left'>Shipment</th>
-                <th className='px-6 py-3 text-left'>Order ID</th>
-                <th className='px-6 py-3 text-left'>Provider</th>
-                <th className='px-6 py-3 text-left'>Tracking</th>
-                <th className='px-6 py-3 text-left'>Weight</th>
-                <th className='px-6 py-3 text-left'>Fee</th>
-                <th className='px-6 py-3 text-left'>COD</th>
-                <th className='px-6 py-3 text-left'>Type</th>
-                <th className='px-6 py-3 text-left'>Status</th>
-                <th className='px-6 py-3 text-left'>Pickup</th>
-                <th className='px-6 py-3 text-left'>Delivered</th>
-                <th className='px-6 py-3 text-center'>Actions</th>
+                <th className='px-6 py-3 text-left'>{t.tableShipment}</th>
+                <th className='px-6 py-3 text-left'>{t.tableOrder}</th>
+                <th className='px-6 py-3 text-left'>{t.tableProvider}</th>
+                <th className='px-6 py-3 text-left'>{t.tableTracking}</th>
+                <th className='px-6 py-3 text-left'>{t.tableStatus}</th>
+                <th className='px-6 py-3 text-left'>{t.tableEta}</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-100 text-gray-900'>
-              {SHIPMENTS.map((shipment) => (
-                <tr key={shipment.shipmentCode}>
-                  <td className='whitespace-nowrap px-6 py-4'>
-                    <div>
-                      <p className='font-medium'>{shipment.shipmentCode}</p>
-                      <p className='text-xs text-gray-500'>{shipment.shortCode}</p>
-                    </div>
-                  </td>
-                  <td className='px-6 py-4 text-gray-700'>{shipment.orderId}</td>
-                  <td className='px-6 py-4 text-gray-700'>{shipment.provider}</td>
-                  <td className='px-6 py-4 font-mono text-sm text-gray-900'>{shipment.tracking}</td>
-                  <td className='px-6 py-4'>{shipment.weight}</td>
-                  <td className='px-6 py-4'>{shipment.fee}</td>
-                  <td className='px-6 py-4'>{shipment.cod}</td>
-                  <td className='px-6 py-4'>
-                    <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${TYPE_STYLES[shipment.type]}`}>{shipment.type}</span>
-                  </td>
-                  <td className='px-6 py-4'>
-                    <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${STATUS_STYLES[shipment.status]}`}>
-                      {shipment.status}
-                    </span>
-                  </td>
-                  <td className='px-6 py-4 text-gray-600'>{shipment.pickupDate}</td>
-                  <td className='px-6 py-4 text-gray-600'>{shipment.deliveredDate}</td>
-                  <td className='px-6 py-4 text-center'>
-                    <button type='button' className={ACTION_BUTTON}>
-                      <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                        <path d='M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z' />
-                        <circle cx='12' cy='12' r='2' />
-                      </svg>
-                      View Details
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className='px-6 py-8 text-center'>
+                    {t.loading}
                   </td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className='px-6 py-8 text-center text-gray-500'>
+                    {t.empty}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((s: ShipmentDto) => {
+                  const sid = s.shipmentId || s.id || t.dash
+                  const pid = s.providerId
+                  return (
+                    <tr key={sid}>
+                      <td className='whitespace-nowrap px-6 py-4 font-mono text-xs'>{sid}</td>
+                      <td className='px-6 py-4'>{s.orderId ?? t.dash}</td>
+                      <td className='px-6 py-4'>{pid ? providerName.get(pid) ?? pid : t.dash}</td>
+                      <td className='px-6 py-4 font-mono text-xs'>{s.trackingNumber ?? t.dash}</td>
+                      <td className='px-6 py-4'>
+                        <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${styleFor(s.status)}`}>
+                          {s.status ?? t.dash}
+                        </span>
+                      </td>
+                      <td className='px-6 py-4 text-gray-600'>
+                        {formatDate(s.estimatedDelivery, isVietnamese ? 'vi-VN' : 'en-US', t.dateUnknown)}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>

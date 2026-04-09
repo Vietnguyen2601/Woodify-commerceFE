@@ -84,7 +84,22 @@ export const queryKeys = {
       [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'sellers'] as const,
     users: () => 
       [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'users'] as const,
+    shops: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'shops'] as const,
+    accounts: (ids?: string[]) => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'accounts', ids] as const,
+    orders: (filters?: Record<string, unknown>) =>
+      [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'orders', filters] as const,
+    shipments: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'shipments'] as const,
+    products: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'product-masters'] as const,
+    snapshot: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'snapshot'] as const,
+    categories: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'categories'] as const,
+    banners: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'banners'] as const,
   },
+
+  // Admin shortcuts
+  ADMIN_ACCOUNTS: [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'accounts'] as const,
+  ADMIN_SHOPS: [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'shops'] as const,
+  ADMIN_CATEGORIES: [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'categories'] as const,
+  ADMIN_BANNERS: [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'banners'] as const,
 
   // Categories
   categories: {

@@ -2,13 +2,17 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '@/constants/api.endpoints'
 import { APP_CONFIG } from '@/constants/app.config'
 
+// P0 endpoints that may not be implemented yet — 404/5xx are expected
+const P0_ENDPOINTS = ['/orders/admin', '/orders/Shop', '/Orders/Shop', '/order/admin', '/Order/Admin']
+const isP0Endpoint = (url?: string) => !url || P0_ENDPOINTS.some((p) => url.includes(p))
+
 const createApiClient = (): AxiosInstance => {
   const client = axios.create({
     baseURL: API_BASE_URL,
     timeout: 10000,
     withCredentials: true,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
     },
   })
 
