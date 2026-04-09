@@ -313,7 +313,6 @@ function ProductRow({ product }: { product: ProductMaster }) {
       <td className='px-6 py-4'>
         <div className='flex flex-col items-center gap-1.5'>
           <div className='flex items-center justify-center gap-2'>
-            {/* Approve */}
             <button
               type='button'
               onClick={() => moderate('APPROVED')}
@@ -332,7 +331,6 @@ function ProductRow({ product }: { product: ProductMaster }) {
               </svg>
               Duyệt
             </button>
-
             {/* Reject */}
             <button
               type='button'
