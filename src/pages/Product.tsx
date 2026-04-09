@@ -268,7 +268,7 @@ export default function Product() {
                 <div className='product-shop__avatar'>
                   {shop.logoUrl
                     ? <img src={shop.logoUrl} alt={shop.name} />
-                    : <span>{shop.name.charAt(0).toUpperCase()}</span>
+                    : <span>{(shop?.name ?? 'S').charAt(0).toUpperCase()}</span>
                   }
                 </div>
                 <div className='product-shop__info'>

@@ -138,7 +138,7 @@ export default function Shop() {
                 className='w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex-shrink-0 flex items-center justify-center text-white text-2xl font-bold'
                 style={{ background: 'linear-gradient(135deg, #78716C 0%, #A8A29E 100%)' }}
               >
-                {shop?.name?.charAt(0).toUpperCase() || 'W'}
+                {(shop?.name ?? 'W')?.charAt(0).toUpperCase()}
               </div>
             )}
 

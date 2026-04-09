@@ -110,6 +110,7 @@ export default function Login() {
               email: loginData.email || email,
               username: loginData.username || loginData.email || email,
               role: loginData.role || 'customer',
+              accountId: loginData.accountId, // Store accountId from login response
             }
 
             persistStoredUser(normalizedUser)

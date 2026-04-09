@@ -77,7 +77,7 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
           <button
             type="button"
             onClick={handleSellerChannelClick}
-            className={`hover:opacity-80 transition ${isCheckingSellerAccess ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`hover:opacity-80 transition font-arbutus ${isCheckingSellerAccess ? 'opacity-60 cursor-not-allowed' : ''}`}
             disabled={isCheckingSellerAccess}
             aria-disabled={isCheckingSellerAccess}
           >

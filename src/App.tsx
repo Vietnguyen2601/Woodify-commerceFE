@@ -8,6 +8,8 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import CheckoutMultiShop from './pages/CheckoutMultiShop'
 import { Payment } from './pages/Payment'
+import PaymentSuccess from './pages/payment/PaymentSuccess'
+import PaymentCancel from './pages/payment/PaymentCancel'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Profile from './pages/Profile'
@@ -26,7 +28,7 @@ import './styles/payment.css'
 
 export default function App() {
   const location = useLocation()
-  const cartItemCount = useCart((state) => state.items.reduce((sum, item) => sum + item.qty, 0))
+  const cartItemCount = useCart((state) => state.items.reduce((sum, item) => sum + item.quantity, 0))
   const isProfileRoute = location.pathname.startsWith('/profile')
   const isSellerRoute = location.pathname.startsWith('/seller')
   const isAdminRoute = location.pathname.startsWith('/admin')
@@ -66,6 +68,8 @@ export default function App() {
           <Route path='/checkout' element={<Checkout />} />
           <Route path='/checkout-multishop' element={<CheckoutMultiShop />} />
           <Route path='/payment' element={<Payment />} />
+          <Route path='/payment/success' element={<PaymentSuccess />} />
+          <Route path='/payment/cancel' element={<PaymentCancel />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />

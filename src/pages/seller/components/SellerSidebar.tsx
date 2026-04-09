@@ -45,13 +45,8 @@ const NAV_GROUPS: SellerNavGroup[] = [
     ]
   },
   {
-    id: 'marketing',
-    label: 'Kênh Marketing',
-    placeholder: 'Tính năng sẽ ra mắt sớm. Theo dõi Shopee Live để nhận cập nhật.'
-  },
-  {
     id: 'support',
-    label: 'Chăm Sóc Khách Hàng',
+    label: 'Feedback & Hỗ Trợ',
     links: [
       { label: 'Feedback & Rating', to: '/seller/support/feedback', description: 'Hub chat & đánh giá' },
       { label: 'Chat Management', to: '/seller/support/chat-management' },
@@ -195,10 +190,10 @@ export default function SellerSidebar() {
         {user && (
           <div className='mb-2 flex items-center gap-2 rounded-2xl px-3 py-2'>
             <div className='flex h-7 w-7 items-center justify-center rounded-full bg-amber-800/60 text-[11px] font-semibold text-amber-200'>
-              {(user.fullName ?? user.username).charAt(0).toUpperCase()}
+              {((user.fullName ?? user.username ?? user.email) || 'U').charAt(0).toUpperCase()}
             </div>
             <div className='min-w-0'>
-              <p className='truncate font-medium text-white'>{user.fullName ?? user.username}</p>
+              <p className='truncate font-medium text-white'>{user.fullName ?? user.username ?? user.email ?? 'User'}</p>
               <p className='truncate text-[10px] text-stone-400'>{user.role}</p>
             </div>
           </div>
