@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import ProductionCard, { type ProductionCardProduct } from '../components/ProductionCard'
 import Pagination from '../components/Pagination'
 import { productMasterService, shopService } from '@/services'
-import { mockCatalogProducts, mockShops } from '@/data/catalog-mock-data'
+import type { ProductMaster } from '@/types'
 
 const catalogCategories = [
   { id: 'living', label: 'Không gian phòng khách' },
@@ -37,48 +37,41 @@ export default function Catalog() {
   const { data: rawProducts = [], isLoading, isError } = useQuery({
     queryKey: ['published-products'],
     queryFn: () => productMasterService.getPublishedProducts(),
-    enabled: false, // Tạm vô hiệu hóa API, dùng mock data
+    enabled: true,
   })
 
   const { data: shops = [] } = useQuery({
     queryKey: ['all-shops'],
     queryFn: () => shopService.getAllShops(),
-    enabled: false, // Tạm vô hiệu hóa API, dùng mock data
+    enabled: true,
   })
 
-  // Luôn dùng mock data để test
-  const productsToUse = mockCatalogProducts
-  const shopsToUse = mockShops
-
-  const shopMap = React.useMemo(() => {
-    const map: Record<string, string> = {}
-    shopsToUse.forEach(s => { map[s.shopId] = s.name })
-    return map
-  }, [shopsToUse])
+  const productsToUse = rawProducts
+  const shopsToUse = shops
 
   const catalogProducts = React.useMemo<CatalogProduct[]>(() => (
-    productsToUse.map((p: any, index) => ({
+    productsToUse.map((p: ProductMaster) => ({
       id: p.productId,
       title: p.name,
       description: p.description || '',
-      price: p.price || 0,
-      originalPrice: p.originalPrice,
-      rating: p.rating,
-      reviewCount: p.reviewCount,
-      soldCount: p.soldCount,
-      location: p.location,
-      discount: p.discount,
-      isFeatured: p.isFeatured,
-      hasFreeship: p.hasFreeship,
+      price: p.price,
+      originalPrice: undefined,
+      rating: undefined,
+      reviewCount: undefined,
+      soldCount: undefined,
+      location: undefined,
+      discount: undefined,
+      isFeatured: false,
+      hasFreeship: false,
       badge: undefined,
       tags: [p.categoryName].filter(Boolean),
       thumbnailUrl: p.thumbnailUrl ?? undefined,
-      shopName: p.shopName ?? shopMap[p.shopId] ?? null,
+      shopName: p.shopName,
       shopId: p.shopId,
-      category: catalogCategories[index % catalogCategories.length].id,
-      createdAt: p.createdAt,
+      category: p.categoryId,
+      createdAt: p.publishedAt || p.createdAt,
     }))
-  ), [productsToUse, shopMap])
+  ), [productsToUse])
 
   const filteredProducts = React.useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()

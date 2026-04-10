@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { productMasterService, shopService } from '@/services'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { productMasterService, shopService, cartService } from '@/services'
+import { readStoredUser } from '@/features/auth/utils/storage'
 import { useCart } from '../store/cartStore'
 
 type Review = {
@@ -44,7 +45,7 @@ const vouchers = ['Giảm 5% đơn từ 3.000.000₫', 'Freeship toàn bộ HCM'
 
 export default function Product() {
   const { id } = useParams<{ id: string }>()
-  const add = useCart(state => state.add)
+  const addItem = useCart(state => state.addItem)
 
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product-detail', id],
@@ -83,6 +84,33 @@ export default function Product() {
   }, [product, selectedVersion])
 
   const [selectedImage, setSelectedImage] = React.useState<string>('')
+  const [addToCartLoading, setAddToCartLoading] = React.useState(false)
+  const [addToCartError, setAddToCartError] = React.useState<string | null>(null)
+
+  const addToCartMutation = useMutation({
+    mutationFn: async () => {
+      const user = readStoredUser()
+      if (!user?.accountId) throw new Error('Vui lòng đăng nhập để thêm vào giỏ')
+      if (!product || !selectedVersion) throw new Error('Sản phẩm không hợp lệ')
+
+      return cartService.addToCart(
+        user.accountId,
+        selectedVersion.versionId,
+        product.shopId,
+        quantity
+      )
+    },
+    onSuccess: (cartItem) => {
+      setAddToCartError(null)
+      // Add API response to local cart store
+      if (cartItem) {
+        addItem(cartItem)
+      }
+    },
+    onError: (err: any) => {
+      setAddToCartError(err?.message || 'Thêm vào giỏ thất bại')
+    },
+  })
 
   React.useEffect(() => {
     if (gallery.length > 0) setSelectedImage(gallery[0])
@@ -113,13 +141,8 @@ export default function Product() {
   }, [activeReviewFilter])
 
   const handleAddToCart = () => {
-    if (!product || !selectedVersion) return
-    add({
-      id: product.productId,
-      title: `${product.name} – ${selectedVersion.versionName}`,
-      price: selectedVersion.price,
-      qty: quantity,
-    })
+    setAddToCartError(null)
+    addToCartMutation.mutate()
   }
 
   if (isLoading) {
@@ -254,9 +277,19 @@ export default function Product() {
               </div>
             )}
 
+            {addToCartError && (
+              <div style={{ padding: '12px', background: '#fee', border: '1px solid #f88', borderRadius: '4px', color: '#c33', fontSize: '12px' }}>
+                {addToCartError}
+              </div>
+            )}
+
             <div className='product-cta'>
-              <button type='button' className='product-cta__secondary' onClick={handleAddToCart}>Thêm vào giỏ</button>
-              <button type='button' className='product-cta__primary' onClick={handleAddToCart}>Mua ngay</button>
+              <button type='button' className='product-cta__secondary' onClick={handleAddToCart} disabled={addToCartMutation.isPending}>
+                {addToCartMutation.isPending ? 'Đang thêm...' : 'Thêm vào giỏ'}
+              </button>
+              <button type='button' className='product-cta__primary' onClick={handleAddToCart} disabled={addToCartMutation.isPending}>
+                {addToCartMutation.isPending ? 'Đang xử lý...' : 'Mua ngay'}
+              </button>
             </div>
           </div>
         </section>

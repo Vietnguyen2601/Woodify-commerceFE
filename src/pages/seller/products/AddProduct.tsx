@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+﻿import React, { useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -6,10 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { CategoryTreeSelect } from '@/components/forms/CategoryTreeSelect'
 import { uploadImageToCloudinary } from '@/services/cloudinary.service'
-import { productMasterService, productVersionService, imageService, categoryService } from '@/services'
+import { productMasterService, imageService, categoryService } from '@/services'
 import { useShopStore } from '@/store/shopStore'
 import { ROUTES } from '@/constants/routes'
 import type { CategoryDTO, ProductMaster, ProductVersion } from '@/types'
+import { VersionFormPanel } from './VersionFormPanel'
 
 // ── Schemas ────────────────────────────────────────────────────────────────────
 const masterSchema = z.object({
@@ -17,20 +18,6 @@ const masterSchema = z.object({
   description: z.string().min(1, 'Mô tả không được để trống'),
 })
 type MasterFormData = z.infer<typeof masterSchema>
-
-const versionSchema = z.object({
-  versionName: z.string().min(1, 'Tên phiên bản không được để trống'),
-  sellerSku: z.string().min(1, 'Seller SKU không được để trống'),
-  price: z.number().gt(0, 'Giá phải lớn hơn 0'),
-  stockQuantity: z.number().int().min(0, 'Tồn kho không được âm'),
-  woodType: z.string().min(1, 'Loại gỗ không được để trống'),
-  weightGrams: z.number().min(0, 'Khối lượng không được âm'),
-  lengthCm: z.number().min(0, 'Chiều dài không được âm'),
-  widthCm: z.number().min(0, 'Chiều rộng không được âm'),
-  heightCm: z.number().min(0, 'Chiều cao không được âm'),
-  isActive: z.boolean(),
-})
-type VersionFormData = z.infer<typeof versionSchema>
 
 const sectionWrapper = 'rounded-xl border border-yellow-800/20 bg-white shadow-[0px_1px_3px_rgba(0,0,0,0.08)]'
 
@@ -62,18 +49,8 @@ export default function AddProduct() {
   const [masterImgUrl, setMasterImgUrl] = useState<string | null>(null)
   const [masterImgError, setMasterImgError] = useState<string | null>(null)
 
-  // version images (multi)
-  const versionImgRef = useRef<HTMLInputElement>(null)
-  const [versionImgs, setVersionImgs] = useState<{ url: string; publicId: string }[]>([])
-  const [versionImgUploading, setVersionImgUploading] = useState(false)
-  const [versionImgError, setVersionImgError] = useState<string | null>(null)
-
   // forms
   const masterForm = useForm<MasterFormData>({ resolver: zodResolver(masterSchema) })
-  const versionForm = useForm<VersionFormData>({
-    resolver: zodResolver(versionSchema),
-    defaultValues: { isActive: true, stockQuantity: 0, weightGrams: 0, lengthCm: 0, widthCm: 0, heightCm: 0 },
-  })
 
   // ── Load categories ──────────────────────────────────────────────────────────
   const { data: categoriesData = [] } = useQuery<CategoryDTO[]>({
@@ -112,43 +89,6 @@ export default function AddProduct() {
     },
   })
 
-  const createVersionMutation = useMutation({
-    mutationFn: (data: VersionFormData) =>
-      productVersionService.createVersion({
-        productId: createdMaster!.productId,
-        sellerSku: data.sellerSku,
-        versionNumber: 1,
-        versionName: data.versionName,
-        price: data.price,
-        stockQuantity: data.stockQuantity,
-        woodType: data.woodType,
-        weightGrams: data.weightGrams,
-        lengthCm: data.lengthCm,
-        widthCm: data.widthCm,
-        heightCm: data.heightCm,
-        isActive: data.isActive,
-      }),
-    onSuccess: async (version) => {
-      setCreatedVersion(version)
-      // save version images in bulk
-      if (versionImgs.length > 0) {
-        await imageService.saveBulk(
-          versionImgs.map((img, idx) => ({
-            imageType: 'PRODUCT_VERSION' as const,
-            referenceId: version.versionId,
-            originalUrl: img.url,
-            publicId: img.publicId,
-            sortOrder: idx,
-          }))
-        ).catch(() => {})
-      }
-      setStep(3)
-    },
-    onError: (err: any) => {
-      versionForm.setError('sellerSku', { message: err?.message || 'Tạo phiên bản thất bại' })
-    },
-  })
-
   const submitApprovalMutation = useMutation({
     mutationFn: () => productMasterService.submitForApproval(createdMaster!.productId),
     onSuccess: () => {
@@ -176,26 +116,6 @@ export default function AddProduct() {
     }
   }
 
-  const handleVersionImgsUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    if (!files.length) return
-    setVersionImgUploading(true)
-    setVersionImgError(null)
-    try {
-      const uploads = await Promise.all(files.map((f) => uploadImageToCloudinary(f)))
-      setVersionImgs((prev) => [...prev, ...uploads.map((u) => ({ url: u.secureUrl, publicId: u.publicId }))])
-    } catch {
-      setVersionImgError('Một số ảnh tải lên thất bại.')
-    } finally {
-      setVersionImgUploading(false)
-      e.target.value = ''
-    }
-  }
-
-  const removeVersionImg = (idx: number) => {
-    setVersionImgs((prev) => prev.filter((_, i) => i !== idx))
-  }
-
   // ── Step submit handlers ────────────────────────────────────────────────────
   const handleMasterSubmit = masterForm.handleSubmit((data) => {
     if (!selectedCategory) {
@@ -204,10 +124,6 @@ export default function AddProduct() {
     }
     setCategoryError(null)
     createMasterMutation.mutate(data)
-  })
-
-  const handleVersionSubmit = versionForm.handleSubmit((data) => {
-    createVersionMutation.mutate(data)
   })
 
   if (!shop) return null
@@ -359,170 +275,13 @@ export default function AddProduct() {
               </div>
               <span className='ml-auto rounded border border-yellow-800/20 bg-orange-100 px-2 py-0.5 text-[10px] font-semibold'>DRAFT</span>
             </div>
-            <form onSubmit={handleVersionSubmit} className='space-y-5'>
-              {/* Version info */}
-              <div className={sectionWrapper}>
-                <div className='border-b border-yellow-800/20 px-5 py-4'>
-                  <p className='text-sm font-semibold'>Phiên bản sản phẩm (Version #1)</p>
-                  <p className={helperText}>Định nghĩa thông tin bán hàng: giá, kho hàng và thông số kỹ thuật.</p>
-                </div>
-                <div className='space-y-4 px-5 py-6'>
-                  <label className='block space-y-1'>
-                    <span className={subtleLabel}>Tên phiên bản <span className='text-rose-600'>*</span></span>
-                    <input
-                      type='text'
-                      placeholder='vd: Bàn sồi tiêu chuẩn 120cm'
-                      className={versionForm.formState.errors.versionName ? inputError : inputBase}
-                      {...versionForm.register('versionName')}
-                    />
-                    {versionForm.formState.errors.versionName && (
-                      <p className='text-[10px] text-rose-600'>{versionForm.formState.errors.versionName.message}</p>
-                    )}
-                  </label>
-                  <label className='block space-y-1'>
-                    <span className={subtleLabel}>Seller SKU <span className='text-rose-600'>*</span></span>
-                    <input
-                      type='text'
-                      placeholder='vd: WS001-OAK-TABLE-120-001'
-                      className={`${versionForm.formState.errors.sellerSku ? inputError : inputBase} font-mono`}
-                      {...versionForm.register('sellerSku')}
-                    />
-                    {versionForm.formState.errors.sellerSku
-                      ? <p className='text-[10px] text-rose-600'>{versionForm.formState.errors.sellerSku.message}</p>
-                      : <p className={helperText}>Định dạng: &lt;SHOP&gt;-&lt;GỖ&gt;-&lt;LOẠI&gt;-&lt;KÍCH THƯỚC&gt;-&lt;STT&gt;</p>
-                    }
-                  </label>
-                  <div className='grid grid-cols-2 gap-4'>
-                    <label className='block space-y-1'>
-                      <span className={subtleLabel}>Giá (VND) <span className='text-rose-600'>*</span></span>
-                      <input
-                        type='number'
-                        min={0}
-                        placeholder='0'
-                        className={versionForm.formState.errors.price ? inputError : inputBase}
-                        {...versionForm.register('price', { valueAsNumber: true })}
-                      />
-                      {versionForm.formState.errors.price && (
-                        <p className='text-[10px] text-rose-600'>{versionForm.formState.errors.price.message}</p>
-                      )}
-                    </label>
-                    <label className='block space-y-1'>
-                      <span className={subtleLabel}>Số lượng tồn kho <span className='text-rose-600'>*</span></span>
-                      <input
-                        type='number'
-                        min={0}
-                        placeholder='0'
-                        className={versionForm.formState.errors.stockQuantity ? inputError : inputBase}
-                        {...versionForm.register('stockQuantity', { valueAsNumber: true })}
-                      />
-                    </label>
-                  </div>
-                  <label className='block space-y-1'>
-                    <span className={subtleLabel}>Loại gỗ <span className='text-rose-600'>*</span></span>
-                    <input
-                      type='text'
-                      placeholder='vd: Oak, Walnut, Pine...'
-                      className={versionForm.formState.errors.woodType ? inputError : inputBase}
-                      {...versionForm.register('woodType')}
-                    />
-                    {versionForm.formState.errors.woodType && (
-                      <p className='text-[10px] text-rose-600'>{versionForm.formState.errors.woodType.message}</p>
-                    )}
-                  </label>
-                  <div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
-                    <label className='block space-y-1'>
-                      <span className={subtleLabel}>Khối lượng (g)</span>
-                      <input type='number' min={0} placeholder='0' className={inputBase} {...versionForm.register('weightGrams', { valueAsNumber: true })} />
-                    </label>
-                    <label className='block space-y-1'>
-                      <span className={subtleLabel}>Dài (cm)</span>
-                      <input type='number' min={0} placeholder='0' className={inputBase} {...versionForm.register('lengthCm', { valueAsNumber: true })} />
-                    </label>
-                    <label className='block space-y-1'>
-                      <span className={subtleLabel}>Rộng (cm)</span>
-                      <input type='number' min={0} placeholder='0' className={inputBase} {...versionForm.register('widthCm', { valueAsNumber: true })} />
-                    </label>
-                    <label className='block space-y-1'>
-                      <span className={subtleLabel}>Cao (cm)</span>
-                      <input type='number' min={0} placeholder='0' className={inputBase} {...versionForm.register('heightCm', { valueAsNumber: true })} />
-                    </label>
-                  </div>
-                  {/* IsActive toggle */}
-                  <div className='flex items-center justify-between rounded-md bg-orange-100/50 px-4 py-3'>
-                    <div>
-                      <p className={subtleLabel}>Kích hoạt phiên bản</p>
-                      <p className={helperText}>Phiên bản cần Active để có thể gửi duyệt</p>
-                    </div>
-                    <button
-                      type='button'
-                      role='switch'
-                      aria-checked={versionForm.watch('isActive')}
-                      onClick={() => versionForm.setValue('isActive', !versionForm.watch('isActive'))}
-                      className={`relative h-5 w-9 rounded-full border transition-colors ${versionForm.watch('isActive') ? 'border-yellow-800 bg-yellow-800' : 'border-yellow-800/30 bg-white'}`}
-                    >
-                      <span className={`absolute top-1 h-3 w-3 rounded-full bg-white shadow transition-transform ${versionForm.watch('isActive') ? 'translate-x-4' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {/* Version images */}
-              <div className={sectionWrapper}>
-                <div className='border-b border-yellow-800/20 px-5 py-4'>
-                  <p className='text-sm font-semibold'>Ảnh phiên bản (tối đa 5 ảnh)</p>
-                  <p className={helperText}>Ảnh thực tế của phiên bản này (màu sắc, kích thước, góc nhìn khác nhau)</p>
-                </div>
-                <div className='space-y-3 px-5 py-6'>
-                  <input ref={versionImgRef} type='file' accept='image/*' multiple className='hidden' onChange={handleVersionImgsUpload} />
-                  {versionImgs.length > 0 && (
-                    <div className='flex flex-wrap gap-3'>
-                      {versionImgs.map((img, idx) => (
-                        <div key={idx} className='relative'>
-                          <img src={img.url} alt={`version-img-${idx}`} className='h-20 w-20 rounded-lg border border-yellow-800/20 object-cover' />
-                          <button
-                            type='button'
-                            onClick={() => removeVersionImg(idx)}
-                            className='absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white text-[10px]'
-                          >✕</button>
-                          {idx === 0 && (
-                            <span className='absolute bottom-0.5 left-0.5 rounded bg-yellow-800 px-1 text-[8px] text-white'>Chính</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {versionImgs.length < 5 && (
-                    <button
-                      type='button'
-                      onClick={() => versionImgRef.current?.click()}
-                      disabled={versionImgUploading}
-                      className='flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-yellow-800/30 text-center text-[10px] text-stone-600 hover:border-yellow-800/60 disabled:opacity-60'
-                    >
-                      <UploadIcon className='h-6 w-6' />
-                      {versionImgUploading ? 'Đang tải lên...' : `Thêm ảnh (${versionImgs.length}/5)`}
-                    </button>
-                  )}
-                  {versionImgError && <p className='text-[10px] text-rose-600'>{versionImgError}</p>}
-                </div>
-              </div>
-              <div className='flex items-center justify-between'>
-                <button
-                  type='button'
-                  disabled={createMasterMutation.isPending}
-                  className='inline-flex items-center gap-2 rounded border border-yellow-800/20 bg-stone-100 px-4 py-2 text-xs font-medium disabled:opacity-60'
-                  onClick={() => setStep(1)}
-                >
-                  <ArrowLeftIcon className='h-3 w-3' />
-                  Quay lại
-                </button>
-                <button
-                  type='submit'
-                  disabled={createVersionMutation.isPending}
-                  className='rounded bg-yellow-800 px-6 py-2 text-xs font-medium text-white disabled:opacity-60'
-                >
-                  {createVersionMutation.isPending ? 'Đang tạo phiên bản...' : 'Tạo phiên bản & Tiếp theo'}
-                </button>
-              </div>
-            </form>
+            <VersionFormPanel
+              productId={createdMaster.productId}
+              versionNumber={1}
+              onSuccess={(version) => { setCreatedVersion(version); setStep(3) }}
+              onCancel={() => setStep(1)}
+              submitLabel='Tạo phiên bản & Tiếp theo'
+            />
           </section>
         )}
 
@@ -569,13 +328,6 @@ export default function AddProduct() {
                     </div>
                   </div>
                 </div>
-                {versionImgs.length > 0 && (
-                  <div className='flex flex-wrap gap-2'>
-                    {versionImgs.map((img, idx) => (
-                      <img key={idx} src={img.url} alt={`v-img-${idx}`} className='h-14 w-14 rounded-md border border-yellow-800/20 object-cover' />
-                    ))}
-                  </div>
-                )}
                 <div className='flex items-center justify-between rounded-md bg-orange-100/60 px-4 py-3'>
                   <div>
                     <p className={subtleLabel}>Trạng thái hiện tại</p>

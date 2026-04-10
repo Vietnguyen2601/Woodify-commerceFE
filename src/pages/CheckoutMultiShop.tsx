@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { MapPin, Store, MessageSquare, CreditCard, Tag, X } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import {
   ShopCart,
   DeliveryAddress,
@@ -17,7 +19,9 @@ import {
   formatCurrency,
   AVAILABLE_SHIPPING_METHODS
 } from '@/data/checkout-mock-data'
-import type { CartItemDto } from '@/types'
+import { shipmentService, paymentService } from '@/services'
+import type { CartItemDto, ShipmentService } from '@/types'
+import { readStoredUser } from '@/features/auth/utils/storage'
 
 export default function Checkout() {
   // Load checkout data from Cart page
@@ -116,6 +120,10 @@ export default function Checkout() {
     district: MOCK_DELIVERY_ADDRESS.district,
     ward: MOCK_DELIVERY_ADDRESS.ward
   })
+  // Store shipment services for each shop
+  const [shipmentServicesByShop, setShipmentServicesByShop] = useState<Record<string, ShipmentService[]>>({})
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const navigate = useNavigate()
 
   // Clean up localStorage after loading
   useEffect(() => {
@@ -127,13 +135,87 @@ export default function Checkout() {
     }
   }, [])
 
+  // Fetch shipment services for each shop (only once on mount)
+  useEffect(() => {
+    const fetchShipmentServices = async () => {
+      console.log('🚀 Fetching shipment services for shops:', shopCarts.map(s => s.shop_id))
+      const services: Record<string, ShipmentService[]> = {}
+      
+      for (const shop of shopCarts) {
+        try {
+          const data = await shipmentService.getServicesByShopId(shop.shop_id)
+          console.log(`✅ Shipment services for shop ${shop.shop_id}:`, data)
+          services[shop.shop_id] = data
+        } catch (error) {
+          console.error(`❌ Failed to fetch shipment services for shop ${shop.shop_id}:`, error)
+          // Skip adding to services on error - will fall back to mock data in rendering
+          services[shop.shop_id] = []
+        }
+      }
+      
+      console.log('📦 All shipment services:', services)
+      setShipmentServicesByShop(services)
+    }
+
+    if (shopCarts.length > 0) {
+      fetchShipmentServices()
+    }
+    // Only fetch when component mounts or when shopCarts initial data is loaded
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency array - fetch only once on mount
+
+  // Update shipping codes when shipment services are fetched
+  useEffect(() => {
+    if (Object.keys(shipmentServicesByShop).length === 0) return
+
+    setShopCarts(prevCarts =>
+      prevCarts.map(shop => {
+        const apiServices = shipmentServicesByShop[shop.shop_id] || []
+        let shippingCode = shop.selected_shipping_code || ''
+
+        // Only set the code for STANDARD method if no code is set yet
+        if (apiServices.length > 0 && !shop.selected_shipping_code) {
+          const standardService = apiServices.find(
+            service => (service as any).speedLevel === 'STANDARD'
+          )
+          if (standardService) {
+            shippingCode = (standardService as any).code
+          }
+        } else if (apiServices.length === 0 && !shop.selected_shipping_code) {
+          // Use STANDARD for mock data
+          shippingCode = 'STANDARD'
+        }
+
+        return {
+          ...shop,
+          selected_shipping_code: shippingCode,
+          // Keep shipping_fee as is - will be set by another API
+          total: shop.subtotal + shop.shipping_fee
+        }
+      })
+    )
+  }, [shipmentServicesByShop])
   const summary: CheckoutSummary = useMemo(
     () => calculateCheckoutSummary(shopCarts, appliedVoucher),
     [shopCarts, appliedVoucher]
   )
 
-  const handleShippingMethodChange = (shopId: string, methodId: 'ECONOMY' | 'STANDARD' | 'EXPRESS') => {
-    setShopCarts(updateShopShippingMethod(shopCarts, shopId, methodId))
+  const handleShippingMethodChange = (shopId: string, serviceCode: string, speedLevel: 'ECONOMY' | 'STANDARD' | 'EXPRESS') => {
+    // Update shop carts with new shipping method and code
+    setShopCarts(prevCarts =>
+      prevCarts.map(shop => {
+        if (shop.shop_id === shopId) {
+          return {
+            ...shop,
+            selected_shipping_method: speedLevel, // Keep speedLevel for backward compatibility
+            selected_shipping_code: serviceCode, // Use actual code for API
+            shipping_fee: shop.shipping_fee, // Keep existing fee
+            total: shop.subtotal + shop.shipping_fee
+          }
+        }
+        return shop
+      })
+    )
   }
 
   const handleNoteChange = (shopId: string, note: string) => {
@@ -192,28 +274,97 @@ export default function Checkout() {
     setShowAddressModal(false)
   }
 
-  const handlePlaceOrder = () => {
-    const orderData = {
-      delivery_address: deliveryAddress,
-      shop_carts: shopCarts,
-      payment_method: paymentMethod,
-      voucher: appliedVoucher,
-      summary: summary,
-      timestamp: new Date().toISOString()
+  const handlePlaceOrder = async () => {
+    try {
+      setIsPlacingOrder(true)
+
+      // Get current user
+      const currentUser = readStoredUser()
+      if (!currentUser?.accountId) {
+        alert('Vui lòng đăng nhập để tiếp tục')
+        return
+      }
+
+      // Format delivery address as string: "123 Đường, Phường, Quận, TP"
+      const deliveryAddressString = `${deliveryAddress.address_line}, ${deliveryAddress.ward}, ${deliveryAddress.district}, ${deliveryAddress.city}`
+
+      console.log('📋 Starting order creation process...')
+      console.log('User:', currentUser.accountId)
+      console.log('Address:', deliveryAddressString)
+
+      // Step 1: Create orders for each shop in parallel
+      const orderPromises = shopCarts.map(cart =>
+        paymentService.createOrder({
+          accountId: currentUser.accountId!,
+          shopId: cart.shop_id,
+          cartItemIds: cart.items.map(item => item.cart_item_id),
+          deliveryAddress: deliveryAddressString,
+          providerServiceCode: cart.selected_shipping_code as any,
+          voucherId: appliedVoucher?.voucher_id || null
+        })
+      )
+
+      console.log('📤 Creating orders for', shopCarts.length, 'shop(s)...')
+      const orderResults = await Promise.all(orderPromises)
+      console.log('✅ Orders created:', orderResults.map(r => r.orderId))
+
+      // Extract order IDs and calculate total
+      const orderIds = orderResults.map(r => r.orderId)
+      const totalAmountCents = orderResults.reduce(
+        (sum, r) => sum + r.totalAmountCents,
+        0
+      )
+
+      console.log('💰 Total amount (cents):', totalAmountCents)
+
+      // Step 2: Create payment
+      const baseUrl = window.location.origin
+
+      const paymentRequest = {
+        orderIds: orderIds,
+        paymentMethod: paymentMethod,
+        accountId: currentUser.accountId!,
+        totalAmountCents: totalAmountCents * 10,  // Convert cents to smallest payment unit
+        ...(paymentMethod === 'PAYOS' && {
+          returnUrl: `${baseUrl}/payment/success`,
+          cancelUrl: `${baseUrl}/payment/cancel`
+        })
+      }
+
+      console.log('💳 Creating payment with method:', paymentMethod)
+      const paymentResponse = await paymentService.createPayment(paymentRequest)
+      console.log('✅ Payment created:', paymentResponse)
+
+      // Step 3: Handle payment response based on method
+      if (paymentMethod === 'PAYOS') {
+        // Redirect to PayOS QR code page
+        if ((paymentResponse as any).paymentUrl) {
+          console.log('🔄 Redirecting to PayOS...')
+          window.location.href = (paymentResponse as any).paymentUrl
+        }
+      } else if (paymentMethod === 'COD' || paymentMethod === 'WALLET') {
+        // Success for COD and WALLET - show confirmation
+        console.log('✅ Payment successful!')
+        alert('Đơn hàng đã được tạo thành công!\nPhương thức thanh toán: ' + getPaymentMethodLabel(paymentMethod))
+        
+        // Navigate to success page with order codes
+        const orderCodes = orderResults.map(r => r.orderId).join(',')
+        navigate(`/payment/success?orderCode=${orderCodes}&amount=${totalAmountCents / 100}`)
+      }
+    } catch (error) {
+      console.error('❌ Error placing order:', error)
+      const errorMsg = (error as any)?.message || 'Có lỗi xảy ra khi tạo đơn hàng'
+      alert('Lỗi: ' + errorMsg)
+    } finally {
+      setIsPlacingOrder(false)
     }
-
-    console.log('===== ORDER DATA =====')
-    console.log(JSON.stringify(orderData, null, 2))
-    console.log('=====================')
-
-    alert('Đơn hàng đã được tạo thành công!\nVui lòng kiểm tra console để xem chi tiết.')
   }
 
   const getPaymentMethodLabel = (method: PaymentMethod): string => {
     const labels: Record<PaymentMethod, string> = {
       COD: 'Thanh toán khi nhận (COD)',
-      BANK_TRANSFER: 'Chuyển khoản ngân hàng',
-      WALLET: 'Ví điện tử (Momo, ZaloPay)'
+      WALLET: 'Ví điện tử (Momo, ZaloPay)',
+      PAYOS: 'Chuyển khoản ngân hàng (PayOS QR)'
     }
     return labels[method]
   }
@@ -355,48 +506,79 @@ export default function Checkout() {
                     Phương thức vận chuyển
                   </p>
                   <div className='flex gap-2 flex-wrap'>
-                    {shop.shipping_methods.map(method => (
-                      <label
-                        key={method.id}
-                        className='flex-1 min-w-max px-3 py-2 rounded-lg border-2 cursor-pointer transition-all'
-                        style={{
-                          borderColor:
-                            shop.selected_shipping_method === method.id
-                              ? '#8B5A3C'
-                              : '#E5E7EB',
-                          backgroundColor:
-                            shop.selected_shipping_method === method.id
-                              ? '#F5E6D3'
-                              : 'transparent'
-                        }}
-                      >
-                        <input
-                          type='radio'
-                          name={`shipping_${shop.shop_id}`}
-                          value={method.id}
-                          checked={shop.selected_shipping_method === method.id}
-                          onChange={(e) =>
-                            handleShippingMethodChange(
-                              shop.shop_id,
-                              e.target.value as 'ECONOMY' | 'STANDARD' | 'EXPRESS'
-                            )
-                          }
-                          className='hidden'
-                        />
-                        <div className='text-left'>
-                          <p className='text-xs font-semibold text-gray-900'>
-                            {method.name}
-                          </p>
-                          <p className='text-xs text-gray-600'>{method.estimated_days}</p>
-                          <p
-                            className='text-xs font-semibold mt-1'
-                            style={{ color: '#8B5A3C' }}
+                    {(() => {
+                      // Use API data if available, otherwise use mock
+                      const apiServices = shipmentServicesByShop[shop.shop_id]
+                      const methods = apiServices && apiServices.length > 0 ? apiServices : shop.shipping_methods
+                      
+                      console.log(`🎯 Rendering shipping methods for shop ${shop.shop_id}:`, {
+                        hasApiServices: apiServices && apiServices.length > 0,
+                        methodCount: methods.length,
+                        methods: methods.map((m: any) => ({ name: m.name, code: m.code || m.id }))
+                      })
+                      
+                      return methods.map(method => {
+                        // Handle both API ShipmentService and mock ShippingMethod formats
+                        const methodCode = (method as any).code || (method as any).id
+                        const speedLevel = (method as any).speedLevel || (method as any).id
+                        const methodName = method.name
+                        const methodEstimatedDays = (method as any).estimated_days 
+                          ? (method as any).estimated_days
+                          : ((method as any).estimatedDaysMin && (method as any).estimatedDaysMax)
+                            ? `${(method as any).estimatedDaysMin}-${(method as any).estimatedDaysMax} ngày`
+                            : 'N/A'
+                        
+                        // Use mock fee for now, will be calculated by another API later
+                        const methodFee = (method as any).fee || 0
+
+                        return (
+                          <label
+                            key={methodCode}
+                            className='flex-1 min-w-max px-3 py-2 rounded-lg border-2 cursor-pointer transition-all'
+                            style={{
+                              borderColor:
+                                shop.selected_shipping_code === methodCode
+                                  ? '#8B5A3C'
+                                  : '#E5E7EB',
+                              backgroundColor:
+                                shop.selected_shipping_code === methodCode
+                                  ? '#F5E6D3'
+                                  : 'transparent'
+                            }}
                           >
-                            {formatCurrency(method.fee)}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
+                            <input
+                              type='radio'
+                              name={`shipping_${shop.shop_id}`}
+                              value={methodCode}
+                              checked={shop.selected_shipping_code === methodCode}
+                              onChange={(e) =>
+                                handleShippingMethodChange(
+                                  shop.shop_id,
+                                  e.target.value,
+                                  speedLevel as 'ECONOMY' | 'STANDARD' | 'EXPRESS'
+                                )
+                              }
+                              className='hidden'
+                            />
+                            <div className='text-left'>
+                              <p className='text-xs font-semibold text-gray-900'>
+                                {methodName}
+                              </p>
+                              <p className='text-xs text-gray-500 mt-0.5'>({methodCode})</p>
+                              <p className='text-xs text-gray-600'>{methodEstimatedDays}</p>
+                              {methodFee > 0 && (
+                                <p
+                                  className='text-xs font-semibold mt-1'
+                                  style={{ color: '#8B5A3C' }}
+                                >
+                                  {formatCurrency(methodFee)}
+                                </p>
+                              )}
+                            </div>
+                          </label>
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
 
@@ -469,7 +651,7 @@ export default function Checkout() {
                 </div>
 
                 <div className='space-y-2'>
-                  {(['COD', 'BANK_TRANSFER', 'WALLET'] as const).map(method => (
+                  {(['COD', 'PAYOS', 'WALLET'] as const).map(method => (
                     <label
                       key={method}
                       className='flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all'
@@ -617,19 +799,24 @@ export default function Checkout() {
                 {/* Place Order Button */}
                 <button
                   onClick={handlePlaceOrder}
-                  className='w-full h-10 rounded-lg text-white font-semibold transition-colors mb-3'
+                  disabled={isPlacingOrder}
+                  className='w-full h-10 rounded-lg text-white font-semibold transition-colors mb-3 disabled:opacity-50 disabled:cursor-not-allowed'
                   style={{
-                    backgroundColor: '#8B5A3C',
+                    backgroundColor: isPlacingOrder ? '#C0A080' : '#8B5A3C',
                     fontFamily: 'Arimo, sans-serif'
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = '#7A4D32')
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = '#8B5A3C')
-                  }
+                  onMouseEnter={(e) => {
+                    if (!isPlacingOrder) {
+                      e.currentTarget.style.backgroundColor = '#7A4D32'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isPlacingOrder) {
+                      e.currentTarget.style.backgroundColor = '#8B5A3C'
+                    }
+                  }}
                 >
-                  ĐẶT HÀNG
+                  {isPlacingOrder ? 'Đang xử lý...' : 'ĐẶT HÀNG'}
                 </button>
 
                 {/* Disclaimer */}

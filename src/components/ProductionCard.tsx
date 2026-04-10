@@ -1,5 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import ShopIcon from '../assets/icons/essential/commerce/shop.svg?url'
+import LocationIcon from '../assets/icons/essential/commerce/point-address.svg?url'
+import StarIcon from '../assets/icons/essential/interface/star-filled.svg?url'
 
 export interface ProductionCardProduct {
   id: string
@@ -43,6 +46,8 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
       role={onCardClick ? 'button' : undefined}
       tabIndex={onCardClick ? 0 : undefined}
       onKeyDown={handleKeyDown}
+      onClick={onCardClick}
+      style={onCardClick ? { cursor: 'pointer' } : undefined}
     >
       <div className='production-card__thumbnail'>
         {product.thumbnailUrl ? (
@@ -61,21 +66,6 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
             </svg>
           </div>
         )}
-        {product.discount && (
-          <span className='production-card__discount-badge'>{-Math.round(product.discount)}%</span>
-        )}
-        <div className='production-card__badges'>
-          {product.isFeatured && (
-            <span className='production-card__badge production-card__badge--featured'>
-              ⭐ Nổi bật
-            </span>
-          )}
-          {product.hasFreeship && (
-            <span className='production-card__badge production-card__badge--freeship'>
-              Freeship
-            </span>
-          )}
-        </div>
       </div>
 
       <div className='production-card__content'>
@@ -85,16 +75,19 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
           <strong className='production-card__price'>
             {product.price.toLocaleString('vi-VN')}₫
           </strong>
-          {product.originalPrice && product.originalPrice > product.price && (
+          {/* {product.originalPrice && product.originalPrice > product.price && (
             <span className='production-card__original-price'>
               {product.originalPrice.toLocaleString('vi-VN')}₫
             </span>
-          )}
+          )} */}
         </div>
 
         <div className='production-card__meta'>
           <div className='production-card__rating'>
-            <span className='production-card__rating-value'>⭐ {rating}</span>
+            <span className='production-card__rating-value'>
+              <img src={StarIcon} alt='rating' className='production-card__rating-icon' style={{ width: '16px', height: '16px', display: 'inline-block', marginRight: '4px' }} />
+              {rating}
+            </span>
             <span className='production-card__review-count'>({reviewCount})</span>
             <span className='production-card__sold'>Đã bán {product.soldCount || 456}</span>
           </div>
@@ -102,12 +95,8 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
 
         <div className='production-card__seller'>
           <div className='production-card__seller-row'>
-            <span className='production-card__seller-icon'>🏪</span>
+            <img src={ShopIcon} alt='shop' className='production-card__seller-icon' style={{ width: '16px', height: '16px' }} />
             <span className='production-card__seller-name'>{product.shopName || 'Shop'}</span>
-          </div>
-          <div className='production-card__seller-row'>
-            <span className='production-card__location-icon'>📍</span>
-            <span className='production-card__location'>{product.location || 'Hà Nội'}</span>
           </div>
         </div>
       </div>

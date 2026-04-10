@@ -152,6 +152,9 @@ export interface ProductMaster {
   updatedAt: string
   publishedAt: string | null
   thumbnailUrl: string | null
+  price: number
+  stockQuantity: number
+  woodType: string
 }
 
 export interface CreateProductMasterRequest {

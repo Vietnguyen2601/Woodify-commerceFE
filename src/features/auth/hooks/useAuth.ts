@@ -10,57 +10,14 @@ const isBrowser = typeof window !== 'undefined'
 const fetchAuthenticatedUser = async (): Promise<StoredUser | null> => {
   if (!isBrowser) return null
 
+  // Return cached user from localStorage if exists
+  // Login response already provides accountId, so getCurrentUser() is not needed
   const cachedUser = readStoredUser()
-
-  try {
-    // Fetch full user data from backend
-    const response = await authService.getCurrentUser()
-    
-    // If response is null (from 401 handling), user is not authenticated
-    if (!response) {
-      clearStoredUser()
-      return null
-    }
-    
-    // The API client interceptor already unwraps { status, message, data: {...} }
-    // so `response` is already the inner User object.
-    const profile = response
-    
-    // Extract only non-sensitive data for localStorage
-    const normalizedUser: StoredUser = {
-      email: profile.email,
-      username: profile.fullName || profile.username || profile.email,
-      fullName: profile.fullName,
-      role: profile.role,
-      accountId: profile.accountId || profile.id, // Store accountId for Profile page access
-    }
-    persistStoredUser(normalizedUser)
-    
-    // Store full user data (including accountId) in sessionStorage for reference
-    // This is temporary and cleared on browser close
-    if (isBrowser) {
-      try {
-        const fullUserWithId = {
-          ...profile,
-          accountId: profile.accountId || profile.id
-        }
-        sessionStorage.setItem('_full_user_data', JSON.stringify(fullUserWithId))
-      } catch (e) {
-        // Silent fail
-      }
-    }
-    
-    return normalizedUser
-  } catch (error: any) {
-    // 401 (Unauthorized) is expected on public pages for unauthenticated users
-    // Silently return null instead of throwing
-    if (error?.response?.status === 401) {
-      clearStoredUser()
-      return null
-    }
-    // For other errors, return null
-    return null
+  if (cachedUser) {
+    return cachedUser
   }
+
+  return null
 }
 
 /**

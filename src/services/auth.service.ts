@@ -64,7 +64,7 @@ export const authService = {
       FullName: data.fullName,
       ...(data.phone && { Phone: data.phone }),
     }
-    return identityServiceClient.post<RegisterResponse>(API_ENDPOINTS.IDENTITY.REGISTER, payload)
+    return identityServiceClient.post(API_ENDPOINTS.IDENTITY.REGISTER, payload) as unknown as RegisterResponse
   },
 
   /**
@@ -101,10 +101,7 @@ export const authService = {
     const payload = {
       Email: request.email,
     }
-    return identityServiceClient.post<SendOtpResponse>(
-      API_ENDPOINTS.IDENTITY.SEND_OTP,
-      payload
-    )
+    return identityServiceClient.post(API_ENDPOINTS.IDENTITY.SEND_OTP, payload) as unknown as SendOtpResponse
   },
 
   /**
@@ -115,10 +112,7 @@ export const authService = {
       Email: request.email,
       Otp: request.otp,
     }
-    return identityServiceClient.post<VerifyOtpResponse>(
-      API_ENDPOINTS.IDENTITY.VERIFY_OTP,
-      payload
-    )
+    return identityServiceClient.post(API_ENDPOINTS.IDENTITY.VERIFY_OTP, payload) as unknown as VerifyOtpResponse
   },
 
   /**
@@ -135,9 +129,6 @@ export const authService = {
       Username: request.username,
       ...(request.phone && { Phone: request.phone }),
     }
-    return identityServiceClient.post<RegisterWithOtpResponse>(
-      API_ENDPOINTS.IDENTITY.REGISTER,
-      payload
-    )
+    return identityServiceClient.post(API_ENDPOINTS.IDENTITY.REGISTER, payload) as unknown as RegisterWithOtpResponse
   },
 }
