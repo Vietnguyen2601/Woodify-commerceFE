@@ -4,7 +4,7 @@ import { ROUTES } from './constants/routes'
 import Home from './pages/Home'
 import Catalog from './pages/Catalog'
 import Product from './pages/Product'
-import Shop from './pages/Shop'
+import ShopDetailPage from './pages/shop/ShopDetailPage'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import CheckoutMultiShop from './pages/CheckoutMultiShop'
@@ -40,7 +40,15 @@ export default function App() {
     location.pathname.startsWith('/auth/register')
   const showUserHeader = !isSellerRoute && !isAdminRoute && !isAuthRoute
   const showFooter = !isSellerRoute && !isAdminRoute
-  const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
+  const isShopPublicPage = location.pathname.startsWith('/shop/')
+  const isProductDetailPage = location.pathname.startsWith('/product/')
+  const isFullBleedRoute =
+    location.pathname === '/' ||
+    isShopPublicPage ||
+    isProductDetailPage ||
+    isProfileRoute ||
+    isSellerRoute ||
+    isAdminRoute
   const authActionLabel = location.pathname.toLowerCase().includes('register') ? 'Đăng ký' : 'Đăng nhập'
 
   return (
@@ -64,7 +72,8 @@ export default function App() {
           <Route path='/' element={<Home />} />
           <Route path='/catalog' element={<Catalog />} />
           <Route path='/product/:id' element={<Product />} />
-          <Route path='/shop/:shopId' element={<Shop />} />
+          <Route path={ROUTES.SHOP_PREVIEW} element={<Navigate to={ROUTES.CATALOG} replace />} />
+          <Route path='/shop/:shopSegment' element={<ShopDetailPage />} />
           <Route path='/cart' element={<Cart />} />
           <Route path='/checkout' element={<Checkout />} />
           <Route path='/checkout-multishop' element={<CheckoutMultiShop />} />
