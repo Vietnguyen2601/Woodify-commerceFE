@@ -14,6 +14,8 @@ export const ROUTES = {
   CHECKOUT_MULTISHOP: '/checkout-multishop',
   PAYMENT_SUCCESS: '/payment/success',
   PAYMENT_CANCEL: '/payment/cancel',
+  /** PayOS / gateway return URL for cancelled wallet or checkout payments */
+  PAYMENT_CALLBACK_CANCEL: '/payment/callback/cancel',
 
   // Auth routes
   LOGIN: '/login',

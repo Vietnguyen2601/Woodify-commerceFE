@@ -39,9 +39,7 @@ const validateAddress = (values: AddressFormState): FormErrors => {
     nextErrors.fullName = 'Vui lòng nhập họ tên'
   }
 
-  if (!values.phone.trim()) {
-    nextErrors.phone = 'Vui lòng nhập số điện thoại'
-  } else if (!PHONE_REGEX.test(values.phone.trim())) {
+  if (values.phone.trim() && !PHONE_REGEX.test(values.phone.trim())) {
     nextErrors.phone = 'Số điện thoại không hợp lệ'
   }
 
@@ -367,14 +365,14 @@ export default function AddressModal({ isOpen, onClose, onSave, initialValue }: 
 
   return (
     <div
-      className='fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 px-4 py-8'
+      className='fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-900/60 px-4 py-4 sm:items-center sm:py-8'
       onMouseDown={handleOverlayMouseDown}
       role='presentation'
     >
       <div
         aria-labelledby={titleId}
         aria-modal='true'
-        className='flex max-h-[90vh] w-full max-w-[640px] flex-col overflow-hidden rounded-xl bg-white shadow-lg'
+        className='my-auto flex h-[calc(100dvh-2rem)] w-full max-w-[640px] flex-col overflow-hidden rounded-xl bg-white shadow-lg sm:h-[min(90vh,760px)]'
         role='dialog'
       >
         <header className='border-b border-stone-100 px-6 py-4'>
@@ -396,8 +394,8 @@ export default function AddressModal({ isOpen, onClose, onSave, initialValue }: 
           </div>
         </header>
 
-        <form className='flex flex-1 flex-col' onSubmit={handleSubmit} noValidate>
-          <div className='flex-1 space-y-5 overflow-y-auto px-6 py-6'>
+        <form className='flex min-h-0 flex-1 flex-col' onSubmit={handleSubmit} noValidate>
+          <div className='min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6'>
             <div className='grid gap-4 md:grid-cols-2'>
               <Field label='Họ & Tên' inputId={fullNameId} required error={showError('fullName')}>
                 <input
@@ -411,42 +409,29 @@ export default function AddressModal({ isOpen, onClose, onSave, initialValue }: 
                   className='h-11 w-full rounded-xl border border-stone-200 px-3 text-sm outline-none focus:border-yellow-900'
                 />
               </Field>
-              <Field label='Số điện thoại (+84)' inputId={phoneId} required error={showError('phone')}>
-                <input
-                  id={phoneId}
-                  name='phone'
-                  type='tel'
-                  placeholder='Nhập vào'
-                  value={formValues.phone}
-                  onChange={handleTextChange}
-                  onBlur={() => markTouched('phone')}
-                  className='h-11 w-full rounded-xl border border-stone-200 px-3 text-sm outline-none focus:border-yellow-900'
-                />
+              <Field label='Tỉnh/Thành phố' inputId={provinceId} required error={showError('provinceCode')} helperText={provinceError}>
+                <div className='relative'>
+                  <select
+                    id={provinceId}
+                    name='provinceCode'
+                    value={formValues.provinceCode}
+                    onChange={handleSelectChange}
+                    onBlur={() => markTouched('provinceCode')}
+                    disabled={provinceLoading}
+                    className='h-11 w-full appearance-none rounded-xl border border-stone-200 bg-white px-3 pr-10 text-sm outline-none focus:border-yellow-900 disabled:bg-stone-50'
+                  >
+                    <option value=''>{provinceLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố'}</option>
+                    {provinces.map((province) => (
+                      <option key={province.code} value={province.code}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+                  <SelectChevron />
+                  {provinceLoading && <LoadingSpinner />}
+                </div>
               </Field>
             </div>
-
-            <Field label='Tỉnh/Thành phố' inputId={provinceId} required error={showError('provinceCode')} helperText={provinceError}>
-              <div className='relative'>
-                <select
-                  id={provinceId}
-                  name='provinceCode'
-                  value={formValues.provinceCode}
-                  onChange={handleSelectChange}
-                  onBlur={() => markTouched('provinceCode')}
-                  disabled={provinceLoading}
-                  className='h-11 w-full appearance-none rounded-xl border border-stone-200 bg-white px-3 pr-10 text-sm outline-none focus:border-yellow-900 disabled:bg-stone-50'
-                >
-                  <option value=''>{provinceLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố'}</option>
-                  {provinces.map((province) => (
-                    <option key={province.code} value={province.code}>
-                      {province.name}
-                    </option>
-                  ))}
-                </select>
-                <SelectChevron />
-                {provinceLoading && <LoadingSpinner />}
-              </div>
-            </Field>
 
             <div className='grid gap-4 md:grid-cols-2'>
               <Field
@@ -536,7 +521,7 @@ export default function AddressModal({ isOpen, onClose, onSave, initialValue }: 
             </label>
           </div>
 
-          <div className='border-t border-stone-100 px-6 py-4'>
+          <div className='sticky bottom-0 shrink-0 border-t border-stone-100 bg-white px-6 py-4'>
             <div className='flex w-full items-center justify-end gap-3'>
               <button
                 type='button'

@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { ROUTES } from '@/constants/routes'
 import { api } from '../services/api/client'
 import { authService, walletService, queryKeys } from '@/services'
+import type { WalletTransactionItem } from '@/services/wallet.service'
 import { APP_CONFIG } from '../constants/app.config'
 import { CreditCard, Filter, Landmark, Wallet } from 'lucide-react'
 
@@ -51,18 +54,88 @@ interface Order {
   shippingAddress: string
 }
 
+const DEPOSIT_METHOD_TO_API = {
+  momo: 'Momo',
+  payos: 'PayOs',
+  vnpay: 'VNPay',
+} as const
+
+function mapApiTransactionStatus(s?: string): Transaction['status'] {
+  const u = (s || '').toUpperCase()
+  if (['SUCCESS', 'COMPLETED', 'SUCCEEDED'].includes(u)) return 'success'
+  if (['FAILED', 'CANCELLED', 'REJECTED'].includes(u)) return 'failed'
+  return 'pending'
+}
+
+function mapWalletItemToTransaction(
+  item: WalletTransactionItem,
+  index: number,
+  fallbackBalance: number
+): Transaction {
+  const id = String(item.id ?? item.paymentId ?? item.transactionId ?? `tx-${index}`)
+  const amount = Number(item.amount ?? 0)
+  const t = `${item.transactionType || item.type || ''}`.toLowerCase()
+  let type: Transaction['type'] = 'income'
+  if (t.includes('refund')) type = 'refund'
+  else if (
+    t.includes('pay') ||
+    t.includes('order') ||
+    t.includes('debit') ||
+    t.includes('expense') ||
+    t.includes('purchase') ||
+    amount < 0
+  ) {
+    type = 'expense'
+  }
+
+  const createdRaw = item.createdAt != null ? String(item.createdAt) : ''
+  const createdAt = createdRaw ? new Date(createdRaw) : null
+  const valid = createdAt && !Number.isNaN(createdAt.getTime())
+  const dateStr = valid ? createdAt.toLocaleDateString('vi-VN') : '—'
+  const timeStr = valid
+    ? createdAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    : ''
+
+  const title =
+    (typeof item.description === 'string' && item.description) ||
+    (typeof item.note === 'string' && item.note) ||
+    (typeof item.title === 'string' && item.title) ||
+    (type === 'income' ? 'Nạp tiền' : type === 'expense' ? 'Chi tiêu' : 'Hoàn tiền / Giao dịch')
+
+  const balanceAfter =
+    item.balanceAfter != null && !Number.isNaN(Number(item.balanceAfter))
+      ? Number(item.balanceAfter)
+      : fallbackBalance
+
+  return {
+    id,
+    type,
+    title,
+    date: dateStr,
+    time: timeStr,
+    status: mapApiTransactionStatus(typeof item.status === 'string' ? item.status : undefined),
+    amount,
+    balance: balanceAfter,
+  }
+}
+
+const PROFILE_TAB_KEYS: TabType[] = ['profile', 'orders', 'wallet', 'settings']
+
 export default function Profile() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [walletTab, setWalletTab] = useState<WalletTabType>('history')
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [depositAmount, setDepositAmount] = useState('')
-  const [depositMethod, setDepositMethod] = useState<'momo' | 'payos' | 'vnpay'>('momo')
+  const [depositMethod, setDepositMethod] = useState<'momo' | 'payos' | 'vnpay'>('payos')
   const [isProcessingDeposit, setIsProcessingDeposit] = useState(false)
   const [depositError, setDepositError] = useState<string | null>(null)
   const [walletBalance, setWalletBalance] = useState(0)
   const [walletData, setWalletData] = useState<any>(null)
+  const [txPage, setTxPage] = useState(1)
   const [userInfo, setUserInfo] = useState({
     name: '',
     email: '',
@@ -71,6 +144,20 @@ export default function Profile() {
     gender: '',
     address: ''
   })
+
+  // Deep link: /profile?tab=wallet (e.g. PayOS cancel callback redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tab = params.get('tab') as TabType | null
+    if (!tab || !PROFILE_TAB_KEYS.includes(tab)) return
+    setActiveTab(tab)
+    if (tab === 'wallet') {
+      setWalletTab('history')
+    }
+    params.delete('tab')
+    const rest = params.toString()
+    navigate({ pathname: ROUTES.PROFILE, search: rest ? `?${rest}` : '' }, { replace: true })
+  }, [location.search, navigate])
 
   // Fetch authenticated user to get accountId and walletId
   const { data: authenticatedUser, isLoading: isUserLoading } = useQuery({
@@ -94,6 +181,24 @@ export default function Profile() {
       setWalletData(wallet)
     }
   }, [wallet])
+
+  const walletIdForTx = wallet?.walletId || walletData?.walletId
+
+  const { data: txPageData, isLoading: isTxLoading } = useQuery({
+    queryKey: ['wallet-transactions', walletIdForTx, txPage],
+    queryFn: () => walletService.getWalletTransactions(walletIdForTx!, { page: txPage, pageSize: 20 }),
+    enabled: Boolean(walletIdForTx && activeTab === 'wallet'),
+  })
+
+  useEffect(() => {
+    setTxPage(1)
+  }, [walletIdForTx])
+
+  const displayTransactions = useMemo(() => {
+    const items = txPageData?.items
+    if (!items?.length) return []
+    return items.map((item, i) => mapWalletItemToTransaction(item, i, walletBalance))
+  }, [txPageData, walletBalance])
 
   // Fetch user account data on component mount
   useEffect(() => {
@@ -181,39 +286,6 @@ export default function Profile() {
     { id: 'settings' as TabType, label: 'Cài đặt', icon: SettingIcon }
   ]
 
-  const transactions: Transaction[] = [
-    {
-      id: '1',
-      type: 'income',
-      title: 'Nạp tiền vào ví',
-      date: '15/02/2026',
-      time: '14:30',
-      status: 'success',
-      amount: 5000000,
-      balance: 15750000
-    },
-    {
-      id: '2',
-      type: 'expense',
-      title: 'Thanh toán đơn hàng #DH2024001',
-      date: '14/02/2026',
-      time: '10:15',
-      status: 'success',
-      amount: -3500000,
-      balance: 10750000
-    },
-    {
-      id: '3',
-      type: 'refund',
-      title: 'Hoàn tiền đơn hàng #DH2024002',
-      date: '13/02/2026',
-      time: '16:45',
-      status: 'success',
-      amount: 2250000,
-      balance: 14250000
-    }
-  ]
-
   const orders: Order[] = [
     {
       id: '1',
@@ -296,6 +368,18 @@ export default function Profile() {
     }
   }
 
+  const transactionStatusLabel: Record<Transaction['status'], string> = {
+    success: 'Thành công',
+    pending: 'Đang xử lý',
+    failed: 'Thất bại',
+  }
+
+  const transactionStatusClass: Record<Transaction['status'], string> = {
+    success: 'bg-green-100 text-green-700',
+    pending: 'bg-amber-100 text-amber-800',
+    failed: 'bg-red-100 text-red-700',
+  }
+
   const getTransactionBgColor = (type: string) => {
     switch (type) {
       case 'income':
@@ -374,16 +458,26 @@ export default function Profile() {
       return
     }
     
+    const walletId = walletData?.walletId ?? wallet?.walletId
+    if (!walletId) {
+      setDepositError('Chưa có thông tin ví. Vui lòng tải lại trang sau khi đăng nhập.')
+      return
+    }
+
     setIsProcessingDeposit(true)
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      setWalletTab('history')
-      setDepositAmount('')
-      setDepositMethod('momo')
+      const result = await walletService.topUp({
+        walletId,
+        amount: Math.round(amount),
+        method: DEPOSIT_METHOD_TO_API[depositMethod],
+      })
+      if (result.paymentUrl) {
+        window.location.assign(result.paymentUrl)
+        return
+      }
+      setDepositError('Không nhận được link thanh toán từ hệ thống.')
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi nạp tiền')
+      setDepositError(err?.message || 'Lỗi khi nạp tiền')
     } finally {
       setIsProcessingDeposit(false)
     }
@@ -664,45 +758,85 @@ export default function Profile() {
                   {/* Transaction List */}
                   {walletTab !== 'deposit' && (
                     <div className='space-y-4'>
-                      {transactions.map(transaction => (
-                        <div
-                          key={transaction.id}
-                          className='flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors'
-                        >
-                          {/* Left Side - Icon and Details */}
-                          <div className='flex items-center gap-4 flex-1'>
-                            {/* Icon Circle */}
-                            <div className={`w-12 h-12 ${getTransactionBgColor(transaction.type)} rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md`}>
-                              {getTransactionIcon(transaction.type)}
-                            </div>
+                      {isTxLoading && (
+                        <p className='text-center text-gray-500 py-8' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                          Đang tải lịch sử giao dịch...
+                        </p>
+                      )}
+                      {!isTxLoading && displayTransactions.length === 0 && (
+                        <p className='text-center text-gray-500 py-8' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                          Chưa có giao dịch nào.
+                        </p>
+                      )}
+                      {!isTxLoading &&
+                        displayTransactions.map((transaction) => (
+                          <div
+                            key={transaction.id}
+                            className='flex items-center justify-between p-4 border border-gray-200 rounded-[10px] hover:bg-gray-50 transition-colors'
+                          >
+                            <div className='flex items-center gap-4 flex-1'>
+                              <div
+                                className={`w-12 h-12 ${getTransactionBgColor(transaction.type)} rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md`}
+                              >
+                                {getTransactionIcon(transaction.type)}
+                              </div>
 
-                            {/* Transaction Details */}
-                            <div className='flex-1'>
-                              <h4 className='text-gray-800 font-semibold mb-1' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                {transaction.title}
-                              </h4>
-                              <div className='flex items-center gap-3'>
-                                <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                  {transaction.date} • {transaction.time}
-                                </p>
-                                <span className='px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                  Thành công
-                                </span>
+                              <div className='flex-1'>
+                                <h4 className='text-gray-800 font-semibold mb-1' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                                  {transaction.title}
+                                </h4>
+                                <div className='flex items-center gap-3 flex-wrap'>
+                                  <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                                    {transaction.date}
+                                    {transaction.time ? ` • ${transaction.time}` : ''}
+                                  </p>
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-medium ${transactionStatusClass[transaction.status]}`}
+                                    style={{ fontFamily: 'Arimo, sans-serif' }}
+                                  >
+                                    {transactionStatusLabel[transaction.status]}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Right Side - Amount and Balance */}
-                          <div className='text-right'>
-                            <p className={`text-lg font-bold mb-1 ${getTransactionColor(transaction.type)}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                              {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
-                            </p>
-                            <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                              Số dư: {formatCurrency(transaction.balance)}
-                            </p>
+                            <div className='text-right'>
+                              <p
+                                className={`text-lg font-bold mb-1 ${getTransactionColor(transaction.type)}`}
+                                style={{ fontFamily: 'Poppins, sans-serif' }}
+                              >
+                                {transaction.amount > 0 ? '+' : ''}
+                                {formatCurrency(transaction.amount)}
+                              </p>
+                              <p className='text-gray-500 text-sm' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                                Số dư: {formatCurrency(transaction.balance)}
+                              </p>
+                            </div>
                           </div>
+                        ))}
+                      {!isTxLoading && txPageData && txPageData.totalPages > 1 && (
+                        <div className='flex items-center justify-center gap-4 pt-2'>
+                          <button
+                            type='button'
+                            disabled={txPage <= 1}
+                            onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                            className='rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed'
+                          >
+                            Trước
+                          </button>
+                          <span className='text-sm text-gray-600'>
+                            Trang {txPage} / {txPageData.totalPages}
+                          </span>
+                          <button
+                            type='button'
+                            disabled={txPage >= txPageData.totalPages}
+                            onClick={() => setTxPage((p) => p + 1)}
+                            className='rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed'
+                          >
+                            Sau
+                          </button>
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>

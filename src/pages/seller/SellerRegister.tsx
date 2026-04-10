@@ -148,50 +148,50 @@ export default function SellerRegister() {
 
   if (isDraftLoading || !stepOneData) {
     return (
-      <div className='min-h-screen bg-gray-50 flex items-center justify-center text-gray-600'>
+      <div className='flex min-h-screen items-center justify-center bg-[#f7f4ee] text-stone-600'>
         Đang chuẩn bị dữ liệu đăng ký...
       </div>
     )
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 py-12 px-4'>
-      <div className='max-w-2xl mx-auto'>
-        <div className='text-center mb-10'>
-          <p className='text-sm font-semibold uppercase tracking-[0.28em] text-gray-500'>Woodify Seller Center</p>
-          <h1 className='mt-2 text-3xl font-bold text-gray-900'>Bước 2: Hình ảnh & vận chuyển</h1>
-          <p className='mt-1 text-sm text-gray-600'>Hoàn thiện logo, ảnh cover và chọn nhà vận chuyển mặc định.</p>
+    <div className='min-h-screen bg-[#f7f4ee] px-4 py-10'>
+      <div className='mx-auto flex max-w-5xl flex-col items-center gap-6'>
+        <div className='text-center'>
+          <p className='text-sm font-semibold uppercase tracking-[0.24em] text-stone-500'>Woodify Seller Center</p>
+          <h1 className='mt-2 text-3xl font-semibold text-stone-900'>Bước 2: Hình ảnh & vận chuyển</h1>
+          <p className='mt-2 max-w-2xl text-sm text-stone-600'>Hoàn thiện logo, ảnh cover và chọn nhà vận chuyển mặc định cho gian hàng của bạn.</p>
         </div>
 
-        <div className='mb-8 rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm'>
+        <div className='w-full max-w-3xl rounded-2xl border border-yellow-100 bg-[#fff9ee] p-6 shadow-[0_12px_35px_rgba(105,64,25,0.08)]'>
           <div className='flex items-center justify-between gap-4'>
             <div>
-              <p className='text-xs font-semibold uppercase tracking-wide text-blue-700'>Thông tin bước 1</p>
-              <h2 className='mt-1 text-lg font-semibold text-blue-900'>{stepOneData.name}</h2>
+              <p className='text-xs font-semibold uppercase tracking-[0.25em] text-stone-500'>Thông tin bước 1</p>
+              <h2 className='mt-1 text-lg font-semibold text-stone-900'>{stepOneData.name}</h2>
             </div>
             <button
               type='button'
               onClick={handleEditStepOne}
-              className='text-sm font-semibold text-blue-700 underline-offset-4 hover:underline'
+              className='text-sm font-semibold text-yellow-900 underline-offset-4 hover:underline'
             >
               Chỉnh sửa bước 1
             </button>
           </div>
-          <p className='mt-3 text-sm text-blue-900/80'>{stepOneData.description}</p>
-          <p className='mt-2 text-sm font-medium text-blue-900'>Địa chỉ lấy hàng: {stepOneData.defaultPickupAddress}</p>
+          <p className='mt-3 text-sm text-stone-700'>{stepOneData.description}</p>
+          <p className='mt-2 text-sm font-medium text-stone-800'>Địa chỉ lấy hàng: {stepOneData.defaultPickupAddress}</p>
         </div>
 
-        <div className='bg-white rounded-2xl shadow-md p-8'>
+        <div className='w-full max-w-3xl rounded-2xl border border-stone-100 bg-white p-8 shadow-[0_20px_60px_rgba(105,64,25,0.08)]'>
           <form className='space-y-6' onSubmit={onSubmit}>
             <div className='grid gap-6'>
               <div className='space-y-2'>
                 <div className='flex flex-wrap items-center justify-between gap-3'>
-                  <label className='text-sm font-medium text-gray-700'>Logo cửa hàng *</label>
+                  <label className='text-sm font-semibold text-stone-700'>Logo cửa hàng *</label>
                   <button
                     type='button'
                     onClick={() => logoInputRef.current?.click()}
                     disabled={logoUploading}
-                    className='inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition disabled:opacity-60'
+                    className='inline-flex items-center rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 disabled:opacity-60'
                   >
                     {logoUploading ? 'Đang tải...' : 'Upload từ máy'}
                   </button>
@@ -200,7 +200,7 @@ export default function SellerRegister() {
                   type='url'
                   placeholder='https://example.com/logo.jpg'
                   {...mediaForm.register('logoUrl')}
-                  className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                  className='w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-yellow-800 focus:outline-none'
                 />
                 <input
                   ref={logoInputRef}
@@ -209,23 +209,23 @@ export default function SellerRegister() {
                   className='hidden'
                   onChange={(event) => handleImageUpload(event, 'logoUrl')}
                 />
-                {logoUploadError && <p className='text-sm text-red-500'>{logoUploadError}</p>}
+                {logoUploadError && <p className='text-sm text-rose-600'>{logoUploadError}</p>}
                 {mediaForm.formState.errors.logoUrl && (
-                  <p className='text-sm text-red-500'>{mediaForm.formState.errors.logoUrl.message}</p>
+                  <p className='text-sm text-rose-600'>{mediaForm.formState.errors.logoUrl.message}</p>
                 )}
                 {logoUrlValue && (
-                  <img src={logoUrlValue} alt='Logo preview' className='w-24 h-24 mt-3 rounded-lg object-cover border border-gray-200' />
+                  <img src={logoUrlValue} alt='Logo preview' className='mt-3 h-24 w-24 rounded-2xl border border-stone-200 object-cover' />
                 )}
               </div>
 
               <div className='space-y-2'>
                 <div className='flex flex-wrap items-center justify-between gap-3'>
-                  <label className='text-sm font-medium text-gray-700'>Ảnh cover *</label>
+                  <label className='text-sm font-semibold text-stone-700'>Ảnh cover *</label>
                   <button
                     type='button'
                     onClick={() => coverInputRef.current?.click()}
                     disabled={coverUploading}
-                    className='inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition disabled:opacity-60'
+                    className='inline-flex items-center rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 disabled:opacity-60'
                   >
                     {coverUploading ? 'Đang tải...' : 'Upload từ máy'}
                   </button>
@@ -234,7 +234,7 @@ export default function SellerRegister() {
                   type='url'
                   placeholder='https://example.com/cover.jpg'
                   {...mediaForm.register('coverImageUrl')}
-                  className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                  className='w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-yellow-800 focus:outline-none'
                 />
                 <input
                   ref={coverInputRef}
@@ -243,72 +243,70 @@ export default function SellerRegister() {
                   className='hidden'
                   onChange={(event) => handleImageUpload(event, 'coverImageUrl')}
                 />
-                {coverUploadError && <p className='text-sm text-red-500'>{coverUploadError}</p>}
+                {coverUploadError && <p className='text-sm text-rose-600'>{coverUploadError}</p>}
                 {mediaForm.formState.errors.coverImageUrl && (
-                  <p className='text-sm text-red-500'>{mediaForm.formState.errors.coverImageUrl.message}</p>
+                  <p className='text-sm text-rose-600'>{mediaForm.formState.errors.coverImageUrl.message}</p>
                 )}
                 {coverUrlValue && (
-                  <img src={coverUrlValue} alt='Cover preview' className='w-full h-40 mt-3 rounded-lg object-cover border border-gray-200' />
+                  <img src={coverUrlValue} alt='Cover preview' className='mt-3 h-40 w-full rounded-2xl border border-stone-200 object-cover' />
                 )}
               </div>
             </div>
 
-            <section className='space-y-3'>
+            <section className='space-y-4'>
               <div className='flex flex-wrap items-center justify-between gap-2'>
-                <h3 className='text-sm font-semibold text-gray-900'>Nhà vận chuyển mặc định *</h3>
-                <p className='text-xs text-gray-500'>Danh sách hiển thị tên nhà vận chuyển.</p>
+                <h3 className='text-sm font-semibold text-stone-900'>Nhà vận chuyển mặc định *</h3>
+                <p className='text-xs text-stone-500'>Danh sách hiển thị tên nhà vận chuyển.</p>
               </div>
               {providersLoading ? (
-                <div className='py-4 text-center text-gray-600'>Đang tải danh sách nhà vận chuyển...</div>
+                <div className='py-4 text-center text-stone-600'>Đang tải danh sách nhà vận chuyển...</div>
               ) : providers.length ? (
                 <div className='space-y-2'>
                   {providers.map((provider: ShippingProvider) => (
                     <label
                       key={provider.providerId}
-                      className='flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 hover:border-blue-400 cursor-pointer transition'
+                      className='flex cursor-pointer items-center gap-3 rounded-2xl border border-stone-200 px-4 py-3 transition hover:border-yellow-700/50 hover:bg-[#fffbf3]'
                     >
                       <input
                         type='radio'
                         {...mediaForm.register('defaultProvider')}
                         value={provider.providerId}
-                        className='h-4 w-4 text-blue-600 focus:ring-blue-500'
+                        className='h-4 w-4 border-stone-300 text-yellow-900 focus:ring-yellow-800'
                       />
-                      <span className='text-sm font-medium text-gray-900'>{provider.name}</span>
+                      <span className='text-sm font-medium text-stone-900'>{provider.name}</span>
                     </label>
                   ))}
                 </div>
               ) : (
-                <p className='text-sm text-gray-500'>Không có nhà vận chuyển khả dụng.</p>
+                <p className='rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 px-4 py-4 text-sm text-stone-500'>Không có nhà vận chuyển khả dụng.</p>
               )}
               {mediaForm.formState.errors.defaultProvider && (
-                <p className='text-sm text-red-500'>{mediaForm.formState.errors.defaultProvider.message}</p>
+                <p className='text-sm text-rose-600'>{mediaForm.formState.errors.defaultProvider.message}</p>
               )}
             </section>
 
-            <p className='text-sm text-gray-500'>💡 Gợi ý: Dùng Cloudinary hoặc dịch vụ tương tự để lấy URL sau khi upload.</p>
-
-            <div className='flex justify-between gap-4 pt-6'>
+            <div className='flex flex-wrap items-center justify-between gap-4 border-t border-stone-100 pt-6'>
               <button
                 type='button'
                 onClick={handleEditStepOne}
-                className='px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors'
+                className='text-sm font-semibold text-stone-500 transition hover:text-stone-800'
               >
                 Quay lại bước 1
               </button>
               <button
                 type='submit'
                 disabled={isPending || logoUploading || coverUploading}
-                className='px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                className='inline-flex min-w-[160px] items-center justify-center rounded-full px-6 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-stone-300 disabled:opacity-100 bg-yellow-900 hover:bg-yellow-800'
               >
-                {isPending ? 'Đang Xử Lý...' : 'Hoàn tất đăng ký'}
+                {isPending ? 'Đang xử lý...' : 'Hoàn tất đăng ký'}
               </button>
             </div>
           </form>
         </div>
 
-        <div className='mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6'>
-          <h3 className='font-semibold text-blue-900 mb-2'>ℹ️ Lưu ý</h3>
-          <ul className='text-sm text-blue-800 space-y-1 list-disc list-inside'>
+        <div className='w-full max-w-3xl rounded-2xl border border-yellow-100 bg-[#fff8eb] p-6'>
+          <h3 className='mb-2 font-semibold text-yellow-900'>Lưu ý</h3>
+          <ul className='list-inside list-disc space-y-1 text-sm text-yellow-900/80'>
             <li>Bạn có thể cập nhật thông tin cửa hàng sau khi hoàn tất đăng ký.</li>
             <li>Nhà vận chuyển mặc định sẽ áp dụng cho mọi đơn hàng mới.</li>
             <li>Ảnh rõ nét và chuyên nghiệp giúp tăng độ tin cậy cho thương hiệu.</li>

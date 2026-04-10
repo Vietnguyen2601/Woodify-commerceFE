@@ -1,5 +1,4 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 
 export interface ProductionCardProduct {
   id: string
@@ -42,6 +41,7 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
       className='production-card'
       role={onCardClick ? 'button' : undefined}
       tabIndex={onCardClick ? 0 : undefined}
+      onClick={onCardClick ? () => onCardClick() : undefined}
       onKeyDown={handleKeyDown}
     >
       <div className='production-card__thumbnail'>
