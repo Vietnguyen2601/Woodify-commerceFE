@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { productMasterService, shopService } from '@/services'
 import { useCart } from '../store/cartStore'
 import { ROUTES } from '@/constants/routes'
+import AssetIcon from '@/components/AssetIcon'
+import chevronRightIcon from '@/assets/icons/essential/interface/chevron-right.svg'
 
 /** Figma MCP assets — related products (node 108:473) */
 const RELATED_IMAGES = {
@@ -68,6 +70,13 @@ const vouchers = ['Giảm 5% đơn từ 3.000.000₫', 'Freeship toàn bộ HCM'
 export default function Product() {
   const { id } = useParams<{ id: string }>()
   const add = useCart(state => state.add)
+
+  React.useEffect(() => {
+    document.body.classList.add('product-route-bg')
+    return () => {
+      document.body.classList.remove('product-route-bg')
+    }
+  }, [])
 
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product-detail', id],
@@ -148,10 +157,10 @@ export default function Product() {
 
   if (isLoading) {
     return (
-      <div className='product-page product-page--empty'>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '80px 0' }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', border: '4px solid #7c5c3b', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-          <p style={{ color: '#7c5c3b', fontSize: 14 }}>Đang tải sản phẩm...</p>
+      <div className='flex min-h-screen w-full flex-col items-center justify-center bg-transparent px-4'>
+        <div className='flex flex-col items-center gap-3 py-20'>
+          <div className='h-9 w-9 animate-spin rounded-full border-4 border-[#6C5B50] border-t-transparent' />
+          <p className="font-['Inter'] text-sm text-[#5c4a32]">Đang tải sản phẩm...</p>
         </div>
       </div>
     )
@@ -159,9 +168,11 @@ export default function Product() {
 
   if (isError || !product) {
     return (
-      <div className='product-page product-page--empty'>
-        <p>Không tìm thấy sản phẩm.</p>
-        <Link to='/catalog' className='home__action-primary'>Quay lại catalog</Link>
+      <div className='flex min-h-screen w-full flex-col items-center justify-center gap-4 bg-transparent px-4 text-center'>
+        <p className="font-['Inter'] text-base text-neutral-700">Không tìm thấy sản phẩm.</p>
+        <Link to={ROUTES.CATALOG} className='home__action-primary'>
+          Quay lại danh mục
+        </Link>
       </div>
     )
   }
@@ -191,15 +202,33 @@ export default function Product() {
   const descriptionText = product.description?.trim() ? product.description : PRODUCT_DETAIL_FALLBACK
 
   return (
-    <div className='product-page__content product-page__content--figma'>
-        <nav className='product-breadcrumbs' aria-label='Breadcrumb'>
-          <Link to={ROUTES.HOME}>Trang chủ</Link>
-          <span className='product-breadcrumbs__sep'>/</span>
-          <Link to={ROUTES.CATALOG}>{product.categoryName}</Link>
-          <span className='product-breadcrumbs__sep'>/</span>
-          <span className='product-breadcrumbs__current'>{product.name}</span>
+    <div className='min-h-screen w-full bg-transparent pb-14'>
+      <div className='mx-auto w-full max-w-[min(1386px,calc(100%-2rem))] px-10 pt-6 lg:px-10 sm:px-4 sm:pt-4'>
+        <nav className="mb-6 font-['Inter'] text-sm text-black/60" aria-label='Breadcrumb'>
+          <ol className='m-0 flex list-none flex-wrap items-center gap-1.5 p-0'>
+            <li>
+              <Link to={ROUTES.HOME} className='text-[#6C5B50] no-underline hover:text-[#BE9C73]'>
+                Trang chủ
+              </Link>
+            </li>
+            <li aria-hidden='true' className='flex items-center opacity-45'>
+              <AssetIcon src={chevronRightIcon} width={12} height={12} />
+            </li>
+            <li>
+              <Link to={ROUTES.CATALOG} className='text-[#6C5B50] no-underline hover:text-[#BE9C73]'>
+                {product.categoryName}
+              </Link>
+            </li>
+            <li aria-hidden='true' className='flex items-center opacity-45'>
+              <AssetIcon src={chevronRightIcon} width={12} height={12} />
+            </li>
+            <li className='min-w-0 max-w-[min(100%,28rem)] truncate font-semibold text-black' title={product.name}>
+              {product.name}
+            </li>
+          </ol>
         </nav>
 
+        <div className='product-page__content--figma'>
         <div className='product-layout-figma'>
           <div className='product-layout-figma__main'>
             <section className='product-hero product-hero--figma'>
@@ -462,7 +491,7 @@ export default function Product() {
                   </div>
                 </div>
                 <div className='product-shop-card-figma__actions'>
-                  <Link to={`/shop/${shop.shopId}`} className='product-shop__btn product-shop__btn--outline product-shop__btn--figma'>
+                  <Link to={ROUTES.SHOP(shop.shopId, shop.name)} className='product-shop__btn product-shop__btn--outline product-shop__btn--figma'>
                     Xem Shop
                   </Link>
                   <button type='button' className='product-shop__btn product-shop__btn--primary product-shop__btn--figma'>
@@ -506,12 +535,14 @@ export default function Product() {
                     <p className='product-eyebrow'>Gợi ý mua thêm</p>
                     <h3>{section.title}</h3>
                   </div>
-                  <Link to='/catalog'>Xem tất cả</Link>
+                  <Link to={ROUTES.CATALOG}>Xem tất cả</Link>
                 </div>
               </div>
             </section>
           )
         ))}
+        </div>
+      </div>
     </div>
   )
 }

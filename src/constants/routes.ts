@@ -3,12 +3,17 @@
  * Centralized route management for type-safe navigation
  */
 
+import { buildShopPathSegment } from '@/utils/shopUrl'
+
 export const ROUTES = {
   // Public routes
   HOME: '/',
   CATALOG: '/catalog',
   PRODUCT: (id: string) => `/product/${id}`,
-  SHOP: (shopId: string) => `/shop/${shopId}`,
+  /** `shopName` nên truyền — URL dạng `/shop/ten-cua-hang` (slug tên shop). */
+  SHOP: (shopId: string, shopName?: string | null) => `/shop/${buildShopPathSegment(shopId, shopName)}`,
+  /** URL cũ `/shop-preview` — chuyển hướng sang danh mục. */
+  SHOP_PREVIEW: '/shop-preview',
   CART: '/cart',
   CHECKOUT: '/checkout',
   CHECKOUT_MULTISHOP: '/checkout-multishop',
