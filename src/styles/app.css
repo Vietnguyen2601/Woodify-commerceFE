@@ -333,7 +333,7 @@ body {
 .container {
 	padding: 24px;
 	min-height: 70vh;
-	width: min(1340px, 100%);
+	width: min(1300px, 100%);
 	margin: 0 auto;
 	box-sizing: border-box;
 }
@@ -2457,7 +2457,7 @@ body {
 .product-page__content--figma {
 	padding: 20px clamp(16px, 4vw, 40px) 80px;
 	gap: 16px;
-	max-width: 1340px;
+	max-width: 1300px;
 	margin: 0 auto;
 	background: #faf7f2;
 }
@@ -3846,7 +3846,7 @@ body {
 
 .cart-account__name {
 	font-weight: 600;
-	width: min(1340px, 100%);
+	width: min(1300px, 100%);
 	margin: 32px auto;
 	display: flex;
 	flex-direction: column;
