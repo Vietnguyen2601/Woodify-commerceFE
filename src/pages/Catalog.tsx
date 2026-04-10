@@ -4,15 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import ProductionCard, { type ProductionCardProduct } from '../components/ProductionCard'
 import Pagination from '../components/Pagination'
 import { productMasterService, shopService } from '@/services'
-import { mockCatalogProducts, mockShops } from '@/data/catalog-mock-data'
-
-const catalogCategories = [
-  { id: 'living', label: 'Không gian phòng khách' },
-  { id: 'bedroom', label: 'Nội thất phòng ngủ' },
-  { id: 'workspace', label: 'Góc làm việc' },
-  { id: 'decor', label: 'Trang trí & phụ kiện' },
-  { id: 'bespoke', label: 'Đặt đóng theo yêu cầu' }
-]
 
 const priceFilters = [
   { id: 'under3', label: 'Dưới 3 triệu', range: [0, 3000000] as [number, number] },
@@ -22,11 +13,10 @@ const priceFilters = [
 ]
 
 type SortOption = 'featured' | 'priceAsc' | 'priceDesc' | 'dateDesc' | 'dateAsc'
-type CatalogProduct = ProductionCardProduct & { category: string; shopId: string; createdAt?: string }
+type CatalogProduct = ProductionCardProduct & { shopId: string; createdAt?: string }
 
 export default function Catalog() {
   const navigate = useNavigate()
-  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null)
   const [selectedShop, setSelectedShop] = React.useState<string | null>(null)
   const [selectedPrice, setSelectedPrice] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
@@ -37,18 +27,15 @@ export default function Catalog() {
   const { data: rawProducts = [], isLoading, isError } = useQuery({
     queryKey: ['published-products'],
     queryFn: () => productMasterService.getPublishedProducts(),
-    enabled: false, // Tạm vô hiệu hóa API, dùng mock data
   })
 
   const { data: shops = [] } = useQuery({
     queryKey: ['all-shops'],
     queryFn: () => shopService.getAllShops(),
-    enabled: false, // Tạm vô hiệu hóa API, dùng mock data
   })
 
-  // Luôn dùng mock data để test
-  const productsToUse = mockCatalogProducts
-  const shopsToUse = mockShops
+  const productsToUse = rawProducts
+  const shopsToUse = shops
 
   const shopMap = React.useMemo(() => {
     const map: Record<string, string> = {}
@@ -57,7 +44,7 @@ export default function Catalog() {
   }, [shopsToUse])
 
   const catalogProducts = React.useMemo<CatalogProduct[]>(() => (
-    productsToUse.map((p: any, index) => ({
+    productsToUse.map((p: any) => ({
       id: p.productId,
       title: p.name,
       description: p.description || '',
@@ -71,11 +58,9 @@ export default function Catalog() {
       isFeatured: p.isFeatured,
       hasFreeship: p.hasFreeship,
       badge: undefined,
-      tags: [p.categoryName].filter(Boolean),
       thumbnailUrl: p.thumbnailUrl ?? undefined,
       shopName: p.shopName ?? shopMap[p.shopId] ?? null,
       shopId: p.shopId,
-      category: catalogCategories[index % catalogCategories.length].id,
       createdAt: p.createdAt,
     }))
   ), [productsToUse, shopMap])
@@ -85,7 +70,6 @@ export default function Catalog() {
     const priceRange = priceFilters.find(item => item.id === selectedPrice)?.range
 
     let result = catalogProducts.filter(product => {
-      const matchCategory = selectedCategory ? product.category === selectedCategory : true
       const matchShop = selectedShop ? product.shopId === selectedShop : true
       const matchSearch = normalizedSearch
         ? product.title.toLowerCase().includes(normalizedSearch) ||
@@ -93,7 +77,7 @@ export default function Catalog() {
         : true
       const matchPrice = priceRange ? (product.price >= priceRange[0] && product.price <= priceRange[1]) : true
 
-      return matchCategory && matchShop && matchSearch && matchPrice
+      return matchShop && matchSearch && matchPrice
     })
 
     if (sortOption === 'priceAsc') {
@@ -121,10 +105,9 @@ export default function Catalog() {
     }
 
     return result
-  }, [catalogProducts, searchTerm, selectedCategory, selectedPrice, sortOption])
+  }, [catalogProducts, searchTerm, selectedShop, selectedPrice, sortOption])
 
   const handleResetFilters = () => {
-    setSelectedCategory(null)
     setSelectedShop(null)
     setSelectedPrice(null)
     setSearchTerm('')
@@ -149,30 +132,6 @@ export default function Catalog() {
           <div className='catalog__sidebar-header'>
             <p className='catalog__eyebrow'>🔍 Bộ lọc tìm kiếm</p>
           </div>
-
-          <section className='catalog__sidebar-section'>
-            <div className='catalog__sidebar-heading'>
-              <div>
-                <p className='catalog__eyebrow'>Danh mục</p>
-                <h2>Chọn không gian</h2>
-              </div>
-              <button type='button' className='catalog__link' onClick={() => setSelectedCategory(null)}>Bỏ chọn</button>
-            </div>
-
-            <div className='catalog__pill-group'>
-              {catalogCategories.map(category => (
-                <button
-                  key={category.id}
-                  type='button'
-                  className={selectedCategory === category.id ? 'catalog__pill active' : 'catalog__pill'}
-                  onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
-                >
-                  {category.label}
-                </button>
-              ))}
-            </div>
-          </section>
-
           <section className='catalog__sidebar-section'>
             <div>
               <p className='catalog__eyebrow'>Tìm kiếm</p>

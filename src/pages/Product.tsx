@@ -3,6 +3,29 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { productMasterService, shopService } from '@/services'
 import { useCart } from '../store/cartStore'
+import { ROUTES } from '@/constants/routes'
+
+/** Figma MCP assets — related products (node 108:473) */
+const RELATED_IMAGES = {
+  chair: 'https://www.figma.com/api/mcp/asset/e76f1283-1a15-45d3-91bd-c5a1198d0d30',
+  shelf: 'https://www.figma.com/api/mcp/asset/24850760-516c-4d82-855c-76b6a9593539',
+  lamp: 'https://www.figma.com/api/mcp/asset/3505a72d-39c5-40c0-a0c6-cc02508757f9',
+  cabinet: 'https://www.figma.com/api/mcp/asset/7463d068-eab7-419c-93d0-6d5992043125',
+} as const
+
+const RELATED_ITEMS = [
+  { key: 'r1', title: 'Ghế làm việc ergonomic', price: 1_800_000, rating: 4.7, sold: 234, image: RELATED_IMAGES.chair },
+  { key: 'r2', title: 'Kệ sách treo tường', price: 980_000, rating: 4.9, sold: 567, image: RELATED_IMAGES.shelf },
+  { key: 'r3', title: 'Đèn bàn LED hiện đại', price: 450_000, rating: 4.6, sold: 789, image: RELATED_IMAGES.lamp },
+  { key: 'r4', title: 'Tủ hồ sơ 3 ngăn', price: 2_200_000, rating: 4.8, sold: 345, image: RELATED_IMAGES.cabinet },
+] as const
+
+const PRODUCT_DETAIL_FALLBACK =
+  'Bàn làm việc gỗ óc chó cao cấp với thiết kế hiện đại, tối giản. Được chế tác từ 100% gỗ óc chó tự nhiên, bề mặt xử lý chống trầy xước và chống nước. Phù hợp cho không gian làm việc tại nhà hoặc văn phòng.'
+
+const DISPLAY_RATING = 4.8
+const DISPLAY_REVIEW_COUNT = 234
+const DISPLAY_SOLD = 456
 
 type Review = {
   id: string
@@ -66,12 +89,13 @@ export default function Product() {
   const [selectedVersionId, setSelectedVersionId] = React.useState<string | null>(null)
   const [quantity, setQuantity] = React.useState(1)
   const [activeReviewFilter, setActiveReviewFilter] = React.useState(reviewFilters[0])
+  const [detailTab, setDetailTab] = React.useState<'info' | 'reviews' | 'policy'>('info')
 
   React.useEffect(() => {
     if (activeVersions.length > 0) {
       setSelectedVersionId(activeVersions[0].versionId)
     }
-  }, [product])
+  }, [activeVersions])
 
   const selectedVersion = activeVersions.find(v => v.versionId === selectedVersionId) ?? activeVersions[0]
 
@@ -145,230 +169,333 @@ export default function Product() {
   const price = selectedVersion?.price ?? 0
   const originalPrice = Math.round(price * 1.2)
   const saving = originalPrice - price
+  const discountPct = originalPrice > 0 ? Math.max(0, Math.round((1 - price / originalPrice) * 100)) : 0
+  const shopJoinYear = shop?.createdAt ? new Date(shop.createdAt).getFullYear() : '—'
+
+  const renderStars = (value: number, size: 'md' | 'sm' = 'md') => {
+    const full = Math.floor(value)
+    const partial = value - full
+    return (
+      <div className={`product-rating__stars ${size === 'sm' ? 'product-rating__stars--compact' : ''}`}>
+        {Array.from({ length: 5 }).map((_, i) => {
+          if (i < full) return <span key={i} className='filled'>&#9733;</span>
+          if (i === full && partial >= 0.25) {
+            return <span key={i} className='filled' style={{ opacity: 0.35 + partial }}>&#9733;</span>
+          }
+          return <span key={i}>&#9733;</span>
+        })}
+      </div>
+    )
+  }
+
+  const descriptionText = product.description?.trim() ? product.description : PRODUCT_DETAIL_FALLBACK
 
   return (
-    <div className='product-page'>
-      <main className='product-page__content'>
-        <section className='product-hero'>
-          <div className='product-media'>
-            <div className='product-media__main'>
-              {gallery.length > 0 ? (
-                <img src={selectedImage} alt={product.name} />
-              ) : (
-                <div style={{ width: '100%', height: 400, background: '#f5ede2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8b49a', fontSize: 13 }}>
-                  Chưa có ảnh
+    <div className='product-page__content product-page__content--figma'>
+        <nav className='product-breadcrumbs' aria-label='Breadcrumb'>
+          <Link to={ROUTES.HOME}>Trang chủ</Link>
+          <span className='product-breadcrumbs__sep'>/</span>
+          <Link to={ROUTES.CATALOG}>{product.categoryName}</Link>
+          <span className='product-breadcrumbs__sep'>/</span>
+          <span className='product-breadcrumbs__current'>{product.name}</span>
+        </nav>
+
+        <div className='product-layout-figma'>
+          <div className='product-layout-figma__main'>
+            <section className='product-hero product-hero--figma'>
+              <div className='product-media product-media--figma'>
+                <div className='product-media__main product-media__main--figma'>
+                  {gallery.length > 0 ? (
+                    <img src={selectedImage} alt={product.name} />
+                  ) : (
+                    <div className='product-media__placeholder'>Chưa có ảnh</div>
+                  )}
+                  {discountPct > 0 && (
+                    <span className='product-media__pct-badge'>-{discountPct}%</span>
+                  )}
+                  <span className='product-media__featured-badge'>Nổi bật</span>
                 </div>
-              )}
-              <div className='product-media__shipping'>
-                <p>Giao nhanh 48h nội thành</p>
-                <span>Đổi trả 7 ngày · Bảo hành tại nhà</span>
-              </div>
-            </div>
 
-            {gallery.length > 1 && (
-              <div className='product-media__thumbs'>
-                {gallery.map(img => (
-                  <button
-                    key={img}
-                    type='button'
-                    className={selectedImage === img ? 'product-media__thumb active' : 'product-media__thumb'}
-                    onClick={() => setSelectedImage(img)}
-                  >
-                    <img src={img} alt='Ảnh phụ của sản phẩm' />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className='product-purchase'>
-            <p className='product-pill'>{product.categoryName} · Woodify</p>
-            <h1>{product.name}</h1>
-            <p className='product-subtitle'>{product.description}</p>
-
-            <div className='product-rating'>
-              <div className='product-rating__stars'>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} className={i < 4 ? 'filled' : ''}>&#9733;</span>
-                ))}
-              </div>
-              <strong>4.0/5</strong>
-              <span>(0 đánh giá)</span>
-            </div>
-
-            {selectedVersion && (
-              <div className='product-price'>
-                <strong>{price.toLocaleString('vi-VN')} VND</strong>
-                <del>{originalPrice.toLocaleString('vi-VN')} VND</del>
-                <span className='product-price__label'>Tiết kiệm {saving.toLocaleString('vi-VN')} VND</span>
-              </div>
-            )}
-
-            <div className='product-vouchers'>
-              {vouchers.map(v => (
-                <button key={v} type='button' className='product-voucher'>{v}</button>
-              ))}
-            </div>
-
-            <div className='product-meta'>
-              <div>
-                <p>Vận chuyển</p>
-                <strong>Freeship toàn quốc</strong>
-              </div>
-              <div>
-                <p>Bảo hành</p>
-                <strong>24 tháng tận nơi</strong>
-              </div>
-              <div>
-                <p>Tư vấn</p>
-                <strong>Stylist 1:1 miễn phí</strong>
-              </div>
-            </div>
-
-            {activeVersions.length > 0 && (
-              <div className='product-options'>
-                <div>
-                  <p className='product-label'>Phiên bản</p>
-                  <div className='product-options__colors'>
-                    {activeVersions.map(v => (
+                {gallery.length > 0 && (
+                  <div className='product-media__thumbs product-media__thumbs--figma'>
+                    {gallery.map(img => (
                       <button
-                        key={v.versionId}
+                        key={img}
                         type='button'
-                        className={selectedVersionId === v.versionId ? 'active' : ''}
-                        onClick={() => setSelectedVersionId(v.versionId)}
+                        className={selectedImage === img ? 'product-media__thumb product-media__thumb--figma active' : 'product-media__thumb product-media__thumb--figma'}
+                        onClick={() => setSelectedImage(img)}
                       >
-                        {v.versionName}
+                        <img src={img} alt='' />
                       </button>
                     ))}
                   </div>
+                )}
+
+                <div className='product-media__share-row'>
+                  <button type='button' className='product-media__soft-btn'>Yêu thích</button>
+                  <button type='button' className='product-media__soft-btn'>Chia sẻ</button>
+                </div>
+              </div>
+
+              <div className='product-purchase product-purchase--figma'>
+                <p className='product-pill product-pill--figma'>{product.categoryName} · WOODIFY</p>
+                <h1>{product.name}</h1>
+                <p className='product-subtitle product-subtitle--figma'>{descriptionText}</p>
+
+                <div className='product-rating product-rating--figma'>
+                  {renderStars(DISPLAY_RATING)}
+                  <strong>{DISPLAY_RATING}/5</strong>
+                  <span className='product-rating__paren'>({DISPLAY_REVIEW_COUNT} đánh giá)</span>
+                  <span className='product-rating__divider' aria-hidden />
+                  <span className='product-rating__sold'>Đã bán <strong>{DISPLAY_SOLD}</strong></span>
                 </div>
 
-                <div className='product-quantity'>
-                  <p className='product-label'>Số lượng</p>
-                  <div className='product-quantity__control'>
-                    <button type='button' onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</button>
-                    <span>{quantity}</span>
-                    <button type='button' onClick={() => setQuantity(prev => Math.min(selectedVersion?.stockQuantity ?? 10, prev + 1))}>+</button>
+                {selectedVersion && (
+                  <div className='product-price-block-figma'>
+                    <div className='product-price-block-figma__row'>
+                      <strong className='product-price-block-figma__now'>{price.toLocaleString('vi-VN')}₫</strong>
+                      <del className='product-price-block-figma__was'>{originalPrice.toLocaleString('vi-VN')}₫</del>
+                    </div>
+                    <span className='product-price-block-figma__save'>Tiết kiệm {saving.toLocaleString('vi-VN')}₫</span>
                   </div>
+                )}
+
+                <div className='product-vouchers-figma'>
+                  <span className='product-voucher-figma product-voucher-figma--brown'>{vouchers[0]}</span>
+                  <div className='product-vouchers-figma__row'>
+                    <span className='product-voucher-figma product-voucher-figma--blue'>{vouchers[1]}</span>
+                    <span className='product-voucher-figma product-voucher-figma--green'>{vouchers[2]}</span>
+                  </div>
+                </div>
+
+                <div className='product-meta-figma'>
+                  <div className='product-meta-figma__pair'>
+                    <div className='product-meta-figma__cell'>
+                      <p className='product-meta-figma__title'>Vận chuyển</p>
+                      <p className='product-meta-figma__desc'>Freeship toàn quốc</p>
+                    </div>
+                    <div className='product-meta-figma__cell'>
+                      <p className='product-meta-figma__title'>Bảo hành</p>
+                      <p className='product-meta-figma__desc'>Bảo hành 24 tháng tận nơi</p>
+                    </div>
+                  </div>
+                  <div className='product-meta-figma__cell product-meta-figma__cell--full'>
+                    <p className='product-meta-figma__title'>Chính sách đổi trả</p>
+                    <p className='product-meta-figma__desc'>Đổi trả miễn phí trong 7 ngày</p>
+                  </div>
+                </div>
+
+                {activeVersions.length > 0 && (
+                  <div className='product-options product-options--figma'>
+                    <div>
+                      <p className='product-label product-label--figma'>Phiên bản</p>
+                      <div className='product-options__chips'>
+                        {activeVersions.map(v => (
+                          <button
+                            key={v.versionId}
+                            type='button'
+                            className={selectedVersionId === v.versionId ? 'active' : ''}
+                            onClick={() => setSelectedVersionId(v.versionId)}
+                          >
+                            {v.versionName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className='product-quantity product-quantity--figma'>
+                      <p className='product-label product-label--figma'>Số lượng</p>
+                      <div className='product-quantity__figma-row'>
+                        <div className='product-quantity__control product-quantity__control--figma'>
+                          <button type='button' aria-label='Giảm' onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>−</button>
+                          <span>{quantity}</span>
+                          <button type='button' aria-label='Tăng' onClick={() => setQuantity(prev => Math.min(selectedVersion?.stockQuantity ?? 10, prev + 1))}>+</button>
+                        </div>
+                        <span className='product-quantity__stock'>{selectedVersion?.stockQuantity ?? 0} sản phẩm có sẵn</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className='product-cta product-cta--figma'>
+                  <button type='button' className='product-cta__secondary product-cta__secondary--figma' onClick={handleAddToCart}>
+                    Thêm vào giỏ
+                  </button>
+                  <button type='button' className='product-cta__primary product-cta__primary--figma' onClick={handleAddToCart}>
+                    Mua ngay
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <div className='product-figma-tabs-card'>
+              <div className='product-figma-tabs' role='tablist' aria-label='Chi tiết sản phẩm'>
+                <button
+                  type='button'
+                  role='tab'
+                  aria-selected={detailTab === 'info'}
+                  className={detailTab === 'info' ? 'active' : ''}
+                  onClick={() => setDetailTab('info')}
+                >
+                  Thông tin chi tiết
+                </button>
+                <button
+                  type='button'
+                  role='tab'
+                  aria-selected={detailTab === 'reviews'}
+                  className={detailTab === 'reviews' ? 'active' : ''}
+                  onClick={() => setDetailTab('reviews')}
+                >
+                  Đánh giá sản phẩm
+                </button>
+                <button
+                  type='button'
+                  role='tab'
+                  aria-selected={detailTab === 'policy'}
+                  className={detailTab === 'policy' ? 'active' : ''}
+                  onClick={() => setDetailTab('policy')}
+                >
+                  Chính sách
+                </button>
+              </div>
+
+              {detailTab === 'info' && (
+                <div className='product-figma-tab-panel' role='tabpanel'>
+                  <h3 className='product-figma-panel-title'>Thông tin chi tiết</h3>
+                  <p className='product-figma-panel-lead'>{descriptionText}</p>
+                  {specificationList.length > 0 && (
+                    <dl className='product-specs product-specs--figma-grid'>
+                      {specificationList.map(spec => (
+                        <React.Fragment key={spec.label}>
+                          <dt>{spec.label}</dt>
+                          <dd>{spec.value}</dd>
+                        </React.Fragment>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+              )}
+
+              {detailTab === 'reviews' && (
+                <div className='product-figma-tab-panel product-figma-tab-panel--reviews' role='tabpanel'>
+                  <div className='product-reviews__summary product-reviews__summary--figma'>
+                    <div>
+                      <strong>{DISPLAY_RATING}</strong>
+                      <div className='product-rating__stars product-rating__stars--large'>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <span key={i} className={i < Math.floor(DISPLAY_RATING) ? 'filled' : ''}>&#9733;</span>
+                        ))}
+                      </div>
+                      <span>{DISPLAY_REVIEW_COUNT} đánh giá</span>
+                    </div>
+                    <div className='product-reviews__filters'>
+                      {reviewFilters.map(f => (
+                        <button
+                          key={f}
+                          type='button'
+                          className={activeReviewFilter === f ? 'active' : ''}
+                          onClick={() => setActiveReviewFilter(f)}
+                        >
+                          {f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className='product-reviews__list'>
+                    {filteredReviews.map(review => (
+                      <article key={review.id} className='product-review'>
+                        <header>
+                          <strong>{review.author}</strong>
+                          <span>{review.date}</span>
+                        </header>
+                        <div className='product-rating__stars product-rating__stars--compact'>
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i} className={i < review.rating ? 'filled' : ''}>&#9733;</span>
+                          ))}
+                        </div>
+                        <p>{review.content}</p>
+                        {review.media && (
+                          <div className='product-review__media'>
+                            <img src={review.media} alt={`Khách hàng ${review.author}`} />
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {detailTab === 'policy' && (
+                <div className='product-figma-tab-panel' role='tabpanel'>
+                  <h3 className='product-figma-panel-title'>Chính sách</h3>
+                  <p className='product-figma-panel-lead'>
+Đổi trả miễn phí trong 7 ngày kể từ khi nhận hàng. Bảo hành 24 tháng tận nơi theo điều kiện nhà sản xuất.
+                    {' '}
+                    Vận chuyển Freeship toàn quốc áp dụng theo chương trình từng thời điểm.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <aside className='product-layout-figma__aside'>
+            {shop && (
+              <div className='product-shop-card-figma'>
+                <div className='product-shop-card-figma__identity'>
+                  <div className='product-shop__avatar product-shop__avatar--figma'>
+                    {shop.logoUrl
+                      ? <img src={shop.logoUrl} alt={shop.name} />
+                      : <span>{(shop.name ?? 'S').charAt(0).toUpperCase()}</span>}
+                  </div>
+                  <div className='product-shop-card-figma__info'>
+                    <h3 className='product-shop__name'>{shop.name}</h3>
+                    <div className='product-shop-card-figma__rating'>
+                      {renderStars(shop.rating, 'sm')}
+                      <span>{shop.rating.toFixed(1)}</span>
+                    </div>
+                    <div className='product-shop-card-figma__stats'>
+                      <span><strong>{shop.totalProducts}</strong> Sản phẩm</span>
+                      <span><strong>{shop.totalOrders}</strong> Đơn hàng</span>
+                      <span><strong>98%</strong> Phản hồi</span>
+                      <span><strong>{shopJoinYear}</strong> Tham gia</span>
+                    </div>
+                  </div>
+                </div>
+                <div className='product-shop-card-figma__actions'>
+                  <Link to={`/shop/${shop.shopId}`} className='product-shop__btn product-shop__btn--outline product-shop__btn--figma'>
+                    Xem Shop
+                  </Link>
+                  <button type='button' className='product-shop__btn product-shop__btn--primary product-shop__btn--figma'>
+                    Chat ngay
+                  </button>
                 </div>
               </div>
             )}
 
-            <div className='product-cta'>
-              <button type='button' className='product-cta__secondary' onClick={handleAddToCart}>Thêm vào giỏ</button>
-              <button type='button' className='product-cta__primary' onClick={handleAddToCart}>Mua ngay</button>
-            </div>
-          </div>
-        </section>
-
-        {shop && (
-          <section className='product-shop'>
-            <div className='product-shop__inner'>
-              <div className='product-shop__identity'>
-                <div className='product-shop__avatar'>
-                  {shop.logoUrl
-                    ? <img src={shop.logoUrl} alt={shop.name} />
-                    : <span>{(shop?.name ?? 'S').charAt(0).toUpperCase()}</span>
-                  }
-                </div>
-                <div className='product-shop__info'>
-                  <h3 className='product-shop__name'>{shop.name}</h3>
-                  <div className='product-shop__rating'>
-                    <div className='product-rating__stars product-rating__stars--compact'>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <span key={i} className={i < Math.round(shop.rating) ? 'filled' : ''}>&#9733;</span>
-                      ))}
+            <div className='product-related-figma'>
+              <h3 className='product-related-figma__title'>Sản phẩm liên quan</h3>
+              <ul className='product-related-figma__list'>
+                {RELATED_ITEMS.map(item => (
+                  <li key={item.key} className='product-related-figma__item'>
+                    <div className='product-related-figma__thumb'>
+                      <img src={item.image} alt='' />
                     </div>
-                    <span>{shop.rating.toFixed(1)} ({shop.reviewCount} đánh giá)</span>
-                  </div>
-                  <div className='product-shop__stats'>
-                    <span><strong>{shop.totalProducts}</strong> Sản phẩm</span>
-                    <span className='product-shop__stats-divider' />
-                    <span><strong>{shop.totalOrders}</strong> Đơn hàng</span>
-                  </div>
-                </div>
-              </div>
-              <div className='product-shop__actions'>
-                <Link to={`/shop/${shop.shopId}`} className='product-shop__btn product-shop__btn--outline'>
-                  Xem Shop
-                </Link>
-                <button type='button' className='product-shop__btn product-shop__btn--primary'>
-                  Chat ngay
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {specificationList.length > 0 && (
-          <section className='product-details'>
-            <div className='product-section-heading'>
-              <h2>Thông tin chi tiết</h2>
-              <p>Thông số được Woodify xác minh cùng xưởng sản xuất, giúp bạn yên tâm khi mua sắm.</p>
-            </div>
-            <dl className='product-specs'>
-              {specificationList.map(spec => (
-                <React.Fragment key={spec.label}>
-                  <dt>{spec.label}</dt>
-                  <dd>{spec.value}</dd>
-                </React.Fragment>
-              ))}
-            </dl>
-          </section>
-        )}
-
-        <section className='product-reviews'>
-          <div className='product-section-heading'>
-            <h2>Đánh giá sản phẩm</h2>
-            <p>Chưa có đánh giá nào cho sản phẩm này.</p>
-          </div>
-
-          <div className='product-reviews__summary'>
-            <div>
-              <strong>4.0</strong>
-              <div className='product-rating__stars product-rating__stars--large'>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} className={i < 4 ? 'filled' : ''}>&#9733;</span>
+                    <div className='product-related-figma__body'>
+                      <p className='product-related-figma__name'>{item.title}</p>
+                      <p className='product-related-figma__price'>{item.price.toLocaleString('vi-VN')}₫</p>
+                      <p className='product-related-figma__meta'>
+                        <span>★ {item.rating}</span>
+                        <span>•</span>
+                        <span>Đã bán {item.sold}</span>
+                      </p>
+                    </div>
+                  </li>
                 ))}
-              </div>
-              <span>0 đánh giá</span>
+              </ul>
             </div>
-            <div className='product-reviews__filters'>
-              {reviewFilters.map(f => (
-                <button
-                  key={f}
-                  type='button'
-                  className={activeReviewFilter === f ? 'active' : ''}
-                  onClick={() => setActiveReviewFilter(f)}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
+          </aside>
+        </div>
 
-          <div className='product-reviews__list'>
-            {filteredReviews.map(review => (
-              <article key={review.id} className='product-review'>
-                <header>
-                  <strong>{review.author}</strong>
-                  <span>{review.date}</span>
-                </header>
-                <div className='product-rating__stars product-rating__stars--compact'>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i} className={i < review.rating ? 'filled' : ''}>&#9733;</span>
-                  ))}
-                </div>
-                <p>{review.content}</p>
-                {review.media && (
-                  <div className='product-review__media'>
-                    <img src={review.media} alt={`Khách hàng ${review.author}`} />
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
 
         {suggestionSections.map(section => (
           section.items.length > 0 && (
@@ -385,7 +512,6 @@ export default function Product() {
             </section>
           )
         ))}
-      </main>
     </div>
   )
 }
