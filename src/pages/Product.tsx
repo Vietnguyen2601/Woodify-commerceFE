@@ -79,11 +79,13 @@ export default function Product() {
     }
   }, [])
 
-  const { data: product, isLoading, isError } = useQuery({
+  const { data: product, isPending: productLoading, isError } = useQuery({
     queryKey: ['product-detail', id],
     queryFn: () => productMasterService.getProductDetail(id!),
     enabled: !!id,
   })
+
+  const isLoading = productLoading
 
   const { data: shop } = useQuery({
     queryKey: ['shop', product?.shopId],
@@ -92,7 +94,7 @@ export default function Product() {
   })
 
   const activeVersions = React.useMemo(
-    () => product?.versions.filter(v => v.isActive) ?? [],
+    () => (product?.versions ?? []).filter(v => v.isActive),
     [product]
   )
 
@@ -110,8 +112,8 @@ export default function Product() {
   const selectedVersion = activeVersions.find(v => v.versionId === selectedVersionId) ?? activeVersions[0]
 
   const gallery = React.useMemo(() => {
-    const productImgs = product?.images.map(i => i.originalUrl) ?? []
-    const versionImgs = selectedVersion?.images.map(i => i.originalUrl) ?? []
+    const productImgs = (product?.images ?? []).map(i => i.originalUrl)
+    const versionImgs = (selectedVersion?.images ?? []).map(i => i.originalUrl)
     const all = [...new Set([...productImgs, ...versionImgs])]
     return all
   }, [product, selectedVersion])

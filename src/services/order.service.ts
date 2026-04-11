@@ -1,6 +1,6 @@
 import { api } from './api/client'
 import { API_ENDPOINTS } from '@/constants'
-import type { Order, OrderFilters, PaginatedResponse } from '@/types'
+import type { Order, OrderFilters, PaginatedResponse, SellerOrder, SellerOrderStatus } from '@/types'
 
 export interface CreateOrderData {
   items: Array<{
@@ -62,5 +62,20 @@ export const orderService = {
     note?: string
   ): Promise<Order> => {
     return api.patch<Order>(API_ENDPOINTS.ORDERS.STATUS(id), { status, note })
+  },
+
+  /**
+   * Shop orders for seller — GET /order/Orders/Shop/{shopId}
+   */
+  getShopOrders: async (shopId: string): Promise<SellerOrder[]> => {
+    const data = await api.get<SellerOrder[] | null>(API_ENDPOINTS.ORDERS.SHOP_ORDERS(shopId))
+    return Array.isArray(data) ? data : []
+  },
+
+  /**
+   * Cập nhật trạng thái đơn — POST /order/Orders/UpdateStatus
+   */
+  updateShopOrderStatus: async (orderId: string, status: SellerOrderStatus): Promise<void> => {
+    await api.post<unknown>(API_ENDPOINTS.ORDERS.UPDATE_STATUS, { orderId, status })
   },
 }

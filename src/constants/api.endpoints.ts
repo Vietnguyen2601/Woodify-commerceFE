@@ -62,6 +62,10 @@ export const API_ENDPOINTS = {
     CREATE: '/order/Orders/create',
     CANCEL: (id: string) => `/orders/${id}/cancel`,
     STATUS: (id: string) => `/orders/${id}/status`,
+    /** Order service — danh sách đơn theo shop (seller) */
+    SHOP_ORDERS: (shopId: string) =>
+      `/order/Orders/Shop/${encodeURIComponent(shopId)}`,
+    UPDATE_STATUS: '/order/Orders/UpdateStatus',
   },
 
   // ── Payment Service (5015) ────────────────────────────────────────────────
@@ -221,6 +225,7 @@ export const ADMIN_API = {
       '/Order/Admin/GetAllOrders',
     ],
     BY_SHOP: (shopId: string) => [
+      `/order/Orders/Shop/${encodeURIComponent(shopId)}`,
       `/orders/Shop/${encodeURIComponent(shopId)}`,
       `/Orders/Shop/${encodeURIComponent(shopId)}`,
       `/order/GetOrdersByShopId/${encodeURIComponent(shopId)}`,
