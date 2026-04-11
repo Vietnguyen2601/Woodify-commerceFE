@@ -51,3 +51,19 @@ export interface SellerOrder {
   updatedAt: string | null
   orderItems: SellerOrderItem[]
 }
+
+/** GET /order/Orders/Account — buyer order list (same items shape, + paymentStatus) */
+export interface BuyerOrder {
+  orderId: string
+  accountId: string
+  shopId: string
+  subtotalCents: number
+  totalAmountCents: number
+  voucherId: string | null
+  status: SellerOrderStatus | string
+  deliveryAddress: string
+  paymentStatus?: string | null
+  createdAt: string
+  updatedAt: string | null
+  orderItems: SellerOrderItem[]
+}

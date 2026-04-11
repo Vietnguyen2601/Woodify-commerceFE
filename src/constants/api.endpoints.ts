@@ -57,14 +57,20 @@ export const API_ENDPOINTS = {
   // ── Placeholder endpoints — NOT yet confirmed by backend ─────────────────
 
   ORDERS: {
+    /** Legacy / mock — không map sang Order microservice */
     LIST: '/orders',
     DETAIL: (id: string) => `/orders/${id}`,
     CREATE: '/order/Orders/create',
     CANCEL: (id: string) => `/orders/${id}/cancel`,
+    /** Placeholder — cập nhật trạng thái dùng UPDATE_STATUS (PUT) */
     STATUS: (id: string) => `/orders/${id}/status`,
     /** Order service — danh sách đơn theo shop (seller) */
     SHOP_ORDERS: (shopId: string) =>
       `/order/Orders/Shop/${encodeURIComponent(shopId)}`,
+    /** Order service — danh sách đơn theo tài khoản (buyer) */
+    ACCOUNT_ORDERS: (accountId: string) =>
+      `/order/Orders/Account?accountId=${encodeURIComponent(accountId)}`,
+    /** Body: { orderId, status } — PUT */
     UPDATE_STATUS: '/order/Orders/UpdateStatus',
   },
 

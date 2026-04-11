@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ROUTES } from '@/constants/routes'
 import { api } from '../services/api/client'
-import { authService, walletService, queryKeys } from '@/services'
+import { authService, orderService, walletService, queryKeys } from '@/services'
 import type { WalletTransactionItem } from '@/services/wallet.service'
+import { BuyerOrdersPanel, type CustomerOrderBucket } from './profile/BuyerOrdersPanel'
 import { APP_CONFIG } from '../constants/app.config'
 import { CreditCard, Filter, Landmark, Wallet } from 'lucide-react'
 
@@ -21,12 +22,10 @@ import MoneyOutIcon from '@/assets/icons/essential/commerce/money-out.svg'
 import RefreshIcon from '@/assets/icons/essential/commerce/refresh.svg'
 import NotificationBellIcon from '@/assets/icons/essential/interface/notification-bell.svg'
 import GlobeIcon from '@/assets/icons/essential/interface/globe.svg'
-import TruckIcon from '@/assets/icons/essential/commerce/truck.svg'
 import ChevronRightIcon from '@/assets/icons/essential/interface/chevron-right.svg'
 
 type TabType = 'profile' | 'orders' | 'wallet' | 'settings'
 type WalletTabType = 'history' | 'deposit'
-type OrderStatus = 'processing' | 'shipping' | 'completed' | 'cancelled'
 
 interface Transaction {
   id: string
@@ -37,21 +36,6 @@ interface Transaction {
   status: 'success' | 'pending' | 'failed'
   amount: number
   balance: number
-}
-
-interface Order {
-  id: string
-  orderNumber: string
-  date: string
-  status: OrderStatus
-  items: {
-    name: string
-    quantity: number
-    price: number
-    image?: string
-  }[]
-  total: number
-  shippingAddress: string
 }
 
 const DEPOSIT_METHOD_TO_API = {
@@ -144,6 +128,14 @@ export default function Profile() {
     gender: '',
     address: ''
   })
+  const [orderBucket, setOrderBucket] = useState<CustomerOrderBucket>('all')
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
+  const [settings, setSettings] = useState({
+    emailNotifications: true,
+    orderNotifications: true,
+    promotionNotifications: false,
+    newsletter: true,
+  })
 
   // Deep link: /profile?tab=wallet (e.g. PayOS cancel callback redirect)
   useEffect(() => {
@@ -199,6 +191,16 @@ export default function Profile() {
     if (!items?.length) return []
     return items.map((item, i) => mapWalletItemToTransaction(item, i, walletBalance))
   }, [txPageData, walletBalance])
+
+  const accountIdForOrders =
+    (authenticatedUser as { accountId?: string; id?: string } | undefined)?.accountId ||
+    (authenticatedUser as { accountId?: string; id?: string } | undefined)?.id
+
+  const { data: rawBuyerOrders = [], isLoading: buyerOrdersLoading, isError: buyerOrdersError } = useQuery({
+    queryKey: [...queryKeys.orders.all(), 'account', accountIdForOrders],
+    queryFn: () => orderService.getAccountOrders(accountIdForOrders!),
+    enabled: Boolean(accountIdForOrders && activeTab === 'orders'),
+  })
 
   // Fetch user account data on component mount
   useEffect(() => {
@@ -286,50 +288,6 @@ export default function Profile() {
     { id: 'settings' as TabType, label: 'Cài đặt', icon: SettingIcon }
   ]
 
-  const orders: Order[] = [
-    {
-      id: '1',
-      orderNumber: 'DH2024001',
-      date: '14/02/2026',
-      status: 'shipping',
-      items: [
-        { name: 'Ghế Sofa Cao Cấp', quantity: 1, price: 12500000 },
-        { name: 'Bàn Trà Gỗ Sồi', quantity: 1, price: 3500000 }
-      ],
-      total: 16000000,
-      shippingAddress: 'G30 Lê Thị Riêng, Phường Thới An, Quận 12, TP.HCM'
-    },
-    {
-      id: '2',
-      orderNumber: 'DH2024002',
-      date: '10/02/2026',
-      status: 'completed',
-      items: [
-        { name: 'Tủ Gỗ Trang Trí', quantity: 2, price: 4500000 }
-      ],
-      total: 9000000,
-      shippingAddress: 'G30 Lê Thị Riêng, Phường Thới An, Quận 12, TP.HCM'
-    },
-    {
-      id: '3',
-      orderNumber: 'DH2024003',
-      date: '05/02/2026',
-      status: 'processing',
-      items: [
-        { name: 'Giường Ngủ Gỗ Tự Nhiên', quantity: 1, price: 18500000 }
-      ],
-      total: 18500000,
-      shippingAddress: 'G30 Lê Thị Riêng, Phường Thới An, Quận 12, TP.HCM'
-    }
-  ]
-
-  const [settings, setSettings] = useState({
-    emailNotifications: true,
-    orderNotifications: true,
-    promotionNotifications: false,
-    newsletter: true
-  })
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -390,36 +348,6 @@ export default function Profile() {
         return 'bg-blue-500'
       default:
         return 'bg-gray-500'
-    }
-  }
-
-  const getOrderStatusLabel = (status: OrderStatus) => {
-    switch (status) {
-      case 'processing':
-        return 'Đang xử lý'
-      case 'shipping':
-        return 'Đang giao'
-      case 'completed':
-        return 'Hoàn thành'
-      case 'cancelled':
-        return 'Đã hủy'
-      default:
-        return 'Không xác định'
-    }
-  }
-
-  const getOrderStatusColor = (status: OrderStatus) => {
-    switch (status) {
-      case 'processing':
-        return { bg: 'bg-blue-100', text: 'text-blue-700' }
-      case 'shipping':
-        return { bg: 'bg-orange-100', text: 'text-orange-700' }
-      case 'completed':
-        return { bg: 'bg-green-100', text: 'text-green-700' }
-      case 'cancelled':
-        return { bg: 'bg-red-100', text: 'text-red-700' }
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-700' }
     }
   }
 
@@ -1045,97 +973,17 @@ export default function Profile() {
             )}
 
             {activeTab === 'orders' && (
-              <div className='space-y-8'>
-                {/* Orders List */}
-                <div className='space-y-4'>
-                  {orders.map(order => {
-                    const statusColor = getOrderStatusColor(order.status)
-                    return (
-                      <div key={order.id} className='bg-white rounded-[20px] shadow-md p-6 hover:shadow-lg transition-shadow'>
-                        {/* Order Header */}
-                        <div className='flex justify-between items-start mb-4 pb-4 border-b border-gray-200'>
-                          <div>
-                            <div className='flex items-center gap-3 mb-2'>
-                              <h3 className='text-lg font-bold' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                                #{order.orderNumber}
-                              </h3>
-                              <span className={`px-3 py-1 ${statusColor.bg} ${statusColor.text} rounded-full text-xs font-semibold`} style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                {getOrderStatusLabel(order.status)}
-                              </span>
-                            </div>
-                            <p className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                              Ngày đặt: {order.date}
-                            </p>
-                          </div>
-                          <div className='text-right'>
-                            <p className='text-sm text-gray-500 mb-1' style={{ fontFamily: 'Arimo, sans-serif' }}>Tổng tiền</p>
-                            <p className='text-xl font-bold' style={{ fontFamily: 'Poppins, sans-serif', color: '#BE9C73' }}>
-                              {formatCurrency(order.total)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Order Items */}
-                        <div className='space-y-3 mb-4'>
-                          {order.items.map((item, index) => (
-                            <div key={index} className='flex justify-between items-center py-3 px-4 bg-gray-50 rounded-[10px]'>
-                              <div>
-                                <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                  {item.name}
-                                </p>
-                                <p className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                                  Số lượng: {item.quantity}
-                                </p>
-                              </div>
-                              <p className='font-bold text-gray-700' style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                {formatCurrency(item.price)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Order Footer */}
-                        <div className='flex justify-between items-center pt-4 border-t border-gray-200'>
-                          <div>
-                            <p className='text-sm text-gray-600 mb-1' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                              <img src={TruckIcon} alt='Truck' className='w-4 h-4 inline mr-1' /> Địa chỉ giao hàng:
-                            </p>
-                            <p className='text-sm font-medium text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                              {order.shippingAddress}
-                            </p>
-                          </div>
-                          <div className='flex gap-2'>
-                            <button className='px-4 py-2 border-2 rounded-[10px] font-semibold hover:bg-gray-50 transition-colors text-sm' style={{ fontFamily: 'Arimo, sans-serif', borderColor: '#D4B896', color: '#6C5B50' }}>
-                              Chi tiết
-                            </button>
-                            {order.status === 'completed' && (
-                              <button className='px-4 py-2 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity text-sm' style={{ fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' }}>
-                                Mua lại
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Empty State (if needed) */}
-                {orders.length === 0 && (
-                  <div className='bg-white rounded-[20px] shadow-md p-16 text-center'>
-                    <img src={PackageIcon} alt='Package' className='w-24 h-24 mx-auto mb-4 opacity-30' />
-                    <h3 className='text-xl font-bold text-gray-800 mb-2' style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      Chưa có đơn hàng nào
-                    </h3>
-                    <p className='text-gray-600 mb-6' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                      Bạn chưa có đơn hàng nào. Hãy khám phá sản phẩm của chúng tôi!
-                    </p>
-                    <button className='px-6 py-3 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity' style={{ fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' }}>
-                      Mua sắm ngay
-                    </button>
-                  </div>
-                )}
-              </div>
+              <BuyerOrdersPanel
+                orders={rawBuyerOrders}
+                isLoading={buyerOrdersLoading}
+                isError={buyerOrdersError}
+                orderBucket={orderBucket}
+                onBucketChange={setOrderBucket}
+                expandedOrderId={expandedOrderId}
+                onToggleExpand={(orderId) =>
+                  setExpandedOrderId((cur) => (cur === orderId ? null : orderId))
+                }
+              />
             )}
 
             {activeTab === 'settings' && (
