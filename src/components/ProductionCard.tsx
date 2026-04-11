@@ -4,7 +4,7 @@ import { ROUTES } from '@/constants'
 import AssetIcon from '@/components/AssetIcon'
 import pointAddressIcon from '@/assets/icons/essential/commerce/point-address.svg'
 import shopIcon from '@/assets/icons/essential/commerce/shop.svg'
-import StarIcon from '@/assets/icons/essential/star.svg'
+import StarIcon from '@/assets/icons/essential/interface/star.svg'
 
 export interface ProductionCardProduct {
   id: string
