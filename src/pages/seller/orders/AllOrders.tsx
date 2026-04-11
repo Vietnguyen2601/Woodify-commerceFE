@@ -7,7 +7,7 @@ import type { SellerOrder, SellerOrderStatus } from '@/types'
 function providerServiceCodeLabel(code: string | null | undefined): string {
   const u = (code ?? '').trim().toUpperCase()
   if (u === 'ECO') return 'Ti\u1ebft ki\u1ec7m (ECO)'
-  if (u === 'STF') return 'Ti\u00eau chu\u1ea9n (STF)'
+  if (u === 'STF' || u === 'STD') return 'Ti\u00eau chu\u1ea9n (STD)'
   if (u === 'EXP') return 'Nhanh (EXP)'
   return u || '\u2014'
 }
@@ -42,7 +42,7 @@ const FILTER_TABS: Array<{ value: 'ALL' | SellerOrderStatus; label: string }> = 
 const TERMINAL = new Set(['COMPLETED', 'CANCELLED', 'REFUNDED'])
 
 function formatVnd(amount: number): string {
-  return `${Number(amount || 0).toLocaleString('vi-VN')}\u00a0\u20ab`
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(amount) || 0)
 }
 
 function formatDateTime(iso: string): string {
@@ -361,7 +361,7 @@ function OrderCard({
           </span>
         </div>
         <div className='text-sm font-semibold text-stone-900'>
-          {formatVnd(order.totalAmountCents)}
+          {formatVnd(order.totalAmountVnd)}
         </div>
       </div>
 
@@ -501,9 +501,9 @@ function OrderDetailDrawer({
                   <p className='mt-1 text-xs text-stone-500'>SKU: {it.sellerSku}</p>
                   <div className='mt-2 flex flex-wrap justify-between gap-2 text-xs'>
                     <span className='text-stone-600'>
-                      SL: <strong>{it.quantity}</strong> x {formatVnd(it.unitPriceCents)}
+                      SL: <strong>{it.quantity}</strong> x {formatVnd(it.unitPriceVnd)}
                     </span>
-                    <span className='font-semibold text-stone-900'>{formatVnd(it.lineTotalCents)}</span>
+                    <span className='font-semibold text-stone-900'>{formatVnd(it.lineTotalVnd)}</span>
                   </div>
                 </li>
               ))}
@@ -513,11 +513,11 @@ function OrderDetailDrawer({
           <section className='rounded-lg border border-yellow-800/15 bg-orange-50/40 px-3 py-3 text-sm'>
             <div className='flex justify-between py-1'>
               <span className='text-stone-600'>{'T\u1ea1m t\u00ednh'}</span>
-              <span className='font-medium'>{formatVnd(order.subtotalCents)}</span>
+              <span className='font-medium'>{formatVnd(order.subtotalVnd)}</span>
             </div>
             <div className='flex justify-between border-t border-yellow-800/10 py-2 font-semibold'>
               <span>{'T\u1ed5ng thanh to\u00e1n'}</span>
-              <span>{formatVnd(order.totalAmountCents)}</span>
+              <span>{formatVnd(order.totalAmountVnd)}</span>
             </div>
           </section>
         </div>

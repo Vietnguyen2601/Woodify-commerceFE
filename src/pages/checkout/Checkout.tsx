@@ -20,22 +20,42 @@ import {
   findVoucherByCode,
   formatCurrency
 } from '@/data/checkout-mock-data'
-import { paymentService, cartService } from '@/services'
+import { paymentService, cartService, orderService } from '@/services'
+import type { CheckoutShippingPreviewOption } from '@/services/order.service'
 import type { CartItemDto } from '@/types'
 import { readStoredUser } from '@/features/auth/utils/storage'
 import { resolveCartItemLineId } from '@/utils/cartItemId'
 
 const SHIPPING_OPTIONS = [
   { method: 'ECONOMY' as const, label: 'Ti\u1ebft ki\u1ec7m', code: 'ECO' as const },
-  { method: 'STANDARD' as const, label: 'Ti\u00eau chu\u1ea9n', code: 'STF' as const },
+  { method: 'STANDARD' as const, label: 'Ti\u00eau chu\u1ea9n', code: 'STD' as const },
   { method: 'EXPRESS' as const, label: 'Nhanh', code: 'EXP' as const },
 ] as const
 
 const DEFAULT_SHIPPING = SHIPPING_OPTIONS[1]
 
+function normalizeProviderServiceCode(c: string | null | undefined): string {
+  const u = (c ?? '').trim().toUpperCase()
+  if (u === 'STF') return 'STD'
+  return u
+}
+
+function previewFeeForCode(
+  options: CheckoutShippingPreviewOption[] | undefined,
+  selectedCode: string | undefined
+): number {
+  if (!options?.length) return 0
+  const want = normalizeProviderServiceCode(selectedCode)
+  const hit = options.find(
+    (o) => normalizeProviderServiceCode(o.providerServiceCode) === want
+  )
+  return hit?.totalAmountVnd ?? 0
+}
+
 function resolveCheckoutProviderServiceCode(cart: ShopCart): string {
   const raw = (cart.selected_shipping_code ?? '').trim().toUpperCase()
-  if (raw === 'ECO' || raw === 'STF' || raw === 'EXP') return raw
+  if (raw === 'STF') return 'STD'
+  if (raw === 'ECO' || raw === 'STD' || raw === 'EXP') return raw
   const fromMethod = SHIPPING_OPTIONS.find((o) => o.method === cart.selected_shipping_method)?.code
   return fromMethod ?? DEFAULT_SHIPPING.code
 }
@@ -223,6 +243,90 @@ export default function Checkout() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const navigate = useNavigate()
 
+  const [shippingPreviewByShop, setShippingPreviewByShop] = useState<
+    Record<string, { loading: boolean; error?: string; options: CheckoutShippingPreviewOption[] }>
+  >({})
+
+  const shippingPreviewFetchKey = useMemo(
+    () =>
+      JSON.stringify(
+        shopCarts.map((s) => ({
+          shopId: s.shop_id,
+          ids: [...s.items.map((i) => i.cart_item_id)].filter(Boolean).sort(),
+        }))
+      ),
+    [shopCarts]
+  )
+
+  useEffect(() => {
+    const accountId = readStoredUser()?.accountId?.trim()
+    if (!accountId || shopCarts.length === 0) {
+      setShippingPreviewByShop({})
+      return
+    }
+
+    let cancelled = false
+
+    void (async () => {
+      await Promise.all(
+        shopCarts.map(async (cart) => {
+          const shopId = cart.shop_id?.trim()
+          const cartItemIds = cart.items
+            .map((i) => i.cart_item_id)
+            .filter((id): id is string => Boolean(id && String(id).trim()))
+          if (!shopId || cartItemIds.length === 0) return
+
+          setShippingPreviewByShop((prev) => ({
+            ...prev,
+            [shopId]: {
+              loading: true,
+              options: prev[shopId]?.options ?? [],
+              error: undefined,
+            },
+          }))
+
+          try {
+            const data = await orderService.previewCheckoutShipping({
+              accountId,
+              shopId,
+              cartItemIds,
+            })
+            if (cancelled) return
+            const options = data.options ?? []
+            setShippingPreviewByShop((prev) => ({
+              ...prev,
+              [shopId]: { loading: false, options },
+            }))
+            setShopCarts((prev) =>
+              prev.map((s) => {
+                if (s.shop_id !== shopId) return s
+                const fee = previewFeeForCode(options, s.selected_shipping_code)
+                return { ...s, shipping_fee: fee, total: s.subtotal + fee }
+              })
+            )
+          } catch (e: unknown) {
+            if (cancelled) return
+            const msg =
+              e &&
+              typeof e === 'object' &&
+              'message' in e &&
+              typeof (e as { message: string }).message === 'string'
+                ? (e as { message: string }).message
+                : 'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c ph\u00ed v\u1eadn chuy\u1ec3n'
+            setShippingPreviewByShop((prev) => ({
+              ...prev,
+              [shopId]: { loading: false, options: [], error: msg },
+            }))
+          }
+        })
+      )
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [shippingPreviewFetchKey])
+
   useEffect(() => {
     document.body.classList.add('checkout-route-bg')
     return () => {
@@ -400,11 +504,10 @@ export default function Checkout() {
 
       const orderResults = await Promise.all(orderPromises)
 
-      // Extract order IDs and calculate total
-      const orderIds = orderResults.map(r => r.orderId)
-      const totalAmountCents = orderResults.reduce(
-        (sum, r) => sum + r.totalAmountCents,
-        0
+      const orderIds = orderResults.map((r) => r.orderId)
+      /** Same VND total as sidebar `summary.total_payment` (merged carts + voucher). */
+      const totalAmountVnd = Math.round(
+        calculateCheckoutSummary(merged, appliedVoucher).total_payment
       )
 
       // Step 2: Create payment
@@ -414,7 +517,7 @@ export default function Checkout() {
         orderIds: orderIds,
         paymentMethod: paymentMethod,
         accountId: currentUser.accountId!,
-        totalAmountCents: totalAmountCents * 10,  // Convert cents to smallest payment unit
+        totalAmountVnd,
         ...(paymentMethod === 'PAYOS' && {
           returnUrl: `${baseUrl}/payment/success`,
           cancelUrl: `${baseUrl}/payment/cancel`
@@ -435,7 +538,7 @@ export default function Checkout() {
         
         // Navigate to success page with order codes
         const orderCodes = orderResults.map(r => r.orderId).join(',')
-        navigate(`/payment/success?orderCode=${orderCodes}&amount=${totalAmountCents / 100}`)
+        navigate(`/payment/success?orderCode=${orderCodes}&amount=${totalAmountVnd}`)
       }
     } catch (error: unknown) {
       const err = error as {
@@ -616,13 +719,23 @@ export default function Checkout() {
 
                 <div className='border-b border-[#ece6dd]/90 px-4 py-3'>
                   <p className='mb-2 text-sm font-semibold text-[#3f2a1d]'>{'Ph\u01b0\u01a1ng th\u1ee9c v\u1eadn chuy\u1ec3n'}</p>
+                  {shippingPreviewByShop[shop.shop_id]?.error &&
+                    !shippingPreviewByShop[shop.shop_id]?.loading && (
+                      <p className='mb-2 text-xs text-red-600/85'>
+                        {shippingPreviewByShop[shop.shop_id]!.error}
+                      </p>
+                    )}
                   <div className='flex flex-col gap-2 sm:flex-row sm:flex-wrap'>
                     {SHIPPING_OPTIONS.map(({ method, label, code }) => {
                       const selected = shop.selected_shipping_method === method
+                      const preview = shippingPreviewByShop[shop.shop_id]
+                      const opt = preview?.options.find(
+                        (o) => normalizeProviderServiceCode(o.providerServiceCode) === normalizeProviderServiceCode(code)
+                      )
                       return (
                         <label
                           key={method}
-                          className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                             selected
                               ? 'border-[#6C5B50] bg-[#f8f3ec] text-[#3f2a1d]'
                               : 'border-[#ece6dd] bg-white text-black/70 hover:border-[#d4cab8]'
@@ -631,9 +744,10 @@ export default function Checkout() {
                           <input
                             type='radio'
                             name={`checkout_ship_${shop.shop_id || shopIndex}`}
-                            className='accent-[#6C5B50]'
+                            className='accent-[#6C5B50] mt-0.5'
                             checked={selected}
                             onChange={() => {
+                              const fee = previewFeeForCode(preview?.options, code)
                               setShopCarts((prev) =>
                                 prev.map((s) =>
                                   s.shop_id === shop.shop_id
@@ -641,15 +755,34 @@ export default function Checkout() {
                                         ...s,
                                         selected_shipping_method: method,
                                         selected_shipping_code: code,
+                                        shipping_fee: fee,
+                                        total: s.subtotal + fee,
                                       }
                                     : s
                                 )
                               )
                             }}
                           />
-                          <span>
-                            {label}{' '}
-                            <span className='text-xs text-black/45'>({code})</span>
+                          <span className='min-w-0 flex-1'>
+                            <span className='block'>
+                              {label}{' '}
+                              <span className='text-xs text-black/45'>({code})</span>
+                            </span>
+                            {preview?.loading ? (
+                              <span className='mt-0.5 block text-xs text-black/40'>
+                                {'\u0110ang t\u00ednh ph\u00ed\u2026'}
+                              </span>
+                            ) : preview?.error ? (
+                              <span className='mt-0.5 block text-xs text-black/35'>{'\u2014'}</span>
+                            ) : opt ? (
+                              <span className='mt-0.5 block text-xs font-medium text-[#6C5B50]'>
+                                {opt.isFreeShipping || opt.totalAmountVnd <= 0
+                                  ? 'Mi\u1ec5n ph\u00ed v\u1eadn chuy\u1ec3n'
+                                  : formatCurrency(opt.totalAmountVnd)}
+                              </span>
+                            ) : (
+                              <span className='mt-0.5 block text-xs text-black/35'>{'\u2014'}</span>
+                            )}
                           </span>
                         </label>
                       )
@@ -677,10 +810,18 @@ export default function Checkout() {
                   />
                 </div>
 
-                <div className='bg-[#f8f3ec]/50 px-4 py-3'>
-                  <div className='flex items-center justify-between'>
-                    <p className='text-sm text-black/55'>Tổng tiền ({shop.items.length} sản phẩm):</p>
-                    <p className='font-semibold text-[#6C5B50]'>{formatCurrency(shop.subtotal)}</p>
+                <div className='space-y-2 bg-[#f8f3ec]/50 px-4 py-3'>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-black/55'>Tiền hàng ({shop.items.length} sản phẩm):</span>
+                    <span className='font-semibold text-[#3f2a1d]'>{formatCurrency(shop.subtotal)}</span>
+                  </div>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-black/55'>Phí vận chuyển:</span>
+                    <span className='font-semibold text-[#3f2a1d]'>{formatCurrency(shop.shipping_fee)}</span>
+                  </div>
+                  <div className='flex items-center justify-between border-t border-[#ece6dd]/90 pt-2'>
+                    <span className='text-sm font-semibold text-[#3f2a1d]'>Tạm tính (shop):</span>
+                    <span className='font-semibold text-[#6C5B50]'>{formatCurrency(shop.total)}</span>
                   </div>
                 </div>
               </div>
@@ -782,6 +923,12 @@ export default function Checkout() {
                     <span className='text-black/55'>Tổng tiền hàng:</span>
                     <span className='font-semibold text-[#3f2a1d]'>
                       {formatCurrency(summary.merchandise_subtotal)}
+                    </span>
+                  </div>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-black/55'>Phí vận chuyển:</span>
+                    <span className='font-semibold text-[#3f2a1d]'>
+                      {formatCurrency(summary.total_shipping_fee)}
                     </span>
                   </div>
 

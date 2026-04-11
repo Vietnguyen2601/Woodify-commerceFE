@@ -57,7 +57,7 @@ function mapWalletItemToTransaction(
   fallbackBalance: number
 ): Transaction {
   const id = String(item.id ?? item.paymentId ?? item.transactionId ?? `tx-${index}`)
-  const amount = Number(item.amount ?? 0)
+  const amount = Number(item.amountVnd ?? item.amount ?? 0)
   const t = `${item.transactionType || item.type || ''}`.toLowerCase()
   let type: Transaction['type'] = 'income'
   if (t.includes('refund')) type = 'refund'
@@ -86,9 +86,10 @@ function mapWalletItemToTransaction(
     (typeof item.title === 'string' && item.title) ||
     (type === 'income' ? 'Nạp tiền' : type === 'expense' ? 'Chi tiêu' : 'Hoàn tiền / Giao dịch')
 
+  const balanceAfterRaw = item.balanceAfterVnd ?? item.balanceAfter
   const balanceAfter =
-    item.balanceAfter != null && !Number.isNaN(Number(item.balanceAfter))
-      ? Number(item.balanceAfter)
+    balanceAfterRaw != null && !Number.isNaN(Number(balanceAfterRaw))
+      ? Number(balanceAfterRaw)
       : fallbackBalance
 
   return {
@@ -168,8 +169,9 @@ export default function Profile() {
 
   // Update wallet balance when wallet data is fetched
   useEffect(() => {
-    if (wallet?.balance !== undefined) {
-      setWalletBalance(wallet.balance)
+    const bal = wallet?.balanceVnd ?? wallet?.balance
+    if (bal !== undefined && bal !== null) {
+      setWalletBalance(Number(bal))
       setWalletData(wallet)
     }
   }, [wallet])
