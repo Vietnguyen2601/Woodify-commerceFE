@@ -10,7 +10,7 @@ const root = createRoot(document.getElementById('root') as HTMLElement)
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <App />
       </BrowserRouter>
     </QueryClientProvider>

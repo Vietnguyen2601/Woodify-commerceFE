@@ -6,8 +6,7 @@ import Catalog from './pages/Catalog'
 import Product from './pages/Product'
 import ShopDetailPage from './pages/shop/ShopDetailPage'
 import Cart from './pages/Cart'
-import Checkout from './pages/Checkout'
-import CheckoutMultiShop from './pages/CheckoutMultiShop'
+import Checkout from './pages/checkout/Checkout'
 import { Payment } from './pages/Payment'
 import PaymentSuccess from './pages/payment/PaymentSuccess'
 import PaymentCancel from './pages/payment/PaymentCancel'
@@ -42,10 +41,14 @@ export default function App() {
   const showFooter = !isSellerRoute && !isAdminRoute
   const isShopPublicPage = location.pathname.startsWith('/shop/')
   const isProductDetailPage = location.pathname.startsWith('/product/')
+  const isCartPage = location.pathname === '/cart'
+  const isCheckoutPage = location.pathname === '/checkout'
   const isFullBleedRoute =
     location.pathname === '/' ||
     isShopPublicPage ||
     isProductDetailPage ||
+    isCartPage ||
+    isCheckoutPage ||
     isProfileRoute ||
     isSellerRoute ||
     isAdminRoute
@@ -76,7 +79,7 @@ export default function App() {
           <Route path='/shop/:shopSegment' element={<ShopDetailPage />} />
           <Route path='/cart' element={<Cart />} />
           <Route path='/checkout' element={<Checkout />} />
-          <Route path='/checkout-multishop' element={<CheckoutMultiShop />} />
+          <Route path='/checkout-multishop' element={<Navigate to={ROUTES.CHECKOUT} replace />} />
           <Route path='/payment' element={<Payment />} />
           <Route path='/payment/success' element={<PaymentSuccess />} />
           <Route path='/payment/cancel' element={<PaymentCancel />} />

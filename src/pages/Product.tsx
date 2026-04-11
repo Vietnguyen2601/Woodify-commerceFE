@@ -9,6 +9,7 @@ import type { CartItemDto } from '@/types'
 import AssetIcon from '@/components/AssetIcon'
 import chevronRightIcon from '@/assets/icons/essential/interface/chevron-right.svg'
 import { parseProductPathParam, resolveProductIdFromPublished } from '@/utils/productUrl'
+import { resolveCartItemLineId } from '@/utils/cartItemId'
 
 function writeCheckoutFromItems(accountId: string, selectedItems: CartItemDto[]) {
   const selectedTotal = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -162,6 +163,7 @@ export default function Product() {
 
   const [selectedVersionId, setSelectedVersionId] = React.useState<string | null>(null)
   const [quantity, setQuantity] = React.useState(1)
+  const [qtyDraft, setQtyDraft] = React.useState('1')
   const [activeReviewFilter, setActiveReviewFilter] = React.useState(reviewFilters[0])
   const [detailTab, setDetailTab] = React.useState<'info' | 'reviews' | 'policy'>('info')
 
@@ -171,7 +173,21 @@ export default function Product() {
     }
   }, [activeVersions])
 
+  React.useEffect(() => {
+    setQtyDraft(String(quantity))
+  }, [quantity])
+
+  React.useEffect(() => {
+    setQuantity(1)
+    setQtyDraft('1')
+  }, [selectedVersionId])
+
   const selectedVersion = activeVersions.find(v => v.versionId === selectedVersionId) ?? activeVersions[0]
+
+  React.useEffect(() => {
+    const max = Math.max(1, selectedVersion?.stockQuantity ?? 1)
+    setQuantity((q) => Math.min(max, Math.max(1, q)))
+  }, [selectedVersion?.stockQuantity])
 
   const gallery = React.useMemo(() => {
     const productImgs = product?.images.map(i => i.originalUrl) ?? []
@@ -204,18 +220,32 @@ export default function Product() {
     onSuccess: async ({ cartItem, intent, accountId, versionId }) => {
       setAddToCartError(null)
       void queryClient.invalidateQueries({ queryKey: ['cart', accountId] })
+      let serverItems: CartItemDto[] | null = null
       try {
         const cart = await cartService.getCart(accountId)
-        setCartItems(cart.items ?? [])
+        serverItems = cart.items ?? []
+        setCartItems(serverItems)
       } catch {
         if (cartItem) addItem(cartItem)
+        serverItems = null
       }
       if (intent === 'checkout') {
         setAddToCartSuccess(null)
-        const line = cartItem ?? useCart.getState().items.find((i) => i.versionId === versionId)
-        if (line) {
-          writeCheckoutFromItems(accountId, [line])
-          navigate(ROUTES.CHECKOUT_MULTISHOP)
+        // Prefer full line from GetCart (always has cartItemId); addToCart payload may omit it
+        const fromServer = serverItems?.find((i) => i.versionId === versionId)
+        const fromStore = useCart.getState().items.find((i) => i.versionId === versionId)
+        const line = fromServer ?? fromStore ?? cartItem
+        const cartItemId = resolveCartItemLineId(line) || line?.cartItemId
+        if (line && product && cartItemId) {
+          const shopId = line.shopId || product.shopId
+          const shopName = line.shopName || product.shopName || ''
+          const normalized: CartItemDto = { ...line, cartItemId, shopId, shopName }
+          writeCheckoutFromItems(accountId, [normalized])
+          navigate(ROUTES.CHECKOUT)
+        } else if (line && cartItemId) {
+          const normalized: CartItemDto = { ...line, cartItemId }
+          writeCheckoutFromItems(accountId, [normalized])
+          navigate(ROUTES.CHECKOUT)
         } else {
           setAddToCartError('Không thể chuyển đến thanh toán. Vui lòng mở giỏ hàng và thử lại.')
         }
@@ -454,9 +484,58 @@ export default function Product() {
                       <p className='product-label product-label--figma'>Số lượng</p>
                       <div className='product-quantity__figma-row'>
                         <div className='product-quantity__control product-quantity__control--figma'>
-                          <button type='button' aria-label='Giảm' onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>−</button>
-                          <span>{quantity}</span>
-                          <button type='button' aria-label='Tăng' onClick={() => setQuantity(prev => Math.min(selectedVersion?.stockQuantity ?? 10, prev + 1))}>+</button>
+                          <button
+                            type='button'
+                            aria-label='Giảm'
+                            onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                          >
+                            −
+                          </button>
+                          <input
+                            type='number'
+                            min={1}
+                            max={Math.max(1, selectedVersion?.stockQuantity ?? 1)}
+                            inputMode='numeric'
+                            autoComplete='off'
+                            aria-label='Số lượng'
+                            className='product-quantity__input--figma'
+                            value={qtyDraft}
+                            onChange={(e) => {
+                              const raw = e.target.value
+                              if (raw === '') {
+                                setQtyDraft('')
+                                return
+                              }
+                              if (!/^\d+$/.test(raw)) return
+                              setQtyDraft(raw)
+                              const n = parseInt(raw, 10)
+                              const max = Math.max(1, selectedVersion?.stockQuantity ?? 1)
+                              if (Number.isFinite(n)) setQuantity(Math.min(max, Math.max(1, n)))
+                            }}
+                            onBlur={() => {
+                              const max = Math.max(1, selectedVersion?.stockQuantity ?? 1)
+                              if (qtyDraft === '' || !/^\d+$/.test(qtyDraft)) {
+                                setQuantity(1)
+                                setQtyDraft('1')
+                                return
+                              }
+                              const n = Math.min(max, Math.max(1, parseInt(qtyDraft, 10)))
+                              setQuantity(n)
+                              setQtyDraft(String(n))
+                            }}
+                          />
+                          <button
+                            type='button'
+                            aria-label='Tăng'
+                            onClick={() =>
+                              setQuantity((prev) => {
+                                const max = Math.max(1, selectedVersion?.stockQuantity ?? 1)
+                                return Math.min(max, prev + 1)
+                              })
+                            }
+                          >
+                            +
+                          </button>
                         </div>
                         <span className='product-quantity__stock'>{selectedVersion?.stockQuantity ?? 0} sản phẩm có sẵn</span>
                       </div>

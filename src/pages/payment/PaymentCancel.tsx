@@ -120,7 +120,7 @@ export default function PaymentCancel() {
               </button>
 
               <button
-                onClick={() => navigate(ROUTES.CHECKOUT_MULTISHOP)}
+                onClick={() => navigate(ROUTES.CHECKOUT)}
                 className='w-full py-3 rounded-xl font-semibold border-2 transition-all hover:bg-red-50'
                 style={{
                   borderColor: '#dc2626',

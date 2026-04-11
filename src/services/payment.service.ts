@@ -82,20 +82,12 @@ export const paymentService = {
    * When multiple shops exist, call this once per shop
    */
   createOrder: async (data: CreateOrderRequest): Promise<CreateOrderResponse['data']> => {
-    try {
-      // api.post() response interceptor already unwraps data.data for us
-      // So response is already { orderId, shopId, subtotalCents, ... }
-      const response = await api.post<CreateOrderResponse['data']>(
-        API_ENDPOINTS.ORDERS.CREATE,
-        data,
-        { withCredentials: true }
-      )
-      console.log('✅ Order created:', response)
-      return response
-    } catch (error) {
-      console.error('Failed to create order:', error)
-      throw error
-    }
+    // api.post() response interceptor already unwraps data.data for us
+    return api.post<CreateOrderResponse['data']>(
+      API_ENDPOINTS.ORDERS.CREATE,
+      data,
+      { withCredentials: true }
+    )
   },
 
   /**
@@ -103,19 +95,10 @@ export const paymentService = {
    * This gathers all orders from different shops into one payment request
    */
   createPayment: async (data: CreatePaymentRequest): Promise<CreatePaymentResponse['data']> => {
-    try {
-      // api.post() response interceptor already unwraps data.data for us
-      // So response is already the payment data object
-      const response = await api.post<CreatePaymentResponse['data']>(
-        API_ENDPOINTS.PAYMENTS.CREATE,
-        data,
-        { withCredentials: true }
-      )
-      console.log('✅ Payment created:', response)
-      return response
-    } catch (error) {
-      console.error('Failed to create payment:', error)
-      throw error
-    }
+    return api.post<CreatePaymentResponse['data']>(
+      API_ENDPOINTS.PAYMENTS.CREATE,
+      data,
+      { withCredentials: true }
+    )
   },
 }

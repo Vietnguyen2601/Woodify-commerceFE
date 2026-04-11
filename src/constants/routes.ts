@@ -19,7 +19,6 @@ export const ROUTES = {
   SHOP_PREVIEW: '/shop-preview',
   CART: '/cart',
   CHECKOUT: '/checkout',
-  CHECKOUT_MULTISHOP: '/checkout-multishop',
   PAYMENT_SUCCESS: '/payment/success',
   PAYMENT_CANCEL: '/payment/cancel',
   /** PayOS / gateway return URL for cancelled wallet or checkout payments */

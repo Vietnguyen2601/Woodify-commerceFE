@@ -9,13 +9,22 @@ export const shipmentService = {
   getServicesByShopId: async (shopId: string): Promise<ShipmentService[]> => {
     try {
       const endpoint = API_ENDPOINTS.SHIPMENT_SERVICES.BY_SHOP(shopId)
-      const response = await api.get<ShipmentServicesApiResponse>(endpoint, {
+      // api client unwraps `{ data: T }` to `T` — success is often the array itself
+      const response = await api.get<ShipmentService[] | ShipmentServicesApiResponse>(endpoint, {
         withCredentials: true,
       })
-      return response.data || []
-    } catch (error) {
-      console.error('Failed to fetch shipment services:', error)
-      throw error
+      if (Array.isArray(response)) return response
+      if (
+        response &&
+        typeof response === 'object' &&
+        'data' in response &&
+        Array.isArray((response as ShipmentServicesApiResponse).data)
+      ) {
+        return (response as ShipmentServicesApiResponse).data
+      }
+      return []
+    } catch {
+      return []
     }
   },
 }
