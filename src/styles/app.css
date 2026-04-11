@@ -18,10 +18,12 @@ body {
 	overflow-x: hidden;
 }
 
-/* Catalog + Shop + Product: nền cream toàn trang */
+/* Catalog + Shop + Product + Cart: nền cream toàn trang */
 body.catalog-route-bg,
 body.shop-route-bg,
-body.product-route-bg {
+body.product-route-bg,
+body.cart-route-bg,
+body.checkout-route-bg {
 	background: #ebe5db;
 	background: color-mix(in srgb, var(--color-brand-bg, #e3dcc8) 68%, white);
 }
@@ -345,7 +347,11 @@ body.product-route-bg {
 	margin: 0 auto;
 	box-sizing: border-box;
 }
-.app-full-bleed { padding:0; }
+.app-full-bleed {
+	padding: 0;
+	width: 100%;
+	max-width: 100%;
+}
 .footer { padding:16px 24px; text-align:center; border-top:1px solid #eee; color:var(--muted); }
 .grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 .card { background:white; padding:12px; border-radius:8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
@@ -366,6 +372,15 @@ body.product-route-bg {
 	max-width: 1480px;
 	margin: 0;
 	padding: 24px 16px 0 0;
+}
+
+/* Cart — typography aligned with catalog / product */
+.cart-route {
+	font-family: Inter, system-ui, sans-serif;
+}
+
+.checkout-route {
+	font-family: Inter, system-ui, sans-serif;
 }
 
 .catalog__layout {
@@ -2945,13 +2960,52 @@ body.product-route-bg {
 }
 
 .product-quantity__control--figma button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	width: 36px;
 	height: 36px;
 	border: none;
 	background: #fff;
 	font-size: 18px;
+	line-height: 1;
 	cursor: pointer;
 	color: #2c1810;
+	flex-shrink: 0;
+}
+
+.product-quantity__control--figma input.product-quantity__input--figma {
+	width: 52px;
+	min-width: 44px;
+	height: 36px;
+	margin: 0;
+	padding: 0 6px;
+	border: none;
+	border-left: 1px solid #d1d5dc;
+	border-right: 1px solid #d1d5dc;
+	background: #fff;
+	text-align: center;
+	font-weight: 600;
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	color: #2c1810;
+	box-sizing: border-box;
+}
+
+.product-quantity__control--figma input.product-quantity__input--figma:focus {
+	outline: none;
+	background: #faf8f5;
+}
+
+.product-quantity__control--figma input.product-quantity__input--figma::-webkit-outer-spin-button,
+.product-quantity__control--figma input.product-quantity__input--figma::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.product-quantity__control--figma input.product-quantity__input--figma[type='number'] {
+	-moz-appearance: textfield;
+	appearance: textfield;
 }
 
 .product-quantity__control--figma span {
