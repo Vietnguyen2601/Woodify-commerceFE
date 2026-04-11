@@ -10,6 +10,7 @@ import ShippingSettings from './orders/ShippingSettings'
 import ProductList from './products/ProductList'
 import AddProduct from './products/AddProduct'
 import AIOptimizer from './products/AIOptimizer'
+import ProductVersionList from './products/ProductVersionList'
 import Revenue from './finance/Revenue'
 import Wallet from './finance/Wallet'
 import BankAccount from './finance/BankAccount'
@@ -36,6 +37,7 @@ export default function SellerDashboard() {
         <Route path='products' element={<ProductList />} />
         <Route path='products/add' element={<AddProduct />} />
         <Route path='products/ai' element={<AIOptimizer />} />
+        <Route path='products/:productId/versions' element={<ProductVersionList />} />
 
         <Route path='finance' element={<Revenue />} />
         <Route path='finance/revenue' element={<Revenue />} />

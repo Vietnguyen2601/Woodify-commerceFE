@@ -1,1 +1,6 @@
-export const currency = (v: number) => v.toLocaleString('vi-VN') + ' VND'
+export const currency = (v: number | undefined | null) => {
+  if (v === undefined || v === null) {
+    return '0 VND'
+  }
+  return v.toLocaleString('vi-VN') + ' VND'
+}

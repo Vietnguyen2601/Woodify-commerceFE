@@ -68,22 +68,23 @@ export default function Catalog() {
       id: p.productId,
       title: p.name,
       description: p.description || '',
-      price: p.price || 0,
-      originalPrice: p.originalPrice,
-      rating: p.rating,
-      reviewCount: p.reviewCount,
-      soldCount: p.soldCount,
-      location: p.location,
-      discount: p.discount,
-      isFeatured: p.isFeatured,
-      hasFreeship: p.hasFreeship,
+      price: p.price,
+      originalPrice: undefined,
+      rating: undefined,
+      reviewCount: undefined,
+      soldCount: undefined,
+      location: undefined,
+      discount: undefined,
+      isFeatured: false,
+      hasFreeship: false,
       badge: undefined,
       thumbnailUrl: p.thumbnailUrl ?? undefined,
-      shopName: p.shopName ?? shopMap[p.shopId] ?? null,
+      shopName: p.shopName,
       shopId: p.shopId,
-      createdAt: p.createdAt,
+      category: p.categoryId,
+      createdAt: p.publishedAt || p.createdAt,
     }))
-  ), [productsToUse, shopMap])
+  ), [productsToUse])
 
   const filteredProducts = React.useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()

@@ -211,6 +211,9 @@ export const findVoucherByCode = (code: string): Voucher | undefined => {
   return MOCK_VOUCHERS.find(v => v.code.toUpperCase() === code.toUpperCase())
 }
 
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number | undefined | null): string => {
+  if (amount === undefined || amount === null) {
+    return '0₫'
+  }
   return amount.toLocaleString('vi-VN') + '₫'
 }

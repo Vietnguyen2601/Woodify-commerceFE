@@ -193,6 +193,7 @@ export default function ProductList() {
                 isPublishing={publishingId === product.productId}
                 onSubmit={() => submitMutation.mutate(product.productId)}
                 onPublish={() => publishMutation.mutate(product.productId)}
+                onVersions={() => navigate(`/seller/products/${product.productId}/versions`)}
               />
             ))}
           </div>
@@ -213,6 +214,7 @@ function ProductCard({
   isPublishing,
   onSubmit,
   onPublish,
+  onVersions,
 }: {
   product: ProductMaster
   activeVersionCount: number
@@ -220,6 +222,7 @@ function ProductCard({
   isPublishing: boolean
   onSubmit: () => void
   onPublish: () => void
+  onVersions: () => void
 }) {
   const canSubmit = (product.status === 'DRAFT' || product.status === 'REJECTED') && activeVersionCount > 0
   const showSubmitBtn = product.status === 'DRAFT' || product.status === 'REJECTED'
@@ -289,7 +292,7 @@ function ProductCard({
           <button type='button' className='flex-1 rounded border border-yellow-800/20 bg-stone-100 px-3 py-2 text-center text-xs text-stone-900'>
             Chỉnh sửa
           </button>
-          <button type='button' className='flex-1 rounded bg-yellow-800 px-3 py-2 text-center text-xs text-white'>
+          <button type='button' onClick={onVersions} className='flex-1 rounded bg-yellow-800 px-3 py-2 text-center text-xs text-white'>
             Phiên bản
           </button>
         </div>

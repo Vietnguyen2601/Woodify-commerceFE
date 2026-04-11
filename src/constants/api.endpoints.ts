@@ -59,9 +59,16 @@ export const API_ENDPOINTS = {
   ORDERS: {
     LIST: '/orders',
     DETAIL: (id: string) => `/orders/${id}`,
-    CREATE: '/orders',
+    CREATE: '/order/Orders/create',
     CANCEL: (id: string) => `/orders/${id}/cancel`,
     STATUS: (id: string) => `/orders/${id}/status`,
+  },
+
+  // ── Payment Service (5015) ────────────────────────────────────────────────
+  PAYMENTS: {
+    CREATE: '/payment/Payments/create',
+    STATUS: (paymentId: string) => `/payment/${paymentId}`,
+    WEBHOOK: '/payment/webhook',
   },
 
   // Cart
@@ -150,6 +157,9 @@ export const API_ENDPOINTS = {
   // ── Shipment Service (5016) ────────────────────────────────────────────────
   PROVIDER: {
     LIST: '/shipment/providers',
+  },
+  SHIPMENT_SERVICES: {
+    BY_SHOP: (shopId: string) => `/shipment/shops/${encodeURIComponent(shopId)}/services`,
   },
 } as const
 

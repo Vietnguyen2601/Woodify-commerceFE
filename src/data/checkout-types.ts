@@ -26,6 +26,7 @@ export interface ShopCart {
   shop_avatar?: string
   items: CartItem[]
   selected_shipping_method: 'ECONOMY' | 'STANDARD' | 'EXPRESS'
+  selected_shipping_code?: string // Code of the selected shipping service from API
   shipping_methods: ShippingMethod[]
   shipping_fee: number
   note_to_seller?: string
@@ -61,4 +62,4 @@ export interface CheckoutSummary {
   total_payment: number
 }
 
-export type PaymentMethod = 'COD' | 'BANK_TRANSFER' | 'WALLET'
+export type PaymentMethod = 'COD' | 'WALLET' | 'PAYOS'

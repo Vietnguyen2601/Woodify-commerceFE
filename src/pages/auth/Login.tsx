@@ -4,6 +4,18 @@ import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/services'
 import { APP_CONFIG } from '@/constants'
 import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
+import type { UserRole } from '@/types'
+
+function parseRoleFromToken(token: string): UserRole | undefined {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const role = (payload?.role as string)?.toLowerCase()
+    if (role === 'admin' || role === 'seller' || role === 'customer') return role
+  } catch {
+    // invalid token
+  }
+  return undefined
+}
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -106,11 +118,13 @@ export default function Login() {
 
           if (isSuccessful && loginData.email) {
             // Store only non-sensitive data in localStorage
+            const role = parseRoleFromToken(loginData.token) ?? 'customer'
+
             const normalizedUser: StoredUser = {
               email: loginData.email || email,
               username: loginData.username || loginData.email || email,
-              role: loginData.role || 'customer',
-              accountId: loginData.accountId, // Store accountId from login response
+              role,
+              accountId: loginData.accountId,
             }
 
             persistStoredUser(normalizedUser)
@@ -121,11 +135,15 @@ export default function Login() {
               localStorage.removeItem('remember_me')
             }
 
-            // Store full user data (with accountId) in React Query cache
-            queryClient.setQueryData(queryKeys.user(), loginData)
-            
-            // Redirect to home
-            nav('/')
+            // Store user data in React Query cache
+            queryClient.setQueryData(queryKeys.user(), normalizedUser)
+
+            // Redirect based on role
+            if (role === 'admin') {
+              nav('/admin/dashboard')
+            } else {
+              nav('/')
+            }
             setFormState('idle')
           } else {
             setFormState('error')

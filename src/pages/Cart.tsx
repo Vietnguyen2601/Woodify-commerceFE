@@ -75,8 +75,8 @@ export default function Cart() {
 
   // Handle cart data updates
   useEffect(() => {
-    if (cartData?.items) {
-      setCartItems(cartData.items)
+    if (cartData) {
+      setCartItems(cartData.items || [])
       setCartError(null)
     }
   }, [cartData, setCartItems, setCartError])
@@ -274,8 +274,8 @@ export default function Cart() {
     )
   }
 
-  // Error state
-  if (cartError) {
+  // Error state (only show if accountId exists, otherwise it's just unauthenticated)
+  if (cartError && accountId) {
     return (
       <div className='bg-stone-100 min-h-screen flex items-center justify-center'>
         <div className='bg-white rounded-md border-2 border-red-500 p-6 max-w-md text-center'>
@@ -344,7 +344,7 @@ export default function Cart() {
           {/* Empty Cart */}
           {cartItems.length === 0 && (
             <div className='w-full p-12 bg-white rounded-md border border-gray-200 text-center'>
-              <p className='text-gray-600 mb-4'>Giỏ hàng trống. Khám phá thêm deal hot ngay!</p>
+              <p className='text-gray-600 mb-4'>Chưa có sản phẩm</p>
               <Link
                 to={ROUTES.CATALOG}
                 className='inline-block px-6 py-2 bg-yellow-800 text-white rounded hover:bg-yellow-900'
