@@ -364,7 +364,7 @@ export function ShopDetailView({
                         key={product.id}
                         product={product}
                         onCardClick={
-                          linkProducts ? () => navigate(ROUTES.PRODUCT(product.id)) : undefined
+                          linkProducts ? () => navigate(ROUTES.PRODUCT(product.id, product.title)) : undefined
                         }
                       />
                     ))}
