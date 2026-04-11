@@ -3,17 +3,24 @@
  * Centralized route management for type-safe navigation
  */
 
+import { buildShopPathSegment } from '@/utils/shopUrl'
+
 export const ROUTES = {
   // Public routes
   HOME: '/',
   CATALOG: '/catalog',
   PRODUCT: (id: string) => `/product/${id}`,
-  SHOP: (shopId: string) => `/shop/${shopId}`,
+  /** `shopName` nên truyền — URL dạng `/shop/ten-cua-hang` (slug tên shop). */
+  SHOP: (shopId: string, shopName?: string | null) => `/shop/${buildShopPathSegment(shopId, shopName)}`,
+  /** URL cũ `/shop-preview` — chuyển hướng sang danh mục. */
+  SHOP_PREVIEW: '/shop-preview',
   CART: '/cart',
   CHECKOUT: '/checkout',
   CHECKOUT_MULTISHOP: '/checkout-multishop',
   PAYMENT_SUCCESS: '/payment/success',
   PAYMENT_CANCEL: '/payment/cancel',
+  /** PayOS / gateway return URL for cancelled wallet or checkout payments */
+  PAYMENT_CALLBACK_CANCEL: '/payment/callback/cancel',
 
   // Auth routes
   LOGIN: '/login',

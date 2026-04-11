@@ -1,8 +1,10 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import ShopIcon from '../assets/icons/essential/commerce/shop.svg?url'
-import LocationIcon from '../assets/icons/essential/commerce/point-address.svg?url'
-import StarIcon from '../assets/icons/essential/interface/star-filled.svg?url'
+import { ROUTES } from '@/constants'
+import AssetIcon from '@/components/AssetIcon'
+import pointAddressIcon from '@/assets/icons/essential/commerce/point-address.svg'
+import shopIcon from '@/assets/icons/essential/commerce/shop.svg'
+import StarIcon from '@/assets/icons/essential/star.svg'
 
 export interface ProductionCardProduct {
   id: string
@@ -13,6 +15,8 @@ export interface ProductionCardProduct {
   badge?: string
   tags?: string[]
   thumbnailUrl?: string
+  /** Có thì khối shop + địa điểm link tới trang shop (URL thân thiện khi có `shopName`). */
+  shopId?: string | null
   shopName?: string | null
   location?: string
   rating?: number
@@ -29,7 +33,7 @@ interface ProductionCardProps {
 }
 
 export default function ProductionCard({ product, onCardClick }: ProductionCardProps) {
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+  const handleMainKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (!onCardClick) return
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
@@ -40,15 +44,40 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
   const rating = product.rating || 4.8
   const reviewCount = product.reviewCount || 234
 
+  const sellerBlock = (
+    <div className='production-card__seller'>
+      <div className='production-card__seller-row'>
+        <AssetIcon
+          src={shopIcon}
+          width={11}
+          height={11}
+          className='production-card__seller-icon'
+          alt=''
+        />
+        <span className='production-card__seller-name'>{product.shopName || 'Shop'}</span>
+      </div>
+      <div className='production-card__seller-row'>
+        <AssetIcon
+          src={pointAddressIcon}
+          width={11}
+          height={11}
+          className='production-card__location-icon'
+          alt=''
+        />
+        <span className='production-card__location'>{product.location || 'Hà Nội'}</span>
+      </div>
+    </div>
+  )
+
   return (
-    <article
-      className='production-card'
-      role={onCardClick ? 'button' : undefined}
-      tabIndex={onCardClick ? 0 : undefined}
-      onKeyDown={handleKeyDown}
-      onClick={onCardClick}
-      style={onCardClick ? { cursor: 'pointer' } : undefined}
-    >
+    <article className='production-card'>
+      <div
+        className='production-card__main'
+        role={onCardClick ? 'button' : undefined}
+        tabIndex={onCardClick ? 0 : undefined}
+        onClick={onCardClick ? () => onCardClick() : undefined}
+        onKeyDown={handleMainKeyDown}
+      >
       <div className='production-card__thumbnail'>
         {product.thumbnailUrl ? (
           <img
@@ -92,14 +121,21 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
             <span className='production-card__sold'>Đã bán {product.soldCount || 456}</span>
           </div>
         </div>
-
-        <div className='production-card__seller'>
-          <div className='production-card__seller-row'>
-            <img src={ShopIcon} alt='shop' className='production-card__seller-icon' style={{ width: '16px', height: '16px' }} />
-            <span className='production-card__seller-name'>{product.shopName || 'Shop'}</span>
-          </div>
-        </div>
       </div>
+      </div>
+
+      {product.shopId ? (
+        <Link
+          to={ROUTES.SHOP(product.shopId, product.shopName)}
+          className='production-card__shop-link'
+          aria-label={`Xem cửa hàng ${product.shopName || 'shop'}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {sellerBlock}
+        </Link>
+      ) : (
+        <div className='production-card__shop-footer'>{sellerBlock}</div>
+      )}
     </article>
   )
 }

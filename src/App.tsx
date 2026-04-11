@@ -1,9 +1,10 @@
 import React from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { ROUTES } from './constants/routes'
 import Home from './pages/Home'
 import Catalog from './pages/Catalog'
 import Product from './pages/Product'
-import Shop from './pages/Shop'
+import ShopDetailPage from './pages/shop/ShopDetailPage'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import CheckoutMultiShop from './pages/CheckoutMultiShop'
@@ -39,7 +40,15 @@ export default function App() {
     location.pathname.startsWith('/auth/register')
   const showUserHeader = !isSellerRoute && !isAdminRoute && !isAuthRoute
   const showFooter = !isSellerRoute && !isAdminRoute
-  const isFullBleedRoute = location.pathname === '/' || isProfileRoute || isSellerRoute || isAdminRoute
+  const isShopPublicPage = location.pathname.startsWith('/shop/')
+  const isProductDetailPage = location.pathname.startsWith('/product/')
+  const isFullBleedRoute =
+    location.pathname === '/' ||
+    isShopPublicPage ||
+    isProductDetailPage ||
+    isProfileRoute ||
+    isSellerRoute ||
+    isAdminRoute
   const authActionLabel = location.pathname.toLowerCase().includes('register') ? 'Đăng ký' : 'Đăng nhập'
 
   return (
@@ -63,13 +72,18 @@ export default function App() {
           <Route path='/' element={<Home />} />
           <Route path='/catalog' element={<Catalog />} />
           <Route path='/product/:id' element={<Product />} />
-          <Route path='/shop/:shopId' element={<Shop />} />
+          <Route path={ROUTES.SHOP_PREVIEW} element={<Navigate to={ROUTES.CATALOG} replace />} />
+          <Route path='/shop/:shopSegment' element={<ShopDetailPage />} />
           <Route path='/cart' element={<Cart />} />
           <Route path='/checkout' element={<Checkout />} />
           <Route path='/checkout-multishop' element={<CheckoutMultiShop />} />
           <Route path='/payment' element={<Payment />} />
           <Route path='/payment/success' element={<PaymentSuccess />} />
           <Route path='/payment/cancel' element={<PaymentCancel />} />
+          <Route
+            path={ROUTES.PAYMENT_CALLBACK_CANCEL}
+            element={<Navigate to={`${ROUTES.PROFILE}?tab=wallet`} replace />}
+          />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/auth/login' element={<Login />} />
