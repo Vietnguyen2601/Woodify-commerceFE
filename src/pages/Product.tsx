@@ -1,27 +1,37 @@
 import React from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productMasterService, shopService, cartService } from '@/services'
 import { readStoredUser } from '@/features/auth/utils/storage'
 import { useCart } from '../store/cartStore'
 import { ROUTES } from '@/constants/routes'
+import type { CartItemDto } from '@/types'
 import AssetIcon from '@/components/AssetIcon'
 import chevronRightIcon from '@/assets/icons/essential/interface/chevron-right.svg'
+import { parseProductPathParam, resolveProductIdFromPublished } from '@/utils/productUrl'
 
-/** Figma MCP assets — related products (node 108:473) */
-const RELATED_IMAGES = {
-  chair: 'https://www.figma.com/api/mcp/asset/e76f1283-1a15-45d3-91bd-c5a1198d0d30',
-  shelf: 'https://www.figma.com/api/mcp/asset/24850760-516c-4d82-855c-76b6a9593539',
-  lamp: 'https://www.figma.com/api/mcp/asset/3505a72d-39c5-40c0-a0c6-cc02508757f9',
-  cabinet: 'https://www.figma.com/api/mcp/asset/7463d068-eab7-419c-93d0-6d5992043125',
-} as const
-
-const RELATED_ITEMS = [
-  { key: 'r1', title: 'Ghế làm việc ergonomic', price: 1_800_000, rating: 4.7, sold: 234, image: RELATED_IMAGES.chair },
-  { key: 'r2', title: 'Kệ sách treo tường', price: 980_000, rating: 4.9, sold: 567, image: RELATED_IMAGES.shelf },
-  { key: 'r3', title: 'Đèn bàn LED hiện đại', price: 450_000, rating: 4.6, sold: 789, image: RELATED_IMAGES.lamp },
-  { key: 'r4', title: 'Tủ hồ sơ 3 ngăn', price: 2_200_000, rating: 4.8, sold: 345, image: RELATED_IMAGES.cabinet },
-] as const
+function writeCheckoutFromItems(accountId: string, selectedItems: CartItemDto[]) {
+  const selectedTotal = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0)
+  const selectedByShop = new Map<string, CartItemDto[]>()
+  selectedItems.forEach((item) => {
+    if (!selectedByShop.has(item.shopId)) selectedByShop.set(item.shopId, [])
+    selectedByShop.get(item.shopId)!.push(item)
+  })
+  const checkoutData = {
+    accountId,
+    selectedItems,
+    selectedByShop: Array.from(selectedByShop.entries()).map(([shopId, items]) => ({
+      shopId,
+      shopName: items[0].shopName,
+      items,
+      totalPrice: items.reduce((sum, item) => sum + item.totalPrice, 0),
+    })),
+    selectedTotal,
+    selectedCount: selectedItems.length,
+  }
+  localStorage.setItem('checkoutData', JSON.stringify(checkoutData))
+  localStorage.setItem('checkoutItems', JSON.stringify(selectedItems))
+}
 
 const PRODUCT_DETAIL_FALLBACK =
   'Bàn làm việc gỗ óc chó cao cấp với thiết kế hiện đại, tối giản. Được chế tác từ 100% gỗ óc chó tự nhiên, bề mặt xử lý chống trầy xước và chống nước. Phù hợp cho không gian làm việc tại nhà hoặc văn phòng.'
@@ -66,11 +76,14 @@ const reviewEntries: Review[] = [
 ]
 
 const reviewFilters = ['Tất cả', '5 sao', '4 sao', '3 sao', 'Có ảnh']
-const vouchers = ['Giảm 5% đơn từ 3.000.000₫', 'Freeship toàn bộ HCM', 'Tặng bộ vệ sinh gỗ']
 
 export default function Product() {
-  const { id } = useParams<{ id: string }>()
+  const { id: pathParam = '' } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const queryClient = useQueryClient()
   const addItem = useCart(state => state.addItem)
+  const setCartItems = useCart(state => state.setItems)
 
   React.useEffect(() => {
     document.body.classList.add('product-route-bg')
@@ -79,19 +92,70 @@ export default function Product() {
     }
   }, [])
 
-  const { data: product, isPending: productLoading, isError } = useQuery({
-    queryKey: ['product-detail', id],
-    queryFn: () => productMasterService.getProductDetail(id!),
-    enabled: !!id,
+  const parsedPath = React.useMemo(() => parseProductPathParam(pathParam), [pathParam])
+  const needsPublishedForSlug =
+    parsedPath.kind === 'slugPrefix' || parsedPath.kind === 'slugOnly'
+
+  const { data: publishedProducts, isPending: publishedListLoading } = useQuery({
+    queryKey: ['published-products'],
+    queryFn: () => productMasterService.getPublishedProducts(),
+    enabled: needsPublishedForSlug || !!pathParam.trim(),
+    staleTime: 60_000,
   })
 
-  const isLoading = productLoading
+  const resolvedProductId = React.useMemo(() => {
+    if (parsedPath.kind === 'uuid') return parsedPath.productId
+    if (parsedPath.kind === 'legacyId') return parsedPath.id
+    if ((parsedPath.kind === 'slugPrefix' || parsedPath.kind === 'slugOnly') && publishedProducts)
+      return resolveProductIdFromPublished(parsedPath, publishedProducts)
+    return null
+  }, [parsedPath, publishedProducts])
+
+  const slugResolveFailed =
+    (parsedPath.kind === 'slugPrefix' || parsedPath.kind === 'slugOnly') &&
+    !publishedListLoading &&
+    Array.isArray(publishedProducts) &&
+    resolvedProductId == null
+
+  const {
+    data: product,
+    isLoading: productDetailLoading,
+    isError: productDetailError,
+  } = useQuery({
+    queryKey: ['product-detail', resolvedProductId],
+    queryFn: () => productMasterService.getProductDetail(resolvedProductId!),
+    enabled: !!resolvedProductId,
+  })
+
+  const isLoading = productDetailLoading
 
   const { data: shop } = useQuery({
     queryKey: ['shop', product?.shopId],
     queryFn: () => shopService.getShopById(product!.shopId),
     enabled: !!product?.shopId,
   })
+
+  const relatedProducts = React.useMemo(() => {
+    if (!publishedProducts?.length || !product) return []
+    return publishedProducts
+      .filter((p) => p.categoryId === product.categoryId && p.productId !== product.productId)
+      .slice(0, 4)
+  }, [publishedProducts, product])
+
+  const isProductRouteLoading =
+    (!slugResolveFailed &&
+      (parsedPath.kind === 'slugPrefix' || parsedPath.kind === 'slugOnly') &&
+      publishedListLoading) ||
+    (!!resolvedProductId && productDetailLoading)
+
+  React.useEffect(() => {
+    if (!product?.productId || !product?.name) return
+    if (parsedPath.kind !== 'uuid' && parsedPath.kind !== 'slugPrefix') return
+    const canonical = ROUTES.PRODUCT(product.productId, product.name)
+    if (location.pathname !== canonical) {
+      navigate(canonical, { replace: true })
+    }
+  }, [product?.productId, product?.name, parsedPath.kind, location.pathname, navigate])
 
   const activeVersions = React.useMemo(
     () => (product?.versions ?? []).filter(v => v.isActive),
@@ -119,31 +183,56 @@ export default function Product() {
   }, [product, selectedVersion])
 
   const [selectedImage, setSelectedImage] = React.useState<string>('')
-  const [addToCartLoading, setAddToCartLoading] = React.useState(false)
   const [addToCartError, setAddToCartError] = React.useState<string | null>(null)
+  const [addToCartSuccess, setAddToCartSuccess] = React.useState<string | null>(null)
+
+  type AddCartIntent = 'cart' | 'checkout'
 
   const addToCartMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ intent }: { intent: AddCartIntent }) => {
       const user = readStoredUser()
-      if (!user?.accountId) throw new Error('Vui lòng đăng nhập để thêm vào giỏ')
+      if (!user?.accountId) throw new Error('NOT_LOGGED_IN')
       if (!product || !selectedVersion) throw new Error('Sản phẩm không hợp lệ')
 
-      return cartService.addToCart(
+      const versionId = selectedVersion.versionId
+      const cartItem = await cartService.addToCart(
         user.accountId,
-        selectedVersion.versionId,
+        versionId,
         product.shopId,
         quantity
       )
+      return { cartItem, intent, accountId: user.accountId, versionId }
     },
-    onSuccess: (cartItem) => {
+    onSuccess: async ({ cartItem, intent, accountId, versionId }) => {
       setAddToCartError(null)
-      // Add API response to local cart store
-      if (cartItem) {
-        addItem(cartItem)
+      void queryClient.invalidateQueries({ queryKey: ['cart', accountId] })
+      try {
+        const cart = await cartService.getCart(accountId)
+        setCartItems(cart.items ?? [])
+      } catch {
+        if (cartItem) addItem(cartItem)
+      }
+      if (intent === 'checkout') {
+        setAddToCartSuccess(null)
+        const line = cartItem ?? useCart.getState().items.find((i) => i.versionId === versionId)
+        if (line) {
+          writeCheckoutFromItems(accountId, [line])
+          navigate(ROUTES.CHECKOUT_MULTISHOP)
+        } else {
+          setAddToCartError('Không thể chuyển đến thanh toán. Vui lòng mở giỏ hàng và thử lại.')
+        }
+      } else {
+        setAddToCartSuccess('Đã thêm vào giỏ hàng.')
       }
     },
-    onError: (err: any) => {
-      setAddToCartError(err?.message || 'Thêm vào giỏ thất bại')
+    onError: (err: { message?: string } | Error) => {
+      const raw = 'message' in err ? err.message : (err as Error)?.message
+      if (raw === 'NOT_LOGGED_IN') {
+        setAddToCartError('Bạn cần đăng nhập mới có thể thêm sản phẩm vào giỏ hàng.')
+      } else {
+        setAddToCartError(raw || 'Thêm vào giỏ thất bại')
+      }
+      setAddToCartSuccess(null)
     },
   })
 
@@ -160,14 +249,6 @@ export default function Product() {
     { label: 'SKU', value: product?.globalSku ?? '—' },
   ] : []
 
-  const suggestionSections = React.useMemo(() => ([
-    {
-      id: 'shop',
-      title: `Sản phẩm từ cùng danh mục${product ? ` "${product.categoryName}"` : ''}`,
-      items: [] as { key: string; targetId: string; title: string; price: number }[]
-    }
-  ]), [product])
-
   const filteredReviews = React.useMemo(() => {
     if (activeReviewFilter === 'Tất cả') return reviewEntries
     if (activeReviewFilter === 'Có ảnh') return reviewEntries.filter(r => r.media)
@@ -175,12 +256,39 @@ export default function Product() {
     return Number.isFinite(star) ? reviewEntries.filter(r => Math.round(r.rating) === star) : reviewEntries
   }, [activeReviewFilter])
 
-  const handleAddToCart = () => {
-    setAddToCartError(null)
-    addToCartMutation.mutate()
+  const requireAccountForCart = (): boolean => {
+    const user = readStoredUser()
+    if (!user?.accountId) {
+      setAddToCartSuccess(null)
+      setAddToCartError('Bạn cần đăng nhập mới có thể thêm sản phẩm vào giỏ hàng.')
+      return false
+    }
+    return true
   }
 
-  if (isLoading) {
+  const handleAddToCart = () => {
+    if (!requireAccountForCart()) return
+    if (!selectedVersion) {
+      setAddToCartError('Vui lòng chọn phiên bản sản phẩm.')
+      return
+    }
+    setAddToCartError(null)
+    setAddToCartSuccess(null)
+    addToCartMutation.mutate({ intent: 'cart' })
+  }
+
+  const handleBuyNow = () => {
+    if (!requireAccountForCart()) return
+    if (!selectedVersion) {
+      setAddToCartError('Vui lòng chọn phiên bản sản phẩm.')
+      return
+    }
+    setAddToCartError(null)
+    setAddToCartSuccess(null)
+    addToCartMutation.mutate({ intent: 'checkout' })
+  }
+
+  if (isProductRouteLoading) {
     return (
       <div className='flex min-h-screen w-full flex-col items-center justify-center bg-transparent px-4'>
         <div className='flex flex-col items-center gap-3 py-20'>
@@ -191,7 +299,7 @@ export default function Product() {
     )
   }
 
-  if (isError || !product) {
+  if (slugResolveFailed || (!productDetailLoading && (productDetailError || !product))) {
     return (
       <div className='flex min-h-screen w-full flex-col items-center justify-center gap-4 bg-transparent px-4 text-center'>
         <p className="font-['Inter'] text-base text-neutral-700">Không tìm thấy sản phẩm.</p>
@@ -202,11 +310,11 @@ export default function Product() {
     )
   }
 
+  if (!product) return null
+
   const price = selectedVersion?.price ?? 0
-  const originalPrice = Math.round(price * 1.2)
-  const saving = originalPrice - price
-  const discountPct = originalPrice > 0 ? Math.max(0, Math.round((1 - price / originalPrice) * 100)) : 0
   const shopJoinYear = shop?.createdAt ? new Date(shop.createdAt).getFullYear() : '—'
+  const cartPending = addToCartMutation.isPending
 
   const renderStars = (value: number, size: 'md' | 'sm' = 'md') => {
     const full = Math.floor(value)
@@ -264,9 +372,6 @@ export default function Product() {
                   ) : (
                     <div className='product-media__placeholder'>Chưa có ảnh</div>
                   )}
-                  {discountPct > 0 && (
-                    <span className='product-media__pct-badge'>-{discountPct}%</span>
-                  )}
                   <span className='product-media__featured-badge'>Nổi bật</span>
                 </div>
 
@@ -308,19 +413,9 @@ export default function Product() {
                   <div className='product-price-block-figma'>
                     <div className='product-price-block-figma__row'>
                       <strong className='product-price-block-figma__now'>{price.toLocaleString('vi-VN')}₫</strong>
-                      <del className='product-price-block-figma__was'>{originalPrice.toLocaleString('vi-VN')}₫</del>
                     </div>
-                    <span className='product-price-block-figma__save'>Tiết kiệm {saving.toLocaleString('vi-VN')}₫</span>
                   </div>
                 )}
-
-                <div className='product-vouchers-figma'>
-                  <span className='product-voucher-figma product-voucher-figma--brown'>{vouchers[0]}</span>
-                  <div className='product-vouchers-figma__row'>
-                    <span className='product-voucher-figma product-voucher-figma--blue'>{vouchers[1]}</span>
-                    <span className='product-voucher-figma product-voucher-figma--green'>{vouchers[2]}</span>
-                  </div>
-                </div>
 
                 <div className='product-meta-figma'>
                   <div className='product-meta-figma__pair'>
@@ -371,12 +466,37 @@ export default function Product() {
                   </div>
                 )}
 
+                {(addToCartError || addToCartSuccess) && (
+                  <div className='mt-3 space-y-2' role='status' aria-live='polite'>
+                    {addToCartError && (
+                      <p className="m-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-['Inter'] text-sm text-red-800">
+                        {addToCartError}
+                      </p>
+                    )}
+                    {addToCartSuccess && (
+                      <p className="m-0 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 font-['Inter'] text-sm text-emerald-900">
+                        {addToCartSuccess}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className='product-cta product-cta--figma'>
-                  <button type='button' className='product-cta__secondary product-cta__secondary--figma' onClick={handleAddToCart}>
-                    Thêm vào giỏ
+                  <button
+                    type='button'
+                    className='product-cta__secondary product-cta__secondary--figma'
+                    onClick={handleAddToCart}
+                    disabled={cartPending || activeVersions.length === 0}
+                  >
+                    {cartPending ? 'Đang xử lý…' : 'Thêm vào giỏ'}
                   </button>
-                  <button type='button' className='product-cta__primary product-cta__primary--figma' onClick={handleAddToCart}>
-                    Mua ngay
+                  <button
+                    type='button'
+                    className='product-cta__primary product-cta__primary--figma'
+                    onClick={handleBuyNow}
+                    disabled={cartPending || activeVersions.length === 0}
+                  >
+                    {cartPending ? 'Đang xử lý…' : 'Mua ngay'}
                   </button>
                 </div>
               </div>
@@ -528,44 +648,32 @@ export default function Product() {
 
             <div className='product-related-figma'>
               <h3 className='product-related-figma__title'>Sản phẩm liên quan</h3>
-              <ul className='product-related-figma__list'>
-                {RELATED_ITEMS.map(item => (
-                  <li key={item.key} className='product-related-figma__item'>
-                    <div className='product-related-figma__thumb'>
-                      <img src={item.image} alt='' />
-                    </div>
-                    <div className='product-related-figma__body'>
-                      <p className='product-related-figma__name'>{item.title}</p>
-                      <p className='product-related-figma__price'>{item.price.toLocaleString('vi-VN')}₫</p>
-                      <p className='product-related-figma__meta'>
-                        <span>★ {item.rating}</span>
-                        <span>•</span>
-                        <span>Đã bán {item.sold}</span>
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              {relatedProducts.length === 0 ? (
+                <p className="m-0 font-['Inter'] text-sm text-black/55">Chưa có sản phẩm cùng danh mục.</p>
+              ) : (
+                <ul className='product-related-figma__list'>
+                  {relatedProducts.map((item) => (
+                    <li key={item.productId} className='product-related-figma__item'>
+                      <Link to={ROUTES.PRODUCT(item.productId, item.name)} className='flex min-w-0 gap-3 no-underline text-inherit hover:opacity-90'>
+                        <div className='product-related-figma__thumb'>
+                          {item.thumbnailUrl ? (
+                            <img src={item.thumbnailUrl} alt='' />
+                          ) : (
+                            <span className='flex h-full w-full items-center justify-center bg-black/5 text-xs text-black/40'>Ảnh</span>
+                          )}
+                        </div>
+                        <div className='product-related-figma__body min-w-0'>
+                          <p className='product-related-figma__name'>{item.name}</p>
+                          <p className='product-related-figma__price'>{item.price.toLocaleString('vi-VN')}₫</p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </aside>
         </div>
-
-
-        {suggestionSections.map(section => (
-          section.items.length > 0 && (
-            <section key={section.id} className='product-suggestions'>
-              <div className='product-suggestions__section'>
-                <div className='product-suggestions__header'>
-                  <div>
-                    <p className='product-eyebrow'>Gợi ý mua thêm</p>
-                    <h3>{section.title}</h3>
-                  </div>
-                  <Link to={ROUTES.CATALOG}>Xem tất cả</Link>
-                </div>
-              </div>
-            </section>
-          )
-        ))}
         </div>
       </div>
     </div>

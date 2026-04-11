@@ -4,12 +4,15 @@
  */
 
 import { buildShopPathSegment } from '@/utils/shopUrl'
+import { buildProductPathSegment } from '@/utils/productUrl'
 
 export const ROUTES = {
   // Public routes
   HOME: '/',
   CATALOG: '/catalog',
-  PRODUCT: (id: string) => `/product/${id}`,
+  /** `productName` nên truyền — URL dạng `/product/ten-sp--hex8` thay vì lộ UUID. */
+  PRODUCT: (productId: string, productName?: string | null) =>
+    `/product/${buildProductPathSegment(productId, productName)}`,
   /** `shopName` nên truyền — URL dạng `/shop/ten-cua-hang` (slug tên shop). */
   SHOP: (shopId: string, shopName?: string | null) => `/shop/${buildShopPathSegment(shopId, shopName)}`,
   /** URL cũ `/shop-preview` — chuyển hướng sang danh mục. */

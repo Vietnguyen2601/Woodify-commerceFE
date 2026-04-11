@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { ROUTES } from '@/constants/routes'
 
 interface ProductCardProps {
   id: string
@@ -73,7 +74,7 @@ export default function ProductCard({
 
   return (
     <Link 
-      to={`/product/${id}`} 
+      to={ROUTES.PRODUCT(id, name)} 
       className="flex flex-col rounded-[14px] bg-white overflow-hidden no-underline shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] group"
     >
       {/* Product Image Section */}

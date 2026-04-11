@@ -327,7 +327,7 @@ export default function Catalog() {
                 <ProductionCard
                   key={product.id}
                   product={product}
-                  onCardClick={() => navigate(ROUTES.PRODUCT(product.id))}
+                  onCardClick={() => navigate(ROUTES.PRODUCT(product.id, product.title))}
                 />
               ))
             )}
