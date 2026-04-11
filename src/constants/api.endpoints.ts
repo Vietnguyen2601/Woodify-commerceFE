@@ -178,6 +178,14 @@ export const API_ENDPOINTS = {
  * Matches ADMIN_API_SPEC.md; alternate PascalCase paths are tried in admin.service when needed.
  */
 export const ADMIN_API = {
+  DASHBOARD: {
+    OVERVIEW: ['/admin/dashboard/overview'],
+    METRICS_TODAY: ['/admin/dashboard/metrics/today'],
+    REVENUE_DAILY: ['/admin/dashboard/revenue/daily'],
+    REVENUE_QUARTERLY: ['/admin/dashboard/revenue/quarterly'],
+    REVENUE_YEARLY: ['/admin/dashboard/revenue/yearly'],
+    REVENUE_CUSTOM: ['/admin/dashboard/revenue/custom'],
+  },
   ACCOUNTS: {
     GET_ALL: '/accounts/GetAllAccounts',
     GET_BY_ID: (id: string) => `/accounts/GetAccountById/${encodeURIComponent(id)}`,

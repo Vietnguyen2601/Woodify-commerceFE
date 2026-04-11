@@ -91,6 +91,7 @@ export const queryKeys = {
     shipments: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'shipments'] as const,
     products: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'product-masters'] as const,
     snapshot: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'snapshot'] as const,
+    revenue: (range: string) => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'revenue', range] as const,
     categories: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'categories'] as const,
     banners: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'banners'] as const,
   },

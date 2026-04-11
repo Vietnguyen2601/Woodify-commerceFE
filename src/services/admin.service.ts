@@ -209,7 +209,162 @@ export type AdminOrdersResult = {
   pageSize: number
 }
 
+export type RevenueTrendRange = 'day' | 'month' | 'quarter' | 'year'
+export type RevenueTrendSeries = {
+  labels: string[]
+  gross: number[]
+  commission: number[]
+  net: number[]
+}
+
+function readNumField(obj: Record<string, unknown>, keys: string[]): number {
+  for (const k of keys) {
+    const v = obj[k]
+    if (typeof v === 'number' && Number.isFinite(v)) return v
+    if (typeof v === 'string' && v.trim()) {
+      const n = Number(v)
+      if (Number.isFinite(n)) return n
+    }
+  }
+  return 0
+}
+
+function normalizeRevenueTrendPayload(raw: unknown): RevenueTrendSeries {
+  const source = pickData<unknown>(raw)
+  const root = (source && typeof source === 'object' ? (source as Record<string, unknown>) : {}) as Record<string, unknown>
+
+  const labels = Array.isArray(root.labels) ? root.labels.map((x) => String(x)) : null
+  const gross = Array.isArray(root.gross) ? root.gross.map((x) => Number(x) || 0) : null
+  const commission = Array.isArray(root.commission) ? root.commission.map((x) => Number(x) || 0) : null
+  const net = Array.isArray(root.net) ? root.net.map((x) => Number(x) || 0) : null
+  if (labels && gross && commission && net && labels.length) {
+    return { labels, gross, commission, net }
+  }
+
+  const candidateArrays = [
+    root.chartData,
+    root.items,
+    root.data,
+    root.rows,
+    root.points,
+    root.series,
+    root.values,
+    source,
+  ]
+  const arr = candidateArrays.find((v) => Array.isArray(v)) as unknown[] | undefined
+  if (arr && arr.length > 0) {
+    const mapped = arr
+      .map((item, idx) => {
+        if (!item || typeof item !== 'object') return null
+        const o = item as Record<string, unknown>
+        const label =
+          String(
+            o.label ??
+              o.period ??
+              o.date ??
+              o.day ??
+              o.month ??
+              o.quarter ??
+              o.year ??
+              o.name ??
+              `#${idx + 1}`
+          )
+        const grossValue = readNumField(o, [
+          'gross',
+          'grossRevenue',
+          'grossRevenueVnd',
+          'grossRevenueCents',
+          'totalRevenue',
+          'revenue',
+        ])
+        const commissionValue = readNumField(o, [
+          'commission',
+          'commissionRevenue',
+          'commissionVnd',
+          'commissionCents',
+          'platformCommission',
+        ])
+        const netValue = readNumField(o, ['net', 'netRevenue', 'netToShop', 'sellerNet'])
+        return {
+          label,
+          gross: grossValue,
+          commission: commissionValue,
+          net: netValue || Math.max(0, grossValue - commissionValue),
+        }
+      })
+      .filter(Boolean) as Array<{ label: string; gross: number; commission: number; net: number }>
+
+    if (mapped.length > 0) {
+      return {
+        labels: mapped.map((x) => x.label),
+        gross: mapped.map((x) => x.gross),
+        commission: mapped.map((x) => x.commission),
+        net: mapped.map((x) => x.net),
+      }
+    }
+  }
+
+  const grossSingle = readNumField(root, ['grossRevenue', 'gross', 'revenueToday', 'totalRevenue'])
+  const commissionSingle = readNumField(root, ['commissionRevenue', 'commission', 'totalCommission', 'commissionToday'])
+  const netSingle = readNumField(root, ['netRevenue', 'net', 'netToday'])
+  if (grossSingle || commissionSingle || netSingle) {
+    return {
+      labels: ['Today'],
+      gross: [grossSingle],
+      commission: [commissionSingle],
+      net: [netSingle || Math.max(0, grossSingle - commissionSingle)],
+    }
+  }
+
+  const summary =
+    root.summary && typeof root.summary === 'object'
+      ? (root.summary as Record<string, unknown>)
+      : null
+  if (summary) {
+    const grossFromSummary = readNumField(summary, ['totalGrossRevenue'])
+    const commissionFromSummary = readNumField(summary, ['totalCommissionRevenue'])
+    const netFromSummary = readNumField(summary, ['totalNetRevenue'])
+    return {
+      labels: ['Summary'],
+      gross: [grossFromSummary],
+      commission: [commissionFromSummary],
+      net: [netFromSummary || Math.max(0, grossFromSummary - commissionFromSummary)],
+    }
+  }
+
+  return { labels: [], gross: [], commission: [], net: [] }
+}
+
 export const adminService = {
+  getRevenueTrend: async (range: RevenueTrendRange): Promise<RevenueTrendSeries> => {
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    const today = `${yyyy}-${mm}-${dd}`
+    const monthStart = `${yyyy}-${mm}-01`
+
+    let paths: readonly string[] = ADMIN_API.DASHBOARD.REVENUE_DAILY
+    let params: Record<string, string> | undefined
+
+    if (range === 'day') {
+      paths = [...ADMIN_API.DASHBOARD.METRICS_TODAY, ...ADMIN_API.DASHBOARD.REVENUE_DAILY]
+      params = { startDate: today, endDate: today }
+    } else if (range === 'month') {
+      paths = [...ADMIN_API.DASHBOARD.REVENUE_CUSTOM, ...ADMIN_API.DASHBOARD.REVENUE_DAILY]
+      params = { startDate: monthStart, endDate: today, granularity: 'DAILY' }
+    } else if (range === 'quarter') {
+      paths = [...ADMIN_API.DASHBOARD.REVENUE_QUARTERLY, ...ADMIN_API.DASHBOARD.REVENUE_CUSTOM]
+      params = { granularity: 'QUARTERLY' }
+    } else if (range === 'year') {
+      paths = [...ADMIN_API.DASHBOARD.REVENUE_YEARLY, ...ADMIN_API.DASHBOARD.REVENUE_CUSTOM]
+      params = { granularity: 'YEARLY' }
+    }
+
+    const raw = await getFirstOkOrEmpty<unknown>(paths, params ? { params } : undefined)
+    return normalizeRevenueTrendPayload(raw)
+  },
+
   getAdminShops: async (): Promise<AdminShopDto[]> => {
     const raw = await getFirstOkOrEmpty<unknown>(ADMIN_API.SHOPS.GET_ALL_ADMIN)
     return coerceArray<AdminShopDto>(raw)
