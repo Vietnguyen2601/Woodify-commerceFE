@@ -44,57 +44,32 @@ export default function PaymentCancel() {
   const hasDetail = Boolean(cancelInfo.orderCode)
 
   return (
-    <div className='relative min-h-screen w-full flex items-center justify-center py-12 px-4'>
-      {/* Background */}
-      <div
-        className='fixed inset-0 pointer-events-none'
-        style={{
-          background: 'linear-gradient(to bottom, rgba(254, 226, 226, 0.4), #FFFBEB, #FFF7ED)',
-          zIndex: -1,
-        }}
-      />
-
-      <div className='w-full max-w-lg'>
-        {/* Card */}
-        <div
-          className='bg-white rounded-3xl shadow-lg overflow-hidden'
-          style={{ boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.10)' }}
-        >
-          {/* Red/orange header banner */}
-          <div
-            className='flex flex-col items-center justify-center py-10 px-6'
-            style={{ background: 'linear-gradient(135deg, #dc2626, #f97316)' }}
-          >
-            <div className='text-6xl mb-4 select-none' aria-hidden='true'>
-              ❌
+    <div className='min-h-screen w-full bg-[#f8f3ea] py-8 sm:py-10'>
+      <div className='mx-auto w-full max-w-[min(860px,calc(100%-2rem))]'>
+        <div className='overflow-hidden rounded-[26px] border border-[#e8dccd] bg-white shadow-[0_12px_32px_rgba(92,56,30,0.1)]'>
+          <div className='bg-gradient-to-r from-[#7b2d26] via-[#a63f2c] to-[#c95d33] px-5 py-6 sm:px-8 sm:py-8'>
+            <div className='flex flex-col items-center gap-2.5 text-center'>
+              <span className='text-3xl leading-none sm:text-4xl' aria-hidden='true'>
+                ✕
+              </span>
+              <h1 className='font-["Inter"] text-xl font-extrabold text-white sm:text-2xl'>
+                Thanh toán bị hủy
+              </h1>
+              <p className='max-w-xl font-["Arimo"] text-xs text-white/90 sm:text-sm'>
+                Giao dịch chưa được hoàn tất. Bạn có thể quay lại giỏ hàng hoặc thử thanh toán lại.
+              </p>
             </div>
-            <h1
-              className='text-2xl sm:text-3xl font-bold text-white text-center'
-              style={{ fontFamily: 'Arimo, sans-serif' }}
-            >
-              Thanh toán bị hủy
-            </h1>
-            <p className='text-red-100 mt-2 text-sm sm:text-base text-center'>
-              Giao dịch chưa được hoàn tất. Đừng lo, bạn có thể thử lại bất kỳ lúc nào.
-            </p>
           </div>
 
-          {/* Cancel details */}
-          <div className='px-6 py-6'>
-            {/* Warning notice */}
-            <div
-              className='flex items-start gap-3 rounded-xl px-4 py-3 mb-6 text-sm'
-              style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}
-            >
-              <span className='text-orange-400 text-lg leading-none mt-0.5'>⚠️</span>
-              <p className='text-orange-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                Đơn hàng của bạn vẫn đang chờ thanh toán. Bạn có thể thay đổi phương thức
-                thanh toán hoặc liên hệ hỗ trợ.
+          <div className='space-y-5 px-4 py-5 sm:px-6 sm:py-6'>
+            <div className='rounded-xl border border-[#f2c89e] bg-[#fff7ef] px-3.5 py-2.5 text-xs text-[#7a4f2d] sm:px-4 sm:text-sm'>
+              <p className='font-["Arimo"] leading-relaxed'>
+                Đơn hàng của bạn vẫn đang ở trạng thái chờ thanh toán. Hãy kiểm tra lại phương thức
+                thanh toán hoặc liên hệ hỗ trợ nếu cần.
               </p>
             </div>
 
-            {/* Detail rows */}
-            <div className='rounded-2xl border border-red-100 bg-red-50 divide-y divide-red-100 mb-6'>
+            <div className='overflow-hidden rounded-2xl border border-[#eadfd2] bg-[#fffdfa]'>
               {hasDetail && (
                 <DetailRow label='Mã thanh toán' value={cancelInfo.orderCode!} mono />
               )}
@@ -102,39 +77,28 @@ export default function PaymentCancel() {
               <DetailRow
                 label='Trạng thái'
                 value='Bị hủy'
-                valueClass='font-semibold text-red-600'
+                valueClass='font-semibold text-[#b42318]'
               />
             </div>
 
-            {/* Action buttons */}
-            <div className='flex flex-col gap-3'>
+            <div className='grid gap-2.5 sm:grid-cols-3'>
               <button
                 onClick={() => navigate(ROUTES.CART)}
-                className='w-full py-3 rounded-xl font-semibold text-white transition-all'
-                style={{
-                  background: 'linear-gradient(135deg, #dc2626, #f97316)',
-                  fontFamily: 'Arimo, sans-serif',
-                }}
+                className='rounded-lg bg-[#6C5B50] px-3 py-2.5 font-["Inter"] text-xs font-semibold text-white transition hover:bg-[#5b4b40] sm:text-sm'
               >
                 Quay lại giỏ hàng
               </button>
 
               <button
                 onClick={() => navigate(ROUTES.CHECKOUT)}
-                className='w-full py-3 rounded-xl font-semibold border-2 transition-all hover:bg-red-50'
-                style={{
-                  borderColor: '#dc2626',
-                  color: '#dc2626',
-                  fontFamily: 'Arimo, sans-serif',
-                }}
+                className='rounded-lg border border-[#BE9C73] bg-white px-3 py-2.5 font-["Inter"] text-xs font-semibold text-[#6C5B50] transition hover:bg-[#f8f3ea] sm:text-sm'
               >
                 Thử thanh toán lại
               </button>
 
               <button
                 onClick={() => navigate(ROUTES.HOME)}
-                className='w-full py-3 rounded-xl font-semibold border border-gray-200 text-gray-600 transition-all hover:bg-gray-50'
-                style={{ fontFamily: 'Arimo, sans-serif' }}
+                className='rounded-lg border border-[#e5dccf] bg-[#faf7f2] px-3 py-2.5 font-["Inter"] text-xs font-semibold text-[#6C5B50] transition hover:bg-[#f4eee6] sm:text-sm'
               >
                 Về trang chủ
               </button>
@@ -142,9 +106,8 @@ export default function PaymentCancel() {
           </div>
         </div>
 
-        {/* Support note */}
-        <p className='text-center text-xs text-gray-400 mt-4'>
-          Cần trợ giúp? Liên hệ hỗ trợ Woodify để được giải quyết nhanh nhất
+        <p className='mt-4 text-center font-["Arimo"] text-xs text-[#8b7b6b] sm:text-sm'>
+          Cần hỗ trợ? Liên hệ đội ngũ Woodify để được xử lý nhanh nhất.
         </p>
       </div>
     </div>
@@ -162,12 +125,12 @@ interface DetailRowProps {
 
 function DetailRow({ label, value, mono = false, valueClass }: DetailRowProps) {
   return (
-    <div className='flex items-center justify-between px-4 py-3 gap-4'>
-      <span className='text-sm text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>
+    <div className='flex items-center justify-between gap-4 border-b border-[#f1e7db] px-4 py-3 last:border-b-0 sm:px-5'>
+      <span className='font-["Arimo"] text-sm text-[#8b7b6b] sm:text-base'>
         {label}
       </span>
       <span
-        className={`text-sm text-right text-gray-800 ${mono ? 'font-mono' : 'font-medium'} ${valueClass ?? ''}`}
+        className={`text-right text-sm text-[#3f2a1d] sm:text-base ${mono ? 'font-mono' : 'font-medium'} ${valueClass ?? ''}`}
         style={mono ? undefined : { fontFamily: 'Arimo, sans-serif' }}
       >
         {value}
