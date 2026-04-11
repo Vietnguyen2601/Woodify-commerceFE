@@ -128,6 +128,8 @@ export default function Product() {
     enabled: !!resolvedProductId,
   })
 
+  const isLoading = productDetailLoading
+
   const { data: shop } = useQuery({
     queryKey: ['shop', product?.shopId],
     queryFn: () => shopService.getShopById(product!.shopId),
@@ -157,7 +159,7 @@ export default function Product() {
   }, [product?.productId, product?.name, parsedPath.kind, location.pathname, navigate])
 
   const activeVersions = React.useMemo(
-    () => product?.versions.filter(v => v.isActive) ?? [],
+    () => (product?.versions ?? []).filter(v => v.isActive),
     [product]
   )
 
@@ -190,8 +192,8 @@ export default function Product() {
   }, [selectedVersion?.stockQuantity])
 
   const gallery = React.useMemo(() => {
-    const productImgs = product?.images.map(i => i.originalUrl) ?? []
-    const versionImgs = selectedVersion?.images.map(i => i.originalUrl) ?? []
+    const productImgs = (product?.images ?? []).map(i => i.originalUrl)
+    const versionImgs = (selectedVersion?.images ?? []).map(i => i.originalUrl)
     const all = [...new Set([...productImgs, ...versionImgs])]
     return all
   }, [product, selectedVersion])
