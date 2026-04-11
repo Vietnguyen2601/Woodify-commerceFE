@@ -47,6 +47,8 @@ export interface SellerOrder {
   payment: unknown | null
   status: SellerOrderStatus | string
   deliveryAddress: string
+  /** Mã dịch vụ vận chuyển (ví dụ ECO, STF, EXP) */
+  providerServiceCode?: string | null
   createdAt: string
   updatedAt: string | null
   orderItems: SellerOrderItem[]
@@ -63,6 +65,8 @@ export interface BuyerOrder {
   status: SellerOrderStatus | string
   deliveryAddress: string
   paymentStatus?: string | null
+  /** Mã dịch vụ vận chuyển (ví dụ ECO, STF, EXP) */
+  providerServiceCode?: string | null
   createdAt: string
   updatedAt: string | null
   orderItems: SellerOrderItem[]

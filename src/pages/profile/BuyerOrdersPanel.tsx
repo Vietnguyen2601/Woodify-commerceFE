@@ -26,6 +26,14 @@ function formatOrderMoney(n: number): string {
   return `${Number(n || 0).toLocaleString('vi-VN')}\u00a0\u20ab`
 }
 
+function providerServiceCodeLabel(code: string | null | undefined): string {
+  const u = (code ?? '').trim().toUpperCase()
+  if (u === 'ECO') return 'Ti\u1ebft ki\u1ec7m (ECO)'
+  if (u === 'STF') return 'Ti\u00eau chu\u1ea9n (STF)'
+  if (u === 'EXP') return 'Nhanh (EXP)'
+  return u || '\u2014'
+}
+
 function bucketForStatus(status: string): CustomerOrderBucket {
   const s = status.toUpperCase()
   if (['PENDING', 'CONFIRMED', 'PROCESSING'].includes(s)) return 'handling'
@@ -214,6 +222,15 @@ export function BuyerOrdersPanel({
                           style={{ fontFamily: 'Arimo, sans-serif' }}
                         >
                           {paymentStatusLabel(order.paymentStatus)}
+                        </span>
+                      )}
+                      {order.providerServiceCode != null && order.providerServiceCode !== '' && (
+                        <span
+                          className='rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-900'
+                          style={{ fontFamily: 'Arimo, sans-serif' }}
+                          title={order.providerServiceCode}
+                        >
+                          {providerServiceCodeLabel(order.providerServiceCode)}
                         </span>
                       )}
                     </div>

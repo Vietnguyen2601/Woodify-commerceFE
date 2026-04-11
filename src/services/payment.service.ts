@@ -9,7 +9,8 @@ export interface CreateOrderRequest {
   shopId: string
   cartItemIds: string[]
   deliveryAddress: string
-  providerServiceCode: 'STANDARD' | 'EXPRESS' | 'ECONOMY' | 'FAST'
+  /** Mã dịch vụ VC (ví dụ ECO, STF, EXP) */
+  providerServiceCode: string
   voucherId?: string | null
 }
 
@@ -29,6 +30,7 @@ export interface CreateOrderResponse {
     totalAmountCents: number
     itemCount: number
     status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+    providerServiceCode?: string | null
     createdAt: string
   }
   errors: null | string[]

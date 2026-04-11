@@ -25,8 +25,20 @@ import type { CartItemDto } from '@/types'
 import { readStoredUser } from '@/features/auth/utils/storage'
 import { resolveCartItemLineId } from '@/utils/cartItemId'
 
-/** Tạm tắt vận chuyển — backend vẫn có thể yêu cầu mã tốc độ cố định */
-const PLACEHOLDER_PROVIDER_SERVICE_CODE = 'STANDARD' as const
+const SHIPPING_OPTIONS = [
+  { method: 'ECONOMY' as const, label: 'Ti\u1ebft ki\u1ec7m', code: 'ECO' as const },
+  { method: 'STANDARD' as const, label: 'Ti\u00eau chu\u1ea9n', code: 'STF' as const },
+  { method: 'EXPRESS' as const, label: 'Nhanh', code: 'EXP' as const },
+] as const
+
+const DEFAULT_SHIPPING = SHIPPING_OPTIONS[1]
+
+function resolveCheckoutProviderServiceCode(cart: ShopCart): string {
+  const raw = (cart.selected_shipping_code ?? '').trim().toUpperCase()
+  if (raw === 'ECO' || raw === 'STF' || raw === 'EXP') return raw
+  const fromMethod = SHIPPING_OPTIONS.find((o) => o.method === cart.selected_shipping_method)?.code
+  return fromMethod ?? DEFAULT_SHIPPING.code
+}
 
 const normCartLineId = (id: string) => id.trim().toLowerCase()
 
@@ -114,8 +126,8 @@ export default function Checkout() {
             shop_id: resolvedShopId,
             shop_name: resolvedShopName,
             items,
-            selected_shipping_method: 'STANDARD' as const,
-            selected_shipping_code: PLACEHOLDER_PROVIDER_SERVICE_CODE,
+            selected_shipping_method: DEFAULT_SHIPPING.method,
+            selected_shipping_code: DEFAULT_SHIPPING.code,
             shipping_methods: [],
             shipping_fee: 0,
             note_to_seller: '',
@@ -159,8 +171,8 @@ export default function Checkout() {
               quantity: item.quantity,
               subtotal: item.totalPrice,
             })),
-            selected_shipping_method: 'STANDARD' as const,
-            selected_shipping_code: PLACEHOLDER_PROVIDER_SERVICE_CODE,
+            selected_shipping_method: DEFAULT_SHIPPING.method,
+            selected_shipping_code: DEFAULT_SHIPPING.code,
             shipping_methods: [],
             shipping_fee: 0,
             note_to_seller: '',
@@ -173,7 +185,10 @@ export default function Checkout() {
       // Use mock data if no checkout data available
       return MOCK_SHOP_CARTS.map((s) => ({
         ...s,
-        selected_shipping_code: s.selected_shipping_code ?? PLACEHOLDER_PROVIDER_SERVICE_CODE,
+        selected_shipping_code:
+          s.selected_shipping_code ??
+          SHIPPING_OPTIONS.find((o) => o.method === s.selected_shipping_method)?.code ??
+          DEFAULT_SHIPPING.code,
         shipping_methods: [],
         shipping_fee: 0,
         total: s.subtotal,
@@ -181,7 +196,10 @@ export default function Checkout() {
     } catch {
       return MOCK_SHOP_CARTS.map((s) => ({
         ...s,
-        selected_shipping_code: s.selected_shipping_code ?? PLACEHOLDER_PROVIDER_SERVICE_CODE,
+        selected_shipping_code:
+          s.selected_shipping_code ??
+          SHIPPING_OPTIONS.find((o) => o.method === s.selected_shipping_method)?.code ??
+          DEFAULT_SHIPPING.code,
         shipping_methods: [],
         shipping_fee: 0,
         total: s.subtotal,
@@ -369,14 +387,13 @@ export default function Checkout() {
         ) as CartItemDto[]
         const orderShopId = rows[0]!.shopId
         const canonicalIds = rows.map((r) => r.cartItemId)
-        const shippingCode = (cart.selected_shipping_code ||
-          PLACEHOLDER_PROVIDER_SERVICE_CODE) as 'STANDARD' | 'EXPRESS' | 'ECONOMY' | 'FAST'
+        const providerServiceCode = resolveCheckoutProviderServiceCode(cart)
         return paymentService.createOrder({
           accountId: currentUser.accountId!,
           shopId: orderShopId,
           cartItemIds: canonicalIds,
           deliveryAddress: deliveryAddressString,
-          providerServiceCode: shippingCode,
+          providerServiceCode,
           voucherId: appliedVoucher?.voucher_id || null,
         })
       })
@@ -595,6 +612,49 @@ export default function Checkout() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                <div className='border-b border-[#ece6dd]/90 px-4 py-3'>
+                  <p className='mb-2 text-sm font-semibold text-[#3f2a1d]'>{'Ph\u01b0\u01a1ng th\u1ee9c v\u1eadn chuy\u1ec3n'}</p>
+                  <div className='flex flex-col gap-2 sm:flex-row sm:flex-wrap'>
+                    {SHIPPING_OPTIONS.map(({ method, label, code }) => {
+                      const selected = shop.selected_shipping_method === method
+                      return (
+                        <label
+                          key={method}
+                          className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                            selected
+                              ? 'border-[#6C5B50] bg-[#f8f3ec] text-[#3f2a1d]'
+                              : 'border-[#ece6dd] bg-white text-black/70 hover:border-[#d4cab8]'
+                          }`}
+                        >
+                          <input
+                            type='radio'
+                            name={`checkout_ship_${shop.shop_id || shopIndex}`}
+                            className='accent-[#6C5B50]'
+                            checked={selected}
+                            onChange={() => {
+                              setShopCarts((prev) =>
+                                prev.map((s) =>
+                                  s.shop_id === shop.shop_id
+                                    ? {
+                                        ...s,
+                                        selected_shipping_method: method,
+                                        selected_shipping_code: code,
+                                      }
+                                    : s
+                                )
+                              )
+                            }}
+                          />
+                          <span>
+                            {label}{' '}
+                            <span className='text-xs text-black/45'>({code})</span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 </div>
 
                 {/* Seller Note */}

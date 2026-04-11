@@ -4,6 +4,14 @@ import { orderService } from '@/services'
 import { useShopStore } from '@/store/shopStore'
 import type { SellerOrder, SellerOrderStatus } from '@/types'
 
+function providerServiceCodeLabel(code: string | null | undefined): string {
+  const u = (code ?? '').trim().toUpperCase()
+  if (u === 'ECO') return 'Ti\u1ebft ki\u1ec7m (ECO)'
+  if (u === 'STF') return 'Ti\u00eau chu\u1ea9n (STF)'
+  if (u === 'EXP') return 'Nhanh (EXP)'
+  return u || '\u2014'
+}
+
 const STATUS_LABEL_VI: Record<string, string> = {
   PENDING: 'Ch\u1edd x\u00e1c nh\u1eadn',
   CONFIRMED: '\u0110\u00e3 x\u00e1c nh\u1eadn',
@@ -376,6 +384,12 @@ function OrderCard({
             <p className='mt-1 line-clamp-2 text-xs text-stone-500' title={order.deliveryAddress}>
               {order.deliveryAddress}
             </p>
+            {order.providerServiceCode != null && order.providerServiceCode !== '' && (
+              <p className='mt-1 text-[10px] text-stone-600'>
+                VC:{' '}
+                <span className='font-mono font-semibold'>{order.providerServiceCode}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -467,6 +481,14 @@ function OrderDetailDrawer({
               <span className='font-mono'>{order.accountId}</span>
             </p>
             <p className='mt-2 text-sm leading-relaxed text-stone-700'>{order.deliveryAddress}</p>
+            {order.providerServiceCode != null && order.providerServiceCode !== '' && (
+              <p className='mt-2 text-xs text-stone-600'>
+                {'D\u1ecbch v\u1ee5 VC: '}
+                <span className='font-mono font-semibold text-stone-800'>
+                  {providerServiceCodeLabel(order.providerServiceCode)}
+                </span>
+              </p>
+            )}
           </section>
 
           <section className='mb-5'>
