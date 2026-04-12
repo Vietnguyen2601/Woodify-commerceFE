@@ -72,6 +72,8 @@ export const API_ENDPOINTS = {
       `/order/Orders/Account?accountId=${encodeURIComponent(accountId)}`,
     /** Body: { orderId, status } — PUT */
     UPDATE_STATUS: '/order/Orders/UpdateStatus',
+    /** POST body: { accountId, shopId, cartItemIds } — preview phí VC theo gói */
+    SHIPPING_PREVIEW: '/order/Orders/checkout/shipping-preview',
   },
 
   // ── Payment Service (5015) ────────────────────────────────────────────────

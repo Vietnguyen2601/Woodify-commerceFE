@@ -18,11 +18,11 @@ export interface SellerOrderItem {
   orderItemId: string
   orderId: string
   versionId: string
-  unitPriceCents: number
+  unitPriceVnd: number
   quantity: number
-  discountCents: number
-  taxCents: number
-  lineTotalCents: number
+  discountVnd: number
+  taxVnd: number
+  lineTotalVnd: number
   shipmentId: string | null
   status: string
   createdAt: string
@@ -41,13 +41,13 @@ export interface SellerOrder {
   orderId: string
   accountId: string
   shopId: string
-  subtotalCents: number
-  totalAmountCents: number
+  subtotalVnd: number
+  totalAmountVnd: number
   voucherId: string | null
   payment: unknown | null
   status: SellerOrderStatus | string
   deliveryAddress: string
-  /** Mã dịch vụ vận chuyển (ví dụ ECO, STF, EXP) */
+  /** Mã dịch vụ vận chuyển (ví dụ ECO, STD, EXP) */
   providerServiceCode?: string | null
   createdAt: string
   updatedAt: string | null
@@ -59,13 +59,13 @@ export interface BuyerOrder {
   orderId: string
   accountId: string
   shopId: string
-  subtotalCents: number
-  totalAmountCents: number
+  subtotalVnd: number
+  totalAmountVnd: number
   voucherId: string | null
   status: SellerOrderStatus | string
   deliveryAddress: string
   paymentStatus?: string | null
-  /** Mã dịch vụ vận chuyển (ví dụ ECO, STF, EXP) */
+  /** Mã dịch vụ vận chuyển (ví dụ ECO, STD, EXP) */
   providerServiceCode?: string | null
   createdAt: string
   updatedAt: string | null

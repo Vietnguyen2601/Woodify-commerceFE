@@ -9,7 +9,7 @@ export interface CreateOrderRequest {
   shopId: string
   cartItemIds: string[]
   deliveryAddress: string
-  /** Mã dịch vụ VC (ví dụ ECO, STF, EXP) */
+  /** Mã dịch vụ VC (ví dụ ECO, STD, EXP) */
   providerServiceCode: string
   voucherId?: string | null
 }
@@ -24,10 +24,14 @@ export interface CreateOrderResponse {
   data: {
     orderId: string
     shopId: string
-    subtotalCents: number
-    shippingFeeCents: number
-    commissionCents: number
-    totalAmountCents: number
+    /** Merchandise subtotal (VND, whole dong) */
+    subtotalVnd: number
+    /** Shipping fee (VND) */
+    shippingFeeVnd: number
+    /** Commission (VND) */
+    commissionVnd: number
+    /** Order total to pay (VND) */
+    totalAmountVnd: number
     itemCount: number
     status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
     providerServiceCode?: string | null
@@ -37,13 +41,14 @@ export interface CreateOrderResponse {
 }
 
 /**
- * Request payload for creating a payment
+ * Request payload for creating a payment (amounts are whole VND, not “cents”)
  */
 export interface CreatePaymentRequest {
   orderIds: string[]
   paymentMethod: 'COD' | 'WALLET' | 'PAYOS'
   accountId: string
-  totalAmountCents: number
+  /** Total to charge (VND integer; PayOS amount is dong, not cent-scaled) */
+  totalAmountVnd: number
   returnUrl?: string
   cancelUrl?: string
 }
@@ -53,12 +58,13 @@ export interface CreatePaymentRequest {
  * Note: API wraps the actual payment data in a 'data' field
  */
 export interface CreatePaymentResponse {
-  status: number  // Changed from statusCode
+  status: number // Changed from statusCode
   message: string
   data:
     | {
         paymentId: string
         orderIds: string[]
+        /** Value is VND (API may keep property name `totalAmount`) */
         totalAmount: number
         paymentMethod: 'COD' | 'WALLET' | 'PAYOS'
         status: 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'CREATED'
@@ -66,6 +72,7 @@ export interface CreatePaymentResponse {
     | {
         paymentId: string
         status: 'SUCCEEDED'
+        /** Wallet balance after transaction (VND) */
         remainingBalance: number
       }
     | {

@@ -23,13 +23,13 @@ const BUYER_ORDER_STATUS_LABEL: Record<string, string> = {
 const TIMELINE_STEP_LABELS = ['\u0110\u1eb7t h\u00e0ng', 'Shop x\u1eed l\u00fd', 'V\u1eadn chuy\u1ec3n', 'Ho\u00e0n t\u1ea5t']
 
 function formatOrderMoney(n: number): string {
-  return `${Number(n || 0).toLocaleString('vi-VN')}\u00a0\u20ab`
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(n) || 0)
 }
 
 function providerServiceCodeLabel(code: string | null | undefined): string {
   const u = (code ?? '').trim().toUpperCase()
   if (u === 'ECO') return 'Ti\u1ebft ki\u1ec7m (ECO)'
-  if (u === 'STF') return 'Ti\u00eau chu\u1ea9n (STF)'
+  if (u === 'STF' || u === 'STD') return 'Ti\u00eau chu\u1ea9n (STD)'
   if (u === 'EXP') return 'Nhanh (EXP)'
   return u || '\u2014'
 }
@@ -255,11 +255,11 @@ export function BuyerOrdersPanel({
                       className='text-xl font-bold'
                       style={{ fontFamily: 'Poppins, sans-serif', color: '#BE9C73' }}
                     >
-                      {formatOrderMoney(order.totalAmountCents)}
+                      {formatOrderMoney(order.totalAmountVnd)}
                     </p>
                     <p className='mt-1 text-xs text-gray-500' style={{ fontFamily: 'Arimo, sans-serif' }}>
                       {'T\u1ea1m t\u00ednh: '}
-                      {formatOrderMoney(order.subtotalCents)}
+                      {formatOrderMoney(order.subtotalVnd)}
                     </p>
                   </div>
                 </div>
@@ -391,13 +391,13 @@ export function BuyerOrdersPanel({
                             <div className='text-left sm:text-right'>
                               <p className='text-sm text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
                                 {'SL: '}
-                                {it.quantity} × {formatOrderMoney(it.unitPriceCents)}
+                                {it.quantity} × {formatOrderMoney(it.unitPriceVnd)}
                               </p>
                               <p
                                 className='font-bold text-[#6C5B50]'
                                 style={{ fontFamily: 'Poppins, sans-serif' }}
                               >
-                                {formatOrderMoney(it.lineTotalCents)}
+                                {formatOrderMoney(it.lineTotalVnd)}
                               </p>
                               <span
                                 className='mt-1 inline-block rounded-full bg-white px-2 py-0.5 text-[11px] text-gray-600'

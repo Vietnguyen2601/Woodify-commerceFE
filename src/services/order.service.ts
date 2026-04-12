@@ -9,6 +9,28 @@ import type {
   SellerOrderStatus,
 } from '@/types'
 
+export interface CheckoutShippingPreviewOption {
+  providerServiceCode: string
+  displayLabel: string
+  totalAmountVnd: number
+  isFreeShipping: boolean
+}
+
+export interface CheckoutShippingPreviewResult {
+  shopId: string
+  subtotalVnd: number
+  totalWeightGrams?: number
+  freeShippingThresholdVnd?: number
+  subtotalQualifiesForFreeShipping?: boolean
+  options: CheckoutShippingPreviewOption[]
+}
+
+export interface CheckoutShippingPreviewRequest {
+  accountId: string
+  shopId: string
+  cartItemIds: string[]
+}
+
 export interface CreateOrderData {
   items: Array<{
     productId: string
@@ -88,5 +110,14 @@ export const orderService = {
    */
   updateShopOrderStatus: async (orderId: string, status: SellerOrderStatus): Promise<void> => {
     await api.put<unknown>(API_ENDPOINTS.ORDERS.UPDATE_STATUS, { orderId, status })
+  },
+
+  /**
+   * Preview phí vận chuyển checkout — POST /order/Orders/checkout/shipping-preview
+   */
+  previewCheckoutShipping: async (
+    body: CheckoutShippingPreviewRequest
+  ): Promise<CheckoutShippingPreviewResult> => {
+    return api.post<CheckoutShippingPreviewResult>(API_ENDPOINTS.ORDERS.SHIPPING_PREVIEW, body)
   },
 }
