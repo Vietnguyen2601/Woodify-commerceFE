@@ -73,7 +73,7 @@ export default function ShipmentSellerPanel({ shopId, order, shipment, compact, 
     mutationFn: () => shipmentService.updateShipmentPickup(shipment!.shipmentId),
     onSuccess: () => {
       invalidate()
-      onToast?.(true, 'Đã đánh dấu đã lấy hàng (PICKED_UP).')
+      onToast?.(true, 'Đã đánh dấu đã lấy hàng.')
     },
     onError: (e) => onToast?.(false, errMsg(e)),
   })
@@ -208,7 +208,6 @@ export default function ShipmentSellerPanel({ shopId, order, shipment, compact, 
             {shipment && canMarkPickup(shipment.status) && (
               <button type='button' disabled={busy} onClick={() => pickupMu.mutate()} className={tileSecondary}>
                 Đã lấy hàng
-                <span className='mt-0.5 block text-[10px] font-normal opacity-90'>PICKED_UP</span>
               </button>
             )}
           </div>
@@ -236,8 +235,7 @@ export default function ShipmentSellerPanel({ shopId, order, shipment, compact, 
                   }}
                   className={tileNext}
                 >
-                  <span className='block'>{shipmentStatusLabel(ns)}</span>
-                  <span className='mt-0.5 block font-mono text-[10px] font-normal text-stone-500'>{ns}</span>
+                  {shipmentStatusLabel(ns)}
                 </button>
               ))}
             </div>

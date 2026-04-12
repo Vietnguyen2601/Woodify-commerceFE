@@ -1,40 +1,66 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useShopStore } from '@/store/shopStore'
 
-const FEEDBACK_OPTIONS = [
+const FEEDBACK_OPTIONS_BASE = [
   {
     id: 'chat',
     title: 'Chat Management',
     description: 'Giám sát chat, trả lời nhanh và cấu hình widget hỗ trợ khách.',
     highlights: [
       { label: 'Response rate', value: '95.8%' },
-      { label: 'Avg. time', value: '8.5 phút' }
+      { label: 'Avg. time', value: '8.5 phút' },
     ],
     badge: 'Hỗ trợ realtime',
     gradient: 'from-amber-900 via-amber-700 to-yellow-500',
-    route: '/seller/support/chat-management'
+    route: '/seller/support/chat-management',
   },
   {
     id: 'rating',
     title: 'Shop Rating Management',
     description: 'Theo dõi đánh giá, lọc phản hồi và trả lời khách nhanh chóng.',
-    highlights: [
-      { label: 'Overall', value: '4.8 / 5.0' },
-      { label: 'Total reviews', value: '1.248' }
-    ],
+    highlights: [] as { label: string; value: string }[],
     badge: 'Danh tiếng shop',
     gradient: 'from-stone-900 via-amber-900 to-rose-600/80',
-    route: '/seller/support/shop-rating'
-  }
+    route: '/seller/support/shop-rating',
+  },
 ] as const
 
 const QUICK_STATS = [
-  { label: 'Tổng chat tuần này', value: '342', delta: '+28' },
-  { label: 'Đánh giá mới 7 ngày', value: '15', delta: '+12%' }
+  { label: 'Tổng chat tuần này', value: '—', delta: '' },
+  { label: 'Đánh giá (shop)', value: '—', delta: '' },
 ]
 
 export default function FeedbackRating() {
   const navigate = useNavigate()
+  const { shop } = useShopStore()
+
+  const feedbackOptions = React.useMemo(() => {
+    const rating = shop
+      ? [
+          { label: 'Điểm shop', value: `${shop.rating.toFixed(1)} / 5` },
+          { label: 'Tổng review', value: String(shop.reviewCount) },
+        ]
+      : [
+          { label: 'Điểm shop', value: '—' },
+          { label: 'Tổng review', value: '—' },
+        ]
+    return FEEDBACK_OPTIONS_BASE.map((opt) =>
+      opt.id === 'rating' ? { ...opt, highlights: rating } : opt
+    )
+  }, [shop])
+
+  const quickStats = React.useMemo(
+    () => [
+      { ...QUICK_STATS[0] },
+      {
+        label: 'Đánh giá (shop API)',
+        value: shop ? String(shop.reviewCount) : '—',
+        delta: '',
+      },
+    ],
+    [shop]
+  )
 
   return (
     <div className='space-y-6'>
@@ -48,12 +74,14 @@ export default function FeedbackRating() {
               trong một hub duy nhất.
             </p>
             <div className='flex flex-wrap gap-4'>
-              {QUICK_STATS.map(stat => (
+              {quickStats.map((stat) => (
                 <div key={stat.label} className='rounded-2xl border border-stone-200/80 bg-stone-50 px-4 py-3'>
                   <p className='text-xs uppercase tracking-wide text-stone-400'>{stat.label}</p>
                   <div className='flex items-baseline gap-2'>
                     <span className='text-xl font-semibold text-stone-900'>{stat.value}</span>
-                    <span className='text-xs font-medium text-green-600'>{stat.delta}</span>
+                    {stat.delta ? (
+                      <span className='text-xs font-medium text-green-600'>{stat.delta}</span>
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -68,7 +96,7 @@ export default function FeedbackRating() {
       </section>
 
       <section className='grid gap-6 md:grid-cols-2'>
-        {FEEDBACK_OPTIONS.map(option => (
+        {feedbackOptions.map((option) => (
           <article
             key={option.id}
             className='group relative overflow-hidden rounded-3xl border border-amber-900/10 bg-white p-6 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.8)]'

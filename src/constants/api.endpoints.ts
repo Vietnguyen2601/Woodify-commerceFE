@@ -54,6 +54,27 @@ export const API_ENDPOINTS = {
     CREATE: '/product/ProductVersions/CreateVersion',
   },
 
+  /** ProductReviews — PRODUCT_REVIEWS_FEEDBACK_FE_API_GUIDE.md */
+  PRODUCT_REVIEWS: {
+    GET_VISIBLE: (productId: string) =>
+      `/product/ProductReviews/GetVisibleReviews/${encodeURIComponent(productId)}`,
+    GET_BY_PRODUCT: (productId: string) =>
+      `/product/ProductReviews/GetReviewsByProductId/${encodeURIComponent(productId)}`,
+    GET_BY_ID: (reviewId: string) =>
+      `/product/ProductReviews/GetReviewById/${encodeURIComponent(reviewId)}`,
+    CREATE: '/product/ProductReviews/CreateReview',
+    GET_BY_ORDER: (orderId: string) =>
+      `/product/ProductReviews/GetReviewsByOrderId/${encodeURIComponent(orderId)}`,
+    ADD_SHOP_RESPONSE: (reviewId: string) =>
+      `/product/ProductReviews/AddShopResponse/${encodeURIComponent(reviewId)}`,
+    HIDE: (reviewId: string) =>
+      `/product/ProductReviews/HideReview/${encodeURIComponent(reviewId)}`,
+    UNHIDE: (reviewId: string) =>
+      `/product/ProductReviews/UnhideReview/${encodeURIComponent(reviewId)}`,
+    DELETE: (reviewId: string) =>
+      `/product/ProductReviews/DeleteReview/${encodeURIComponent(reviewId)}`,
+  },
+
   // ── Placeholder endpoints — NOT yet confirmed by backend ─────────────────
 
   ORDERS: {
