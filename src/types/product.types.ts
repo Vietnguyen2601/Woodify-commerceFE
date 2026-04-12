@@ -134,6 +134,9 @@ export interface ProductDetail {
   publishedAt: string | null
   images: ProductImage[]
   versions: ProductDetailVersion[]
+  /** Trung bình sao review đang hiển thị; null nếu chưa có (Product Service) */
+  averageRating?: number | null
+  reviewCount?: number
 }
 
 export interface ProductMaster {
@@ -155,6 +158,8 @@ export interface ProductMaster {
   price: number
   stockQuantity: number
   woodType: string
+  averageRating?: number | null
+  reviewCount?: number
 }
 
 export interface CreateProductMasterRequest {

@@ -10,6 +10,14 @@ import {
   shipmentStatusBadgeClass,
   shipmentStatusLabel,
 } from './shipmentSellerUi'
+import {
+  SELLER_MAIN_STAGE_SEQUENCE,
+  SELLER_STAGE_LABEL_VI,
+  SELLER_STAGE_STRIP_LABEL_VI,
+  type SellerOrderStage,
+  resolveSellerOrderStage,
+  sellerStageBadgeClass,
+} from './sellerOrderStage'
 
 function providerServiceCodeLabel(code: string | null | undefined): string {
   const u = (code ?? '').trim().toUpperCase()
@@ -32,18 +40,15 @@ const STATUS_LABEL_VI: Record<string, string> = {
   REFUNDED: '\u0110\u00e3 ho\u00e0n ti\u1ec1n',
 }
 
-const FILTER_TABS: Array<{ value: 'ALL' | SellerOrderStatus; label: string }> = [
+type StageFilter = 'ALL' | SellerOrderStage
+
+const STAGE_FILTER_TABS: Array<{ value: StageFilter; label: string }> = [
   { value: 'ALL', label: 'T\u1ea5t c\u1ea3' },
-  { value: 'PENDING', label: 'Ch\u1edd x\u00e1c nh\u1eadn' },
-  { value: 'CONFIRMED', label: '\u0110\u00e3 x\u00e1c nh\u1eadn' },
-  { value: 'PROCESSING', label: '\u0110ang x\u1eed l\u00fd' },
-  { value: 'READY_TO_SHIP', label: 'S\u1eb5n s\u00e0ng giao' },
-  { value: 'SHIPPED', label: '\u0110ang giao' },
-  { value: 'DELIVERED', label: '\u0110\u00e3 giao' },
-  { value: 'COMPLETED', label: 'Ho\u00e0n th\u00e0nh' },
-  { value: 'CANCELLED', label: '\u0110\u00e3 h\u1ee7y' },
-  { value: 'REFUNDING', label: 'Ho\u00e0n ti\u1ec1n' },
-  { value: 'REFUNDED', label: '\u0110\u00e3 ho\u00e0n ti\u1ec1n' },
+  { value: 'prepare', label: SELLER_STAGE_LABEL_VI.prepare },
+  { value: 'handover', label: SELLER_STAGE_LABEL_VI.handover },
+  { value: 'in_delivery', label: SELLER_STAGE_LABEL_VI.in_delivery },
+  { value: 'done', label: SELLER_STAGE_LABEL_VI.done },
+  { value: 'exception', label: SELLER_STAGE_LABEL_VI.exception },
 ]
 
 const TERMINAL = new Set(['COMPLETED', 'CANCELLED', 'REFUNDED'])
@@ -118,7 +123,7 @@ function getCancelAction(status: string): { label: string; next: SellerOrderStat
 export default function AllOrders() {
   const shop = useShopStore((s) => s.shop)
   const queryClient = useQueryClient()
-  const [filter, setFilter] = React.useState<'ALL' | SellerOrderStatus>('ALL')
+  const [filter, setFilter] = React.useState<StageFilter>('ALL')
   const [search, setSearch] = React.useState('')
   const [selected, setSelected] = React.useState<SellerOrder | null>(null)
   const [banner, setBanner] = React.useState<{ ok: boolean; msg: string } | null>(null)
@@ -178,19 +183,26 @@ export default function AllOrders() {
     return () => window.clearTimeout(t)
   }, [banner])
 
-  const statusCounts = React.useMemo(() => {
-    const m = new Map<string, number>()
+  const stageCounts = React.useMemo(() => {
+    const m = new Map<SellerOrderStage, number>()
+    for (const s of STAGE_FILTER_TABS) {
+      if (s.value !== 'ALL') m.set(s.value, 0)
+    }
     for (const o of orders) {
-      const k = (o.status || '').toUpperCase()
-      m.set(k, (m.get(k) ?? 0) + 1)
+      const ship = shipmentByOrderId.get(o.orderId) ?? null
+      const stage = resolveSellerOrderStage(o.status, ship)
+      m.set(stage, (m.get(stage) ?? 0) + 1)
     }
     return m
-  }, [orders])
+  }, [orders, shipmentByOrderId])
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase()
     return orders.filter((o) => {
-      if (filter !== 'ALL' && (o.status || '').toUpperCase() !== filter) return false
+      if (filter !== 'ALL') {
+        const ship = shipmentByOrderId.get(o.orderId) ?? null
+        if (resolveSellerOrderStage(o.status, ship) !== filter) return false
+      }
       if (!q) return true
       if (o.orderId.toLowerCase().includes(q)) return true
       if (o.accountId.toLowerCase().includes(q)) return true
@@ -200,7 +212,7 @@ export default function AllOrders() {
           (it.sellerSku || '').toLowerCase().includes(q),
       )
     })
-  }, [orders, filter, search])
+  }, [orders, filter, search, shipmentByOrderId])
 
   const runStatusUpdate = (orderId: string, status: SellerOrderStatus) => {
     setBanner(null)
@@ -220,7 +232,9 @@ export default function AllOrders() {
       <header className='mb-6'>
         <h1 className='text-xl font-bold text-stone-900'>{'Qu\u1ea3n l\u00fd \u0111\u01a1n h\u00e0ng'}</h1>
         <p className='mt-1 text-sm text-stone-600'>
-          {'Xem \u0111\u01a1n theo shop, chi ti\u1ebft t\u1eebng \u0111\u01a1n v\u00e0 c\u1eadp nh\u1eadt tr\u1ea1ng th\u00e1i theo quy tr\u00ecnh giao h\u00e0ng.'}
+          {
+            'L\u1ecdc theo 5 giai \u0111o\u1ea1n hi\u1ec3n th\u1ecb (Chu\u1ea9n b\u1ecb \u2192 B\u00e0n giao \u2192 \u0110ang giao \u2192 Ho\u00e0n t\u1ea5t / Ngo\u1ea1i l\u1ec7). Tr\u1ea1ng th\u00e1i API v\u1eabn hi\u1ec7n \u1edf chi ti\u1ebft t\u1eebng \u0111\u01a1n.'
+          }
         </p>
       </header>
 
@@ -239,9 +253,9 @@ export default function AllOrders() {
 
       <section className='mb-4 rounded-xl border border-yellow-800/20 bg-white p-4 shadow-sm'>
         <div className='flex flex-wrap gap-2'>
-          {FILTER_TABS.map((tab) => {
+          {STAGE_FILTER_TABS.map((tab) => {
             const count =
-              tab.value === 'ALL' ? orders.length : (statusCounts.get(tab.value) ?? 0)
+              tab.value === 'ALL' ? orders.length : (stageCounts.get(tab.value) ?? 0)
             const active = filter === tab.value
             return (
               <button
@@ -352,6 +366,42 @@ export default function AllOrders() {
   )
 }
 
+function SellerStageProgressStrip({ stage }: { stage: SellerOrderStage }) {
+  if (stage === 'exception') {
+    return (
+      <div className='rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-center text-[11px] font-semibold text-orange-900'>
+        {SELLER_STAGE_LABEL_VI.exception}
+        {' — '}
+        <span className='font-normal opacity-90'>
+          {'Ngo\u1ea1i l\u1ec7 lu\u1ed3ng chu\u1ea9n (h\u1ee7y / ho\u00e0n / l\u1ed7i giao\u2026)'}
+        </span>
+      </div>
+    )
+  }
+  const active = SELLER_MAIN_STAGE_SEQUENCE.indexOf(stage)
+  return (
+    <div>
+      <p className='mb-2 text-[10px] font-bold uppercase tracking-wide text-stone-500'>
+        {'Ti\u1ebfn \u0111\u1ed9 \u0111\u01a1n (hi\u1ec3n th\u1ecb)'}
+      </p>
+      <div className='grid grid-cols-4 gap-2'>
+        {SELLER_MAIN_STAGE_SEQUENCE.map((s, i) => (
+          <div key={s} className='text-center'>
+            <div className={`h-1.5 rounded-full ${i <= active ? 'bg-yellow-800' : 'bg-stone-200'}`} />
+            <p
+              className={`mt-1 text-[9px] leading-tight ${
+                i <= active ? 'font-semibold text-stone-900' : 'text-stone-500'
+              }`}
+            >
+              {SELLER_STAGE_STRIP_LABEL_VI[s]}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function OrderCard({
   order,
   shipment,
@@ -366,6 +416,7 @@ function OrderCard({
   onStatusChange: (orderId: string, s: SellerOrderStatus) => void
 }) {
   const st = (order.status || '').toUpperCase()
+  const stage = resolveSellerOrderStage(order.status, shipment)
   const forward = getForwardActions(st)
   const cancel = getCancelAction(st)
   const locked = TERMINAL.has(st) || st === 'REFUNDING'
@@ -380,7 +431,13 @@ function OrderCard({
           <span className='font-mono font-semibold text-stone-900'>{order.orderId}</span>
           <span className='text-stone-500'>{formatDateTime(order.createdAt)}</span>
           <span
-            className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${statusBadgeClass(st)}`}
+            className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${sellerStageBadgeClass(stage)}`}
+          >
+            {SELLER_STAGE_LABEL_VI[stage]}
+          </span>
+          <span
+            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium opacity-80 ${statusBadgeClass(st)}`}
+            title='Tr\u1ea1ng th\u00e1i \u0111\u01a1n (API)'
           >
             {statusLabel(st)}
           </span>
@@ -484,6 +541,7 @@ function OrderDetailDrawer({
   onShipmentToast: (ok: boolean, msg: string) => void
 }) {
   const st = (order.status || '').toUpperCase()
+  const uiStage = resolveSellerOrderStage(order.status, shipment)
   const forward = getForwardActions(st)
   const cancel = getCancelAction(st)
   const locked = TERMINAL.has(st) || st === 'REFUNDING'
@@ -498,14 +556,21 @@ function OrderDetailDrawer({
       />
       <div className='relative flex h-full w-full max-w-lg flex-col border-l border-yellow-800/20 bg-white shadow-2xl'>
         <div className='flex items-start justify-between border-b border-yellow-800/15 px-5 py-4'>
-          <div>
+          <div className='min-w-0 pr-2'>
             <p className='text-xs font-semibold uppercase tracking-wide text-stone-500'>Chi tiết sản phẩm</p>
             <p className='mt-1 text-xs text-stone-500'>{formatDateTime(order.createdAt)}</p>
-            <span
-              className={`mt-2 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${statusBadgeClass(st)}`}
-            >
-              {statusLabel(st)}
-            </span>
+            <div className='mt-2 flex flex-wrap items-center gap-2'>
+              <span
+                className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${sellerStageBadgeClass(uiStage)}`}
+              >
+                {SELLER_STAGE_LABEL_VI[uiStage]}
+              </span>
+              <span
+                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusBadgeClass(st)}`}
+              >
+                {statusLabel(st)}
+              </span>
+            </div>
           </div>
           <button
             type='button'
@@ -517,8 +582,14 @@ function OrderDetailDrawer({
         </div>
 
         <div className='flex-1 overflow-y-auto px-5 py-4'>
+          <section className='mb-5 rounded-lg border border-yellow-800/15 bg-stone-50/80 px-3 py-3'>
+            <SellerStageProgressStrip stage={uiStage} />
+          </section>
+
           <section className='mb-5'>
-            <h3 className='text-xs font-bold uppercase text-stone-500'>{'Khách hàng & giao hààng'}</h3>
+            <h3 className='text-xs font-bold uppercase text-stone-500'>
+              {'Kh\u00e1ch h\u00e0ng & giao h\u00e0ng'}
+            </h3>
             <p className='mt-2 text-sm text-stone-800'>
               {'Mã tài khoản: '}
               <span className='font-mono'>{order.accountId}</span>

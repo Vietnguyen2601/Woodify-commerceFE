@@ -273,16 +273,17 @@ export function VersionFormPanel({
               role='switch'
               aria-checked={form.watch('isActive')}
               onClick={() => form.setValue('isActive', !form.watch('isActive'))}
-              className={`relative h-5 w-9 rounded-full border transition-colors ${
+              className={`relative h-7 w-[3.25rem] shrink-0 rounded-full border-2 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-800/35 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-50 ${
                 form.watch('isActive')
                   ? 'border-yellow-800 bg-yellow-800'
-                  : 'border-yellow-800/30 bg-white'
+                  : 'border-yellow-800/30 bg-stone-100'
               }`}
             >
               <span
-                className={`absolute top-1 h-3 w-3 rounded-full bg-white shadow transition-transform ${
-                  form.watch('isActive') ? 'translate-x-4' : 'translate-x-1'
+                className={`pointer-events-none absolute left-[3px] top-1/2 block size-[1.125rem] -translate-y-1/2 rounded-full bg-white shadow-sm ring-0 transition-transform duration-300 ease-in-out will-change-transform ${
+                  form.watch('isActive') ? 'translate-x-7' : 'translate-x-0'
                 }`}
+                aria-hidden
               />
             </button>
           </div>

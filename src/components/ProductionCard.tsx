@@ -56,16 +56,6 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
         />
         <span className='production-card__seller-name'>{product.shopName || 'Shop'}</span>
       </div>
-      <div className='production-card__seller-row'>
-        <AssetIcon
-          src={pointAddressIcon}
-          width={11}
-          height={11}
-          className='production-card__location-icon'
-          alt=''
-        />
-        <span className='production-card__location'>{product.location || 'Hà Nội'}</span>
-      </div>
     </div>
   )
 

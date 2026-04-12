@@ -1,7 +1,11 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import type { BuyerOrder } from '@/types'
+import { productReviewService } from '@/services'
 import { ROUTES } from '@/constants/routes'
+import { BuyerReviewModal } from '@/components/reviews/BuyerReviewModal'
+import { lineEligibleForBuyerReview } from '../../utils/orderReviewEligibility'
 import PackageIcon from '@/assets/icons/essential/commerce/package.svg'
 import TruckIcon from '@/assets/icons/essential/commerce/truck.svg'
 
@@ -122,6 +126,24 @@ export function BuyerOrdersPanel({
   onToggleExpand,
 }: BuyerOrdersPanelProps) {
   const navigate = useNavigate()
+  const [reviewTarget, setReviewTarget] = React.useState<null | {
+    orderId: string
+    versionId: string
+    orderItemId: string
+    productName: string
+  }>(null)
+
+  const { data: expandedOrderReviews = [] } = useQuery({
+    queryKey: ['order-reviews', expandedOrderId],
+    queryFn: () => productReviewService.getReviewsByOrderId(expandedOrderId!),
+    enabled: !!expandedOrderId,
+  })
+
+  const reviewedOrderItemIds = React.useMemo(
+    () => new Set(expandedOrderReviews.map((r) => r.orderItemId)),
+    [expandedOrderReviews]
+  )
+
   const sorted = sortBuyerOrdersByDateDesc(orders)
   const filtered = sorted.filter((o) => orderMatchesBucket(o, orderBucket))
   const counts: Record<CustomerOrderBucket, number> = {
@@ -345,6 +367,16 @@ export function BuyerOrdersPanel({
                     )}
                   </div>
                 </div>
+                {(st === 'DELIVERED' || st === 'COMPLETED') && !expanded && (
+                  <p
+                    className='mt-2 text-xs text-gray-600'
+                    style={{ fontFamily: 'Arimo, sans-serif' }}
+                  >
+                    {
+                      'M\u1edf \u201cChi ti\u1ebft s\u1ea3n ph\u1ea9m\u201d \u0111\u1ec3 \u0111\u00e1nh gi\u00e1 t\u1eebng m\u1eb7t h\u00e0ng \u0111\u00e3 giao.'
+                    }
+                  </p>
+                )}
 
                 {expanded && (
                   <div className='mt-4 space-y-3 border-t border-dashed border-gray-200 pt-4'>
@@ -405,6 +437,34 @@ export function BuyerOrdersPanel({
                               >
                                 {lineItemStatusLabel(it.status)}
                               </span>
+                              {lineEligibleForBuyerReview(order.status, it.status) && (
+                                <div className='mt-2'>
+                                  {reviewedOrderItemIds.has(it.orderItemId) ? (
+                                    <span
+                                      className='text-xs font-medium text-emerald-700'
+                                      style={{ fontFamily: 'Arimo, sans-serif' }}
+                                    >
+                                      {'\u0110\u00e3 \u0111\u00e1nh gi\u00e1'}
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type='button'
+                                      className='rounded-[8px] bg-[#BE9C73] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90'
+                                      style={{ fontFamily: 'Arimo, sans-serif' }}
+                                      onClick={() =>
+                                        setReviewTarget({
+                                          orderId: order.orderId,
+                                          versionId: it.versionId,
+                                          orderItemId: it.orderItemId,
+                                          productName: it.productName,
+                                        })
+                                      }
+                                    >
+                                      {'\u0110\u00e1nh gi\u00e1'}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </li>
@@ -444,6 +504,16 @@ export function BuyerOrdersPanel({
           }
         </div>
       )}
+      {reviewTarget ? (
+        <BuyerReviewModal
+          open
+          onClose={() => setReviewTarget(null)}
+          orderId={reviewTarget.orderId}
+          versionId={reviewTarget.versionId}
+          orderItemId={reviewTarget.orderItemId}
+          productName={reviewTarget.productName}
+        />
+      ) : null}
     </div>
   )
 }
