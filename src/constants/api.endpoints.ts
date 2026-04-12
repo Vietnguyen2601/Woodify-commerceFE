@@ -173,6 +173,18 @@ export const API_ENDPOINTS = {
   SHIPMENT_SERVICES: {
     BY_SHOP: (shopId: string) => `/shipment/shops/${encodeURIComponent(shopId)}/services`,
   },
+  /** Shipment entity — SHIPMENT_SELLER_FLOW.md (gateway `/api/shipment/shipments/...`) */
+  SHIPMENTS: {
+    LIST: '/shipment/shipments',
+    BY_ID: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}`,
+    BY_ORDER: (orderId: string) => `/shipment/shipments/by-order/${encodeURIComponent(orderId)}`,
+    BY_SHOP: (shopId: string) => `/shipment/shipments/by-shop/${encodeURIComponent(shopId)}`,
+    CREATE: '/shipment/shipments',
+    UPDATE: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}`,
+    STATUS: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}/status`,
+    PICKUP: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}/pickup`,
+    DELETE: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}`,
+  },
 } as const
 
 /**

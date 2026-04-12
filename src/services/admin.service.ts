@@ -15,7 +15,7 @@ import type {
   ProductMasterDto,
   ProductModerationDto,
   ProvidersPageDto,
-  ShipmentDto,
+  AdminShipmentDto,
   ShipmentProviderDto,
   ShopStatus,
   UpdateAccountStatusPayload,
@@ -258,9 +258,9 @@ export const adminService = {
     return coerceArray<ProductMasterDto>(raw)
   },
 
-  getAllShipments: async (): Promise<ShipmentDto[]> => {
+  getAllShipments: async (): Promise<AdminShipmentDto[]> => {
     const raw = await getFirstOkOrEmpty<unknown>(ADMIN_API.SHIPMENTS.GET_ALL)
-    return coerceArray<ShipmentDto>(raw)
+    return coerceArray<AdminShipmentDto>(raw)
   },
 
   getShipmentProviders: async (page = 1, limit = 50): Promise<ProvidersPageDto> => {
