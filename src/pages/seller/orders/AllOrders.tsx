@@ -1,8 +1,15 @@
 import React from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { orderService } from '@/services'
+import { orderService, shipmentService } from '@/services'
 import { useShopStore } from '@/store/shopStore'
-import type { SellerOrder, SellerOrderStatus } from '@/types'
+import type { SellerOrder, SellerOrderStatus, ShipmentDto } from '@/types'
+import ShipmentSellerPanel from './components/ShipmentSellerPanel'
+import {
+  SHIP_QUERY_KEY,
+  buildShipmentByOrderIdMap,
+  shipmentStatusBadgeClass,
+  shipmentStatusLabel,
+} from './shipmentSellerUi'
 
 function providerServiceCodeLabel(code: string | null | undefined): string {
   const u = (code ?? '').trim().toUpperCase()
@@ -129,6 +136,17 @@ export default function AllOrders() {
     enabled: !!shop?.shopId,
   })
 
+  const { data: shopShipments = [] } = useQuery({
+    queryKey: [SHIP_QUERY_KEY, shop?.shopId],
+    queryFn: () => shipmentService.listShipmentsByShop(shop!.shopId),
+    enabled: !!shop?.shopId,
+  })
+
+  const shipmentByOrderId = React.useMemo(
+    () => buildShipmentByOrderIdMap(shopShipments),
+    [shopShipments],
+  )
+
   React.useEffect(() => {
     if (!selected || !orders.length) return
     const next = orders.find((o) => o.orderId === selected.orderId)
@@ -141,6 +159,7 @@ export default function AllOrders() {
     onMutate: ({ orderId }) => setUpdatingId(orderId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['seller-shop-orders', shop?.shopId] })
+      void queryClient.invalidateQueries({ queryKey: [SHIP_QUERY_KEY, shop?.shopId] })
       setBanner({ ok: true, msg: '\u0110\u00e3 c\u1eadp nh\u1eadt tr\u1ea1ng th\u00e1i \u0111\u01a1n h\u00e0ng.' })
     },
     onError: (e: unknown) => {
@@ -309,6 +328,7 @@ export default function AllOrders() {
             <OrderCard
               key={order.orderId}
               order={order}
+              shipment={shipmentByOrderId.get(order.orderId) ?? null}
               busy={updatingId === order.orderId}
               onOpenDetail={() => setSelected(order)}
               onStatusChange={runStatusUpdate}
@@ -317,12 +337,15 @@ export default function AllOrders() {
         </div>
       )}
 
-      {selected && (
+      {selected && shop?.shopId && (
         <OrderDetailDrawer
+          shopId={shop.shopId}
           order={selected}
+          shipment={shipmentByOrderId.get(selected.orderId) ?? null}
           onClose={() => setSelected(null)}
           busy={updatingId === selected.orderId}
           onStatusChange={runStatusUpdate}
+          onShipmentToast={(ok, msg) => setBanner({ ok, msg })}
         />
       )}
     </div>
@@ -331,11 +354,13 @@ export default function AllOrders() {
 
 function OrderCard({
   order,
+  shipment,
   busy,
   onOpenDetail,
   onStatusChange,
 }: {
   order: SellerOrder
+  shipment: ShipmentDto | null
   busy: boolean
   onOpenDetail: () => void
   onStatusChange: (orderId: string, s: SellerOrderStatus) => void
@@ -390,6 +415,18 @@ function OrderCard({
                 <span className='font-mono font-semibold'>{order.providerServiceCode}</span>
               </p>
             )}
+            <p className='mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-stone-600'>
+              <span>Vận đơn:</span>
+              {shipment ? (
+                <span
+                  className={`inline-flex rounded-full border px-2 py-0.5 font-semibold ${shipmentStatusBadgeClass(shipment.status)}`}
+                >
+                  {shipmentStatusLabel(shipment.status)}
+                </span>
+              ) : (
+                <span className='text-stone-500'>Chưa tạo</span>
+              )}
+            </p>
           </div>
         </div>
 
@@ -430,15 +467,21 @@ function OrderCard({
 }
 
 function OrderDetailDrawer({
+  shopId,
   order,
+  shipment,
   onClose,
   busy,
   onStatusChange,
+  onShipmentToast,
 }: {
+  shopId: string
   order: SellerOrder
+  shipment: ShipmentDto | null
   onClose: () => void
   busy: boolean
   onStatusChange: (orderId: string, s: SellerOrderStatus) => void
+  onShipmentToast: (ok: boolean, msg: string) => void
 }) {
   const st = (order.status || '').toUpperCase()
   const forward = getForwardActions(st)
@@ -508,6 +551,15 @@ function OrderDetailDrawer({
                 </li>
               ))}
             </ul>
+          </section>
+
+          <section className='mb-5'>
+            <ShipmentSellerPanel
+              shopId={shopId}
+              order={order}
+              shipment={shipment}
+              onToast={onShipmentToast}
+            />
           </section>
 
           <section className='rounded-lg border border-yellow-800/15 bg-orange-50/40 px-3 py-3 text-sm'>

@@ -241,6 +241,10 @@ export default function Checkout() {
     ward: MOCK_DELIVERY_ADDRESS.ward
   })
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [placeOrderFeedback, setPlaceOrderFeedback] = useState<{
+    kind: 'success' | 'error'
+    message: string
+  } | null>(null)
   const navigate = useNavigate()
 
   const [shippingPreviewByShop, setShippingPreviewByShop] = useState<
@@ -408,11 +412,15 @@ export default function Checkout() {
   const handlePlaceOrder = async () => {
     try {
       setIsPlacingOrder(true)
+      setPlaceOrderFeedback(null)
 
       // Get current user
       const currentUser = readStoredUser()
       if (!currentUser?.accountId) {
-        alert('Vui lòng đăng nhập để tiếp tục')
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message: 'Vui lòng đăng nhập để tiếp tục.',
+        })
         return
       }
 
@@ -426,9 +434,11 @@ export default function Checkout() {
         return { cart, cartItemIds }
       })
       if (orderPayloads.some((p) => p.cartItemIds.length === 0)) {
-        alert(
-          'Không tìm thấy mã dòng giỏ hàng để đặt hàng. Vui lòng quay lại giỏ hàng hoặc chọn "Mua ngay" lại.'
-        )
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message:
+            'Không tìm thấy mã dòng giỏ hàng để đặt hàng. Vui lòng quay lại giỏ hàng hoặc chọn "Mua ngay" lại.',
+        })
         return
       }
 
@@ -436,7 +446,10 @@ export default function Checkout() {
       try {
         freshCart = await cartService.getCart(currentUser.accountId!)
       } catch {
-        alert('Không tải được giỏ hàng. Vui lòng thử lại.')
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message: 'Không tải được giỏ hàng. Vui lòng thử lại.',
+        })
         return
       }
 
@@ -450,27 +463,33 @@ export default function Checkout() {
           .map((id) => freshById.get(normCartLineId(id)))
           .filter((row): row is CartItemDto => Boolean(row))
         if (rows.length !== cartItemIds.length) {
-          alert(
-            'Giỏ hàng đã thay đổi hoặc dòng hàng không còn hợp lệ. Vui lòng quay lại giỏ hàng hoặc tải lại trang.'
-          )
+          setPlaceOrderFeedback({
+            kind: 'error',
+            message:
+              'Giỏ hàng đã thay đổi hoặc dòng hàng không còn hợp lệ. Vui lòng quay lại giỏ hàng hoặc tải lại trang.',
+          })
           return
         }
         for (const row of rows) {
           if (row.isOutOfStock) {
-            alert(
-              `Sản phẩm "${row.productMasterName}" không đủ hàng hoặc đã hết. Vui lòng chỉnh số lượng trong giỏ hàng rồi thử lại.`
-            )
+            setPlaceOrderFeedback({
+              kind: 'error',
+              message: `Sản phẩm "${row.productMasterName}" không đủ hàng hoặc đã hết. Vui lòng chỉnh số lượng trong giỏ hàng rồi thử lại.`,
+            })
             return
           }
           const em = row.errorMessage?.trim()
           if (em) {
-            alert(em)
+            setPlaceOrderFeedback({ kind: 'error', message: em })
             return
           }
         }
         const shopIds = new Set(rows.map((r) => r.shopId))
         if (shopIds.size !== 1) {
-          alert('Không thể tạo đơn: dữ liệu cửa hàng không nhất quán. Vui lòng tải lại trang.')
+          setPlaceOrderFeedback({
+            kind: 'error',
+            message: 'Không thể tạo đơn: dữ liệu cửa hàng không nhất quán. Vui lòng tải lại trang.',
+          })
           return
         }
       }
@@ -478,9 +497,11 @@ export default function Checkout() {
       const { merged, hadCriticalDiff } = mergeShopCartsWithServer(shopCarts, freshById)
       setShopCarts(merged)
       if (hadCriticalDiff) {
-        alert(
-          'Số lượng hoặc phiên bản sản phẩm trên trang khác với giỏ hàng trên server. Đã cập nhật hiển thị — vui lòng kiểm tra lại rồi bấm Đặt hàng.'
-        )
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message:
+            'Số lượng hoặc phiên bản sản phẩm trên trang khác với giỏ hàng trên server. Đã cập nhật hiển thị — vui lòng kiểm tra lại rồi bấm Đặt hàng.',
+        })
         return
       }
 
@@ -528,18 +549,26 @@ export default function Checkout() {
 
       // Step 3: Handle payment response based on method
       if (paymentMethod === 'PAYOS') {
-        // Redirect to PayOS QR code page
-        if ((paymentResponse as any).paymentUrl) {
-          window.location.href = (paymentResponse as any).paymentUrl
+        const payUrl = (paymentResponse as { paymentUrl?: string }).paymentUrl
+        if (payUrl) {
+          window.location.href = payUrl
+        } else {
+          setPlaceOrderFeedback({
+            kind: 'error',
+            message: 'Không nhận được liên kết thanh toán PayOS. Vui lòng thử lại.',
+          })
         }
       } else if (paymentMethod === 'COD' || paymentMethod === 'WALLET') {
-        // Success for COD and WALLET - show confirmation
-        alert('Đơn hàng đã được tạo thành công!\nPhương thức thanh toán: ' + getPaymentMethodLabel(paymentMethod))
-        
-        // Navigate to success page with order codes
-        const orderCodes = orderResults.map(r => r.orderId).join(',')
-        navigate(`/payment/success?orderCode=${orderCodes}&amount=${totalAmountVnd}`)
+        const orderCodes = orderResults.map((r) => r.orderId).join(',')
+        setPlaceOrderFeedback({
+          kind: 'success',
+          message: `Đơn hàng đã được tạo thành công. Phương thức thanh toán: ${getPaymentMethodLabel(paymentMethod)}.`,
+        })
+        window.setTimeout(() => {
+          navigate(`/payment/success?orderCode=${orderCodes}&amount=${totalAmountVnd}`)
+        }, 900)
       }
+
     } catch (error: unknown) {
       const err = error as {
         data?: unknown
@@ -575,7 +604,7 @@ export default function Checkout() {
         errorMsg +=
           ' Gợi ý: thử giảm số lượng trong giỏ hàng hoặc tải lại trang thanh toán sau khi cập nhật giỏ trên server.'
       }
-      alert('Lỗi: ' + errorMsg)
+      setPlaceOrderFeedback({ kind: 'error', message: errorMsg })
     } finally {
       setIsPlacingOrder(false)
     }
@@ -954,11 +983,24 @@ export default function Checkout() {
                 <button
                   type='button'
                   onClick={handlePlaceOrder}
-                  disabled={isPlacingOrder}
+                  disabled={isPlacingOrder || placeOrderFeedback?.kind === 'success'}
                   className='mb-3 w-full rounded-full bg-[#6C5B50] py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#554538] disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   {isPlacingOrder ? 'Đang xử lý...' : 'Đặt hàng'}
                 </button>
+
+                {placeOrderFeedback && (
+                  <p
+                    role='alert'
+                    className={`mb-3 text-center text-sm leading-snug ${
+                      placeOrderFeedback.kind === 'error'
+                        ? 'font-medium text-red-600'
+                        : 'font-medium text-emerald-700'
+                    }`}
+                  >
+                    {placeOrderFeedback.message}
+                  </p>
+                )}
 
                 <p className='text-center text-xs text-black/45'>
                   Bằng việc đặt hàng, bạn đã đồng ý với các{' '}
