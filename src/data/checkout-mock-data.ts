@@ -212,8 +212,6 @@ export const findVoucherByCode = (code: string): Voucher | undefined => {
 }
 
 export const formatCurrency = (amount: number | undefined | null): string => {
-  if (amount === undefined || amount === null) {
-    return '0₫'
-  }
-  return amount.toLocaleString('vi-VN') + '₫'
+  const n = amount === undefined || amount === null ? 0 : Number(amount)
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 }

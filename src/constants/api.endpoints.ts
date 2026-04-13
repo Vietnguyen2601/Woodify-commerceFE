@@ -54,6 +54,27 @@ export const API_ENDPOINTS = {
     CREATE: '/product/ProductVersions/CreateVersion',
   },
 
+  /** ProductReviews — PRODUCT_REVIEWS_FEEDBACK_FE_API_GUIDE.md */
+  PRODUCT_REVIEWS: {
+    GET_VISIBLE: (productId: string) =>
+      `/product/ProductReviews/GetVisibleReviews/${encodeURIComponent(productId)}`,
+    GET_BY_PRODUCT: (productId: string) =>
+      `/product/ProductReviews/GetReviewsByProductId/${encodeURIComponent(productId)}`,
+    GET_BY_ID: (reviewId: string) =>
+      `/product/ProductReviews/GetReviewById/${encodeURIComponent(reviewId)}`,
+    CREATE: '/product/ProductReviews/CreateReview',
+    GET_BY_ORDER: (orderId: string) =>
+      `/product/ProductReviews/GetReviewsByOrderId/${encodeURIComponent(orderId)}`,
+    ADD_SHOP_RESPONSE: (reviewId: string) =>
+      `/product/ProductReviews/AddShopResponse/${encodeURIComponent(reviewId)}`,
+    HIDE: (reviewId: string) =>
+      `/product/ProductReviews/HideReview/${encodeURIComponent(reviewId)}`,
+    UNHIDE: (reviewId: string) =>
+      `/product/ProductReviews/UnhideReview/${encodeURIComponent(reviewId)}`,
+    DELETE: (reviewId: string) =>
+      `/product/ProductReviews/DeleteReview/${encodeURIComponent(reviewId)}`,
+  },
+
   // ── Placeholder endpoints — NOT yet confirmed by backend ─────────────────
 
   ORDERS: {
@@ -72,6 +93,8 @@ export const API_ENDPOINTS = {
       `/order/Orders/Account?accountId=${encodeURIComponent(accountId)}`,
     /** Body: { orderId, status } — PUT */
     UPDATE_STATUS: '/order/Orders/UpdateStatus',
+    /** POST body: { accountId, shopId, cartItemIds } — preview phí VC theo gói */
+    SHIPPING_PREVIEW: '/order/Orders/checkout/shipping-preview',
   },
 
   // ── Payment Service (5015) ────────────────────────────────────────────────
@@ -170,6 +193,18 @@ export const API_ENDPOINTS = {
   },
   SHIPMENT_SERVICES: {
     BY_SHOP: (shopId: string) => `/shipment/shops/${encodeURIComponent(shopId)}/services`,
+  },
+  /** Shipment entity — SHIPMENT_SELLER_FLOW.md (gateway `/api/shipment/shipments/...`) */
+  SHIPMENTS: {
+    LIST: '/shipment/shipments',
+    BY_ID: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}`,
+    BY_ORDER: (orderId: string) => `/shipment/shipments/by-order/${encodeURIComponent(orderId)}`,
+    BY_SHOP: (shopId: string) => `/shipment/shipments/by-shop/${encodeURIComponent(shopId)}`,
+    CREATE: '/shipment/shipments',
+    UPDATE: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}`,
+    STATUS: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}/status`,
+    PICKUP: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}/pickup`,
+    DELETE: (id: string) => `/shipment/shipments/${encodeURIComponent(id)}`,
   },
 } as const
 

@@ -114,7 +114,8 @@ export interface ProductMasterDto {
   isArchived?: boolean
 }
 
-export interface ShipmentDto {
+/** Admin dashboard — generic shipment row (khác `ShipmentDto` trong shipmentEntity.types). */
+export interface AdminShipmentDto {
   shipmentId?: string
   id?: string
   orderId?: string

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { productMasterService, shopService, cartService } from '@/services'
+import { productMasterService, productReviewService, shopService, cartService } from '@/services'
 import { readStoredUser } from '@/features/auth/utils/storage'
 import { useCart } from '../store/cartStore'
 import { ROUTES } from '@/constants/routes'
@@ -37,46 +37,15 @@ function writeCheckoutFromItems(accountId: string, selectedItems: CartItemDto[])
 const PRODUCT_DETAIL_FALLBACK =
   'Bàn làm việc gỗ óc chó cao cấp với thiết kế hiện đại, tối giản. Được chế tác từ 100% gỗ óc chó tự nhiên, bề mặt xử lý chống trầy xước và chống nước. Phù hợp cho không gian làm việc tại nhà hoặc văn phòng.'
 
-const DISPLAY_RATING = 4.8
-const DISPLAY_REVIEW_COUNT = 234
 const DISPLAY_SOLD = 456
 
-type Review = {
-  id: string
-  author: string
-  rating: number
-  date: string
-  content: string
-  media?: string
-}
-
-const reviewEntries: Review[] = [
-  {
-    id: 'rv1',
-    author: 'Lan Anh',
-    rating: 5,
-    date: '02/01/2026',
-    content: 'Bàn gỗ rất chắc chắn, màu sơn chuẩn như ảnh. Nhân viên hỗ trợ phối đồ cực nhiệt tình.',
-    media: 'https://images.unsplash.com/photo-1505692794400-52d174e35270?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 'rv2',
-    author: 'Quốc Huy',
-    rating: 4,
-    date: '27/12/2025',
-    content: 'Giao hàng đúng hẹn, có sẵn hướng dẫn bảo quản. Chân bàn hơi cao hơn mô tả nhưng vẫn ổn.'
-  },
-  {
-    id: 'rv3',
-    author: 'Trâm Lê',
-    rating: 5,
-    date: '18/12/2025',
-    content: 'Thiết kế tối giản, hợp với không gian Bắc Âu của nhà mình. Sẽ ủng hộ thêm tủ cùng bộ.',
-    media: 'https://images.unsplash.com/photo-1505692794400-52d174e35270?auto=format&fit=crop&w=600&q=80'
-  }
-]
-
 const reviewFilters = ['Tất cả', '5 sao', '4 sao', '3 sao', 'Có ảnh']
+
+function reviewerDisplayName(accountId: string): string {
+  const id = (accountId ?? '').trim()
+  if (id.length < 4) return 'Khách hàng'
+  return `Khách hàng · ${id.slice(-4)}`
+}
 
 export default function Product() {
   const { id: pathParam = '' } = useParams<{ id: string }>()
@@ -125,6 +94,16 @@ export default function Product() {
   } = useQuery({
     queryKey: ['product-detail', resolvedProductId],
     queryFn: () => productMasterService.getProductDetail(resolvedProductId!),
+    enabled: !!resolvedProductId,
+  })
+
+  const {
+    data: visibleReviews = [],
+    isPending: visibleReviewsLoading,
+    isError: visibleReviewsError,
+  } = useQuery({
+    queryKey: ['product-visible-reviews', resolvedProductId],
+    queryFn: () => productReviewService.getVisibleReviews(resolvedProductId!),
     enabled: !!resolvedProductId,
   })
 
@@ -280,11 +259,14 @@ export default function Product() {
   ] : []
 
   const filteredReviews = React.useMemo(() => {
-    if (activeReviewFilter === 'Tất cả') return reviewEntries
-    if (activeReviewFilter === 'Có ảnh') return reviewEntries.filter(r => r.media)
+    if (activeReviewFilter === 'Tất cả') return visibleReviews
+    if (activeReviewFilter === 'Có ảnh')
+      return visibleReviews.filter((r) => (r.imageUrls?.length ?? 0) > 0)
     const star = Number(activeReviewFilter[0])
-    return Number.isFinite(star) ? reviewEntries.filter(r => Math.round(r.rating) === star) : reviewEntries
-  }, [activeReviewFilter])
+    return Number.isFinite(star)
+      ? visibleReviews.filter((r) => Math.round(r.rating) === star)
+      : visibleReviews
+  }, [activeReviewFilter, visibleReviews])
 
   const requireAccountForCart = (): boolean => {
     const user = readStoredUser()
@@ -345,6 +327,14 @@ export default function Product() {
   const price = selectedVersion?.price ?? 0
   const shopJoinYear = shop?.createdAt ? new Date(shop.createdAt).getFullYear() : '—'
   const cartPending = addToCartMutation.isPending
+
+  const headerReviewCount = product.reviewCount ?? visibleReviews.length
+  const headerAvgRating =
+    product.averageRating != null
+      ? product.averageRating
+      : visibleReviews.length > 0
+        ? visibleReviews.reduce((s, r) => s + r.rating, 0) / visibleReviews.length
+        : null
 
   const renderStars = (value: number, size: 'md' | 'sm' = 'md') => {
     const full = Math.floor(value)
@@ -432,9 +422,15 @@ export default function Product() {
                 <p className='product-subtitle product-subtitle--figma'>{descriptionText}</p>
 
                 <div className='product-rating product-rating--figma'>
-                  {renderStars(DISPLAY_RATING)}
-                  <strong>{DISPLAY_RATING}/5</strong>
-                  <span className='product-rating__paren'>({DISPLAY_REVIEW_COUNT} đánh giá)</span>
+                  {headerAvgRating != null && headerReviewCount > 0 ? (
+                    <>
+                      {renderStars(headerAvgRating)}
+                      <strong>{headerAvgRating.toFixed(1)}/5</strong>
+                      <span className='product-rating__paren'>({headerReviewCount} đánh giá)</span>
+                    </>
+                  ) : (
+                    <span className="font-['Inter'] text-sm text-black/55">Chưa có đánh giá</span>
+                  )}
                   <span className='product-rating__divider' aria-hidden />
                   <span className='product-rating__sold'>Đã bán <strong>{DISPLAY_SOLD}</strong></span>
                 </div>
@@ -631,50 +627,102 @@ export default function Product() {
 
               {detailTab === 'reviews' && (
                 <div className='product-figma-tab-panel product-figma-tab-panel--reviews' role='tabpanel'>
-                  <div className='product-reviews__summary product-reviews__summary--figma'>
-                    <div>
-                      <strong>{DISPLAY_RATING}</strong>
-                      <div className='product-rating__stars product-rating__stars--large'>
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i} className={i < Math.floor(DISPLAY_RATING) ? 'filled' : ''}>&#9733;</span>
-                        ))}
-                      </div>
-                      <span>{DISPLAY_REVIEW_COUNT} đánh giá</span>
+                  {visibleReviewsLoading ? (
+                    <div className='flex justify-center py-10'>
+                      <div className='h-8 w-8 animate-spin rounded-full border-2 border-[#6C5B50] border-t-transparent' />
                     </div>
-                    <div className='product-reviews__filters'>
-                      {reviewFilters.map(f => (
-                        <button
-                          key={f}
-                          type='button'
-                          className={activeReviewFilter === f ? 'active' : ''}
-                          onClick={() => setActiveReviewFilter(f)}
-                        >
-                          {f}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className='product-reviews__list'>
-                    {filteredReviews.map(review => (
-                      <article key={review.id} className='product-review'>
-                        <header>
-                          <strong>{review.author}</strong>
-                          <span>{review.date}</span>
-                        </header>
-                        <div className='product-rating__stars product-rating__stars--compact'>
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <span key={i} className={i < review.rating ? 'filled' : ''}>&#9733;</span>
+                  ) : visibleReviewsError ? (
+                    <p className="m-0 font-['Inter'] text-sm text-red-600">
+                      Không tải được đánh giá. Vui lòng thử lại sau.
+                    </p>
+                  ) : (
+                    <>
+                      <div className='product-reviews__summary product-reviews__summary--figma'>
+                        <div>
+                          {headerAvgRating != null && headerReviewCount > 0 ? (
+                            <>
+                              <strong>{headerAvgRating.toFixed(1)}</strong>
+                              <div className='product-rating__stars product-rating__stars--large'>
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <span
+                                    key={i}
+                                    className={i < Math.floor(headerAvgRating) ? 'filled' : ''}
+                                  >
+                                    &#9733;
+                                  </span>
+                                ))}
+                              </div>
+                              <span>{headerReviewCount} đánh giá</span>
+                            </>
+                          ) : (
+                            <span className="font-['Inter'] text-sm text-black/60">Chưa có đánh giá</span>
+                          )}
+                        </div>
+                        <div className='product-reviews__filters'>
+                          {reviewFilters.map((f) => (
+                            <button
+                              key={f}
+                              type='button'
+                              className={activeReviewFilter === f ? 'active' : ''}
+                              onClick={() => setActiveReviewFilter(f)}
+                            >
+                              {f}
+                            </button>
                           ))}
                         </div>
-                        <p>{review.content}</p>
-                        {review.media && (
-                          <div className='product-review__media'>
-                            <img src={review.media} alt={`Khách hàng ${review.author}`} />
-                          </div>
+                      </div>
+                      <div className='product-reviews__list'>
+                        {filteredReviews.length === 0 ? (
+                          <p className="m-0 font-['Inter'] text-sm text-black/55">
+                            {visibleReviews.length === 0
+                              ? 'Chưa có đánh giá nào.'
+                              : 'Không có đánh giá phù hợp bộ lọc.'}
+                          </p>
+                        ) : (
+                          filteredReviews.map((review) => (
+                            <article key={review.reviewId} className='product-review'>
+                              <header>
+                                <strong>{reviewerDisplayName(review.accountId)}</strong>
+                                <span>
+                                  {review.createdAt
+                                    ? new Date(review.createdAt).toLocaleDateString('vi-VN')
+                                    : ''}
+                                </span>
+                              </header>
+                              <div className='product-rating__stars product-rating__stars--compact'>
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <span key={i} className={i < review.rating ? 'filled' : ''}>
+                                    &#9733;
+                                  </span>
+                                ))}
+                              </div>
+                              {review.content ? <p>{review.content}</p> : null}
+                              {(review.imageUrls ?? []).length > 0 && (
+                                <div className='product-review__media mt-2 flex flex-wrap gap-2'>
+                                  {review.imageUrls.map((url, idx) => (
+                                    <img
+                                      key={`${review.reviewId}-img-${idx}`}
+                                      src={url}
+                                      alt=''
+                                      className='max-h-40 rounded-lg object-cover'
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                              {review.shopResponse ? (
+                                <div className='mt-3 rounded-md bg-[#f5f5f5] px-3 py-2.5 text-sm text-black/80'>
+                                  <p className='m-0 font-semibold text-black/85'>
+                                    {'Phản hồi của người bán'}
+                                  </p>
+                                  <p className='m-0 mt-1.5 leading-relaxed'>{review.shopResponse}</p>
+                                </div>
+                              ) : null}
+                            </article>
+                          ))
                         )}
-                      </article>
-                    ))}
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -709,6 +757,7 @@ export default function Product() {
                     <div className='product-shop-card-figma__stats'>
                       <span><strong>{shop.totalProducts}</strong> Sản phẩm</span>
                       <span><strong>{shop.totalOrders}</strong> Đơn hàng</span>
+                      <span><strong>{shop.reviewCount}</strong> Đánh giá</span>
                       <span><strong>98%</strong> Phản hồi</span>
                       <span><strong>{shopJoinYear}</strong> Tham gia</span>
                     </div>

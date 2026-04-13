@@ -20,23 +20,42 @@ import {
   findVoucherByCode,
   formatCurrency
 } from '@/data/checkout-mock-data'
-import { paymentService, cartService } from '@/services'
-import type { CreateOrderResponse } from '@/services/payment.service'
+import { paymentService, cartService, orderService } from '@/services'
+import type { CheckoutShippingPreviewOption } from '@/services/order.service'
 import type { CartItemDto } from '@/types'
 import { readStoredUser } from '@/features/auth/utils/storage'
 import { resolveCartItemLineId } from '@/utils/cartItemId'
 
 const SHIPPING_OPTIONS = [
   { method: 'ECONOMY' as const, label: 'Ti\u1ebft ki\u1ec7m', code: 'ECO' as const },
-  { method: 'STANDARD' as const, label: 'Ti\u00eau chu\u1ea9n', code: 'STF' as const },
+  { method: 'STANDARD' as const, label: 'Ti\u00eau chu\u1ea9n', code: 'STD' as const },
   { method: 'EXPRESS' as const, label: 'Nhanh', code: 'EXP' as const },
 ] as const
 
 const DEFAULT_SHIPPING = SHIPPING_OPTIONS[1]
 
+function normalizeProviderServiceCode(c: string | null | undefined): string {
+  const u = (c ?? '').trim().toUpperCase()
+  if (u === 'STF') return 'STD'
+  return u
+}
+
+function previewFeeForCode(
+  options: CheckoutShippingPreviewOption[] | undefined,
+  selectedCode: string | undefined
+): number {
+  if (!options?.length) return 0
+  const want = normalizeProviderServiceCode(selectedCode)
+  const hit = options.find(
+    (o) => normalizeProviderServiceCode(o.providerServiceCode) === want
+  )
+  return hit?.totalAmountVnd ?? 0
+}
+
 function resolveCheckoutProviderServiceCode(cart: ShopCart): string {
   const raw = (cart.selected_shipping_code ?? '').trim().toUpperCase()
-  if (raw === 'ECO' || raw === 'STF' || raw === 'EXP') return raw
+  if (raw === 'STF') return 'STD'
+  if (raw === 'ECO' || raw === 'STD' || raw === 'EXP') return raw
   const fromMethod = SHIPPING_OPTIONS.find((o) => o.method === cart.selected_shipping_method)?.code
   return fromMethod ?? DEFAULT_SHIPPING.code
 }
@@ -325,30 +344,95 @@ export default function Checkout() {
     ward: MOCK_DELIVERY_ADDRESS.ward
   })
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [placeOrderFeedback, setPlaceOrderFeedback] = useState<{
+    kind: 'success' | 'error'
+    message: string
+  } | null>(null)
   const navigate = useNavigate()
 
-  const syncCheckoutLinesWithServer = useCallback(async () => {
-    const user = readStoredUser()
-    if (!user?.accountId) return
-    try {
-      const fresh = await cartService.getCart(user.accountId)
-      setShopCarts((prev) => reconcileShopCartsFromFreshItems(prev, fresh.items ?? []))
-    } catch {
-      // Keep localStorage snapshot if cart cannot be loaded
-    }
-  }, [])
+  const [shippingPreviewByShop, setShippingPreviewByShop] = useState<
+    Record<string, { loading: boolean; error?: string; options: CheckoutShippingPreviewOption[] }>
+  >({})
+
+  const shippingPreviewFetchKey = useMemo(
+    () =>
+      JSON.stringify(
+        shopCarts.map((s) => ({
+          shopId: s.shop_id,
+          ids: [...s.items.map((i) => i.cart_item_id)].filter(Boolean).sort(),
+        }))
+      ),
+    [shopCarts]
+  )
 
   useEffect(() => {
-    void syncCheckoutLinesWithServer()
-  }, [syncCheckoutLinesWithServer])
-
-  useEffect(() => {
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) void syncCheckoutLinesWithServer()
+    const accountId = readStoredUser()?.accountId?.trim()
+    if (!accountId || shopCarts.length === 0) {
+      setShippingPreviewByShop({})
+      return
     }
-    window.addEventListener('pageshow', onPageShow)
-    return () => window.removeEventListener('pageshow', onPageShow)
-  }, [syncCheckoutLinesWithServer])
+
+    let cancelled = false
+
+    void (async () => {
+      await Promise.all(
+        shopCarts.map(async (cart) => {
+          const shopId = cart.shop_id?.trim()
+          const cartItemIds = cart.items
+            .map((i) => i.cart_item_id)
+            .filter((id): id is string => Boolean(id && String(id).trim()))
+          if (!shopId || cartItemIds.length === 0) return
+
+          setShippingPreviewByShop((prev) => ({
+            ...prev,
+            [shopId]: {
+              loading: true,
+              options: prev[shopId]?.options ?? [],
+              error: undefined,
+            },
+          }))
+
+          try {
+            const data = await orderService.previewCheckoutShipping({
+              accountId,
+              shopId,
+              cartItemIds,
+            })
+            if (cancelled) return
+            const options = data.options ?? []
+            setShippingPreviewByShop((prev) => ({
+              ...prev,
+              [shopId]: { loading: false, options },
+            }))
+            setShopCarts((prev) =>
+              prev.map((s) => {
+                if (s.shop_id !== shopId) return s
+                const fee = previewFeeForCode(options, s.selected_shipping_code)
+                return { ...s, shipping_fee: fee, total: s.subtotal + fee }
+              })
+            )
+          } catch (e: unknown) {
+            if (cancelled) return
+            const msg =
+              e &&
+              typeof e === 'object' &&
+              'message' in e &&
+              typeof (e as { message: string }).message === 'string'
+                ? (e as { message: string }).message
+                : 'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c ph\u00ed v\u1eadn chuy\u1ec3n'
+            setShippingPreviewByShop((prev) => ({
+              ...prev,
+              [shopId]: { loading: false, options: [], error: msg },
+            }))
+          }
+        })
+      )
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [shippingPreviewFetchKey])
 
   useEffect(() => {
     document.body.classList.add('checkout-route-bg')
@@ -431,22 +515,33 @@ export default function Checkout() {
   const handlePlaceOrder = async () => {
     try {
       setIsPlacingOrder(true)
+      setPlaceOrderFeedback(null)
 
       // Get current user
       const currentUser = readStoredUser()
       if (!currentUser?.accountId) {
-        alert('Vui lòng đăng nhập để tiếp tục')
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message: 'Vui lòng đăng nhập để tiếp tục.',
+        })
         return
       }
 
       // Format delivery address as string: "123 Đường, Phường, Quận, TP"
       const deliveryAddressString = `${deliveryAddress.address_line}, ${deliveryAddress.ward}, ${deliveryAddress.district}, ${deliveryAddress.city}`
 
-      const orderPayloads = shopCarts.map((cart) => ({ cart }))
-      if (orderPayloads.some((p) => p.cart.items.length === 0)) {
-        alert(
-          'Không tìm thấy mã dòng giỏ hàng để đặt hàng. Vui lòng quay lại giỏ hàng hoặc chọn "Mua ngay" lại.'
-        )
+      const orderPayloads = shopCarts.map((cart) => {
+        const cartItemIds = cart.items
+          .map((item) => item.cart_item_id)
+          .filter((id): id is string => Boolean(id && String(id).trim()))
+        return { cart, cartItemIds }
+      })
+      if (orderPayloads.some((p) => p.cartItemIds.length === 0)) {
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message:
+            'Không tìm thấy mã dòng giỏ hàng để đặt hàng. Vui lòng quay lại giỏ hàng hoặc chọn "Mua ngay" lại.',
+        })
         return
       }
 
@@ -454,7 +549,10 @@ export default function Checkout() {
       try {
         freshCart = await cartService.getCart(currentUser.accountId!)
       } catch {
-        alert('Không tải được giỏ hàng. Vui lòng thử lại.')
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message: 'Không tải được giỏ hàng. Vui lòng thử lại.',
+        })
         return
       }
 
@@ -465,28 +563,34 @@ export default function Checkout() {
         const rows = cart.items
           .map((item) => resolveLine(item.cart_item_id, item.shop_id, item.product_id))
           .filter((row): row is CartItemDto => Boolean(row))
-        if (rows.length !== cart.items.length) {
-          alert(
-            'Giỏ hàng đã thay đổi hoặc dòng hàng không còn hợp lệ. Vui lòng quay lại giỏ hàng hoặc tải lại trang.'
-          )
+        if (rows.length !== cartItemIds.length) {
+          setPlaceOrderFeedback({
+            kind: 'error',
+            message:
+              'Giỏ hàng đã thay đổi hoặc dòng hàng không còn hợp lệ. Vui lòng quay lại giỏ hàng hoặc tải lại trang.',
+          })
           return
         }
         for (const row of rows) {
           if (row.isOutOfStock) {
-            alert(
-              `Sản phẩm "${row.productMasterName}" không đủ hàng hoặc đã hết. Vui lòng chỉnh số lượng trong giỏ hàng rồi thử lại.`
-            )
+            setPlaceOrderFeedback({
+              kind: 'error',
+              message: `Sản phẩm "${row.productMasterName}" không đủ hàng hoặc đã hết. Vui lòng chỉnh số lượng trong giỏ hàng rồi thử lại.`,
+            })
             return
           }
           const em = row.errorMessage?.trim()
           if (em) {
-            alert(em)
+            setPlaceOrderFeedback({ kind: 'error', message: em })
             return
           }
         }
         const shopIds = new Set(rows.map((r) => r.shopId))
         if (shopIds.size !== 1) {
-          alert('Không thể tạo đơn: dữ liệu cửa hàng không nhất quán. Vui lòng tải lại trang.')
+          setPlaceOrderFeedback({
+            kind: 'error',
+            message: 'Không thể tạo đơn: dữ liệu cửa hàng không nhất quán. Vui lòng tải lại trang.',
+          })
           return
         }
       }
@@ -494,9 +598,11 @@ export default function Checkout() {
       const { merged, hadCriticalDiff } = mergeShopCartsWithServer(shopCarts, freshList)
       setShopCarts(merged)
       if (hadCriticalDiff) {
-        alert(
-          'Số lượng hoặc phiên bản sản phẩm trên trang khác với giỏ hàng trên server. Đã cập nhật hiển thị — vui lòng kiểm tra lại rồi bấm Đặt hàng.'
-        )
+        setPlaceOrderFeedback({
+          kind: 'error',
+          message:
+            'Số lượng hoặc phiên bản sản phẩm trên trang khác với giỏ hàng trên server. Đã cập nhật hiển thị — vui lòng kiểm tra lại rồi bấm Đặt hàng.',
+        })
         return
       }
 
@@ -520,10 +626,11 @@ export default function Checkout() {
 
       const orderResults = await Promise.all(orderPromises)
 
-      // Extract order IDs and calculate total (fallback to checkout summary if API money fields parse wrong)
       const orderIds = orderResults.map((r) => r.orderId)
-      const mergedSummary = calculateCheckoutSummary(merged, appliedVoucher)
-      const paymentAmountVnd = resolveCheckoutPaymentAmountVnd(orderResults, mergedSummary.total_payment)
+      /** Same VND total as sidebar `summary.total_payment` (merged carts + voucher). */
+      const totalAmountVnd = Math.round(
+        calculateCheckoutSummary(merged, appliedVoucher).total_payment
+      )
 
       // Step 2: Create payment
       const baseUrl = window.location.origin
@@ -532,7 +639,7 @@ export default function Checkout() {
         orderIds: orderIds,
         paymentMethod: paymentMethod,
         accountId: currentUser.accountId!,
-        totalAmountCents: paymentAmountVnd,
+        totalAmountVnd,
         ...(paymentMethod === 'PAYOS' && {
           returnUrl: `${baseUrl}/payment/success`,
           cancelUrl: `${baseUrl}/payment/cancel`
@@ -543,18 +650,26 @@ export default function Checkout() {
 
       // Step 3: Handle payment response based on method
       if (paymentMethod === 'PAYOS') {
-        // Redirect to PayOS QR code page
-        if ((paymentResponse as any).paymentUrl) {
-          window.location.href = (paymentResponse as any).paymentUrl
+        const payUrl = (paymentResponse as { paymentUrl?: string }).paymentUrl
+        if (payUrl) {
+          window.location.href = payUrl
+        } else {
+          setPlaceOrderFeedback({
+            kind: 'error',
+            message: 'Không nhận được liên kết thanh toán PayOS. Vui lòng thử lại.',
+          })
         }
       } else if (paymentMethod === 'COD' || paymentMethod === 'WALLET') {
-        // Success for COD and WALLET - show confirmation
-        alert('Đơn hàng đã được tạo thành công!\nPhương thức thanh toán: ' + getPaymentMethodLabel(paymentMethod))
-        
-        // Navigate to success page with order codes
-        const orderCodes = orderResults.map(r => r.orderId).join(',')
-        navigate(`/payment/success?orderCode=${orderCodes}&amount=${paymentAmountVnd}`)
+        const orderCodes = orderResults.map((r) => r.orderId).join(',')
+        setPlaceOrderFeedback({
+          kind: 'success',
+          message: `Đơn hàng đã được tạo thành công. Phương thức thanh toán: ${getPaymentMethodLabel(paymentMethod)}.`,
+        })
+        window.setTimeout(() => {
+          navigate(`/payment/success?orderCode=${orderCodes}&amount=${totalAmountVnd}`)
+        }, 900)
       }
+
     } catch (error: unknown) {
       const err = error as {
         data?: unknown
@@ -590,7 +705,7 @@ export default function Checkout() {
         errorMsg +=
           ' Gợi ý: thử giảm số lượng trong giỏ hàng hoặc tải lại trang thanh toán sau khi cập nhật giỏ trên server.'
       }
-      alert('Lỗi: ' + errorMsg)
+      setPlaceOrderFeedback({ kind: 'error', message: errorMsg })
     } finally {
       setIsPlacingOrder(false)
     }
@@ -734,13 +849,23 @@ export default function Checkout() {
 
                 <div className='border-b border-[#ece6dd]/90 px-4 py-3'>
                   <p className='mb-2 text-sm font-semibold text-[#3f2a1d]'>{'Ph\u01b0\u01a1ng th\u1ee9c v\u1eadn chuy\u1ec3n'}</p>
+                  {shippingPreviewByShop[shop.shop_id]?.error &&
+                    !shippingPreviewByShop[shop.shop_id]?.loading && (
+                      <p className='mb-2 text-xs text-red-600/85'>
+                        {shippingPreviewByShop[shop.shop_id]!.error}
+                      </p>
+                    )}
                   <div className='flex flex-col gap-2 sm:flex-row sm:flex-wrap'>
                     {SHIPPING_OPTIONS.map(({ method, label, code }) => {
                       const selected = shop.selected_shipping_method === method
+                      const preview = shippingPreviewByShop[shop.shop_id]
+                      const opt = preview?.options.find(
+                        (o) => normalizeProviderServiceCode(o.providerServiceCode) === normalizeProviderServiceCode(code)
+                      )
                       return (
                         <label
                           key={method}
-                          className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                             selected
                               ? 'border-[#6C5B50] bg-[#f8f3ec] text-[#3f2a1d]'
                               : 'border-[#ece6dd] bg-white text-black/70 hover:border-[#d4cab8]'
@@ -749,9 +874,10 @@ export default function Checkout() {
                           <input
                             type='radio'
                             name={`checkout_ship_${shop.shop_id || shopIndex}`}
-                            className='accent-[#6C5B50]'
+                            className='accent-[#6C5B50] mt-0.5'
                             checked={selected}
                             onChange={() => {
+                              const fee = previewFeeForCode(preview?.options, code)
                               setShopCarts((prev) =>
                                 prev.map((s) =>
                                   s.shop_id === shop.shop_id
@@ -759,15 +885,34 @@ export default function Checkout() {
                                         ...s,
                                         selected_shipping_method: method,
                                         selected_shipping_code: code,
+                                        shipping_fee: fee,
+                                        total: s.subtotal + fee,
                                       }
                                     : s
                                 )
                               )
                             }}
                           />
-                          <span>
-                            {label}{' '}
-                            <span className='text-xs text-black/45'>({code})</span>
+                          <span className='min-w-0 flex-1'>
+                            <span className='block'>
+                              {label}{' '}
+                              <span className='text-xs text-black/45'>({code})</span>
+                            </span>
+                            {preview?.loading ? (
+                              <span className='mt-0.5 block text-xs text-black/40'>
+                                {'\u0110ang t\u00ednh ph\u00ed\u2026'}
+                              </span>
+                            ) : preview?.error ? (
+                              <span className='mt-0.5 block text-xs text-black/35'>{'\u2014'}</span>
+                            ) : opt ? (
+                              <span className='mt-0.5 block text-xs font-medium text-[#6C5B50]'>
+                                {opt.isFreeShipping || opt.totalAmountVnd <= 0
+                                  ? 'Mi\u1ec5n ph\u00ed v\u1eadn chuy\u1ec3n'
+                                  : formatCurrency(opt.totalAmountVnd)}
+                              </span>
+                            ) : (
+                              <span className='mt-0.5 block text-xs text-black/35'>{'\u2014'}</span>
+                            )}
                           </span>
                         </label>
                       )
@@ -795,10 +940,18 @@ export default function Checkout() {
                   />
                 </div>
 
-                <div className='bg-[#f8f3ec]/50 px-4 py-3'>
-                  <div className='flex items-center justify-between'>
-                    <p className='text-sm text-black/55'>Tổng tiền ({shop.items.length} sản phẩm):</p>
-                    <p className='font-semibold text-[#6C5B50]'>{formatCurrency(shop.subtotal)}</p>
+                <div className='space-y-2 bg-[#f8f3ec]/50 px-4 py-3'>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-black/55'>Tiền hàng ({shop.items.length} sản phẩm):</span>
+                    <span className='font-semibold text-[#3f2a1d]'>{formatCurrency(shop.subtotal)}</span>
+                  </div>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-black/55'>Phí vận chuyển:</span>
+                    <span className='font-semibold text-[#3f2a1d]'>{formatCurrency(shop.shipping_fee)}</span>
+                  </div>
+                  <div className='flex items-center justify-between border-t border-[#ece6dd]/90 pt-2'>
+                    <span className='text-sm font-semibold text-[#3f2a1d]'>Tạm tính (shop):</span>
+                    <span className='font-semibold text-[#6C5B50]'>{formatCurrency(shop.total)}</span>
                   </div>
                 </div>
               </div>
@@ -902,6 +1055,12 @@ export default function Checkout() {
                       {formatCurrency(summary.merchandise_subtotal)}
                     </span>
                   </div>
+                  <div className='flex items-center justify-between text-sm'>
+                    <span className='text-black/55'>Phí vận chuyển:</span>
+                    <span className='font-semibold text-[#3f2a1d]'>
+                      {formatCurrency(summary.total_shipping_fee)}
+                    </span>
+                  </div>
 
                   {appliedVoucher && summary.voucher_discount > 0 && (
                     <div className='flex items-center justify-between text-sm'>
@@ -925,11 +1084,24 @@ export default function Checkout() {
                 <button
                   type='button'
                   onClick={handlePlaceOrder}
-                  disabled={isPlacingOrder}
+                  disabled={isPlacingOrder || placeOrderFeedback?.kind === 'success'}
                   className='mb-3 w-full rounded-full bg-[#6C5B50] py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#554538] disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   {isPlacingOrder ? 'Đang xử lý...' : 'Đặt hàng'}
                 </button>
+
+                {placeOrderFeedback && (
+                  <p
+                    role='alert'
+                    className={`mb-3 text-center text-sm leading-snug ${
+                      placeOrderFeedback.kind === 'error'
+                        ? 'font-medium text-red-600'
+                        : 'font-medium text-emerald-700'
+                    }`}
+                  >
+                    {placeOrderFeedback.message}
+                  </p>
+                )}
 
                 <p className='text-center text-xs text-black/45'>
                   Bằng việc đặt hàng, bạn đã đồng ý với các{' '}

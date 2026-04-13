@@ -2,7 +2,7 @@ import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAppLanguage } from '@/hooks'
 import { adminService, queryKeys } from '@/services'
-import type { ShipmentDto } from '@/types'
+import type { AdminShipmentDto } from '@/types'
 
 const STATUS_STYLES: Record<string, string> = {
   DELIVERED: 'border border-green-200 bg-green-100 text-green-700',
@@ -227,7 +227,7 @@ export default function ShipmentManager() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((s: ShipmentDto) => {
+                filtered.map((s: AdminShipmentDto) => {
                   const sid = s.shipmentId || s.id || t.dash
                   const pid = s.providerId
                   return (

@@ -4,7 +4,10 @@ import { API_ENDPOINTS } from '@/constants/api.endpoints'
 export interface WalletData {
   walletId: string
   accountId: string
-  balance: number
+  /** Wallet balance (VND) */
+  balanceVnd?: number
+  /** @deprecated Prefer balanceVnd; kept if API still returns `balance` */
+  balance?: number
   currency: string
   status: string
   createdAt: string
@@ -16,6 +19,7 @@ export type WalletTopUpMethod = 'Momo' | 'PayOs' | 'VNPay'
 
 export interface WalletTopUpRequest {
   walletId: string
+  /** Top-up amount (VND) */
   amount: number
   method: WalletTopUpMethod
 }
@@ -42,9 +46,12 @@ export type WalletTransactionItem = {
   description?: string
   note?: string
   title?: string
+  /** Amount in VND */
+  amountVnd?: number
   amount?: number
   status?: string
   createdAt?: string
+  balanceAfterVnd?: number
   balanceAfter?: number
   [key: string]: unknown
 }

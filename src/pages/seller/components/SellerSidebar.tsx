@@ -1,6 +1,7 @@
 import React from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { ROUTES } from '@/constants/routes'
 
 interface SellerNavLink {
   label: string
@@ -198,7 +199,15 @@ export default function SellerSidebar() {
             </div>
           </div>
         )}
-        <p className='rounded-2xl px-3 py-2 transition hover:bg-white/5'>Cài đặt</p>
+        <div className='space-y-1'>
+          <p className='rounded-2xl px-3 py-2 transition hover:bg-white/5'>Cài đặt</p>
+          <Link
+            to={ROUTES.HOME}
+            className='block rounded-2xl px-3 py-2 font-medium text-amber-200/90 transition hover:bg-white/5 hover:text-amber-100'
+          >
+            Quay lại
+          </Link>
+        </div>
         <button
           type='button'
           onClick={() => logout()}
