@@ -98,7 +98,7 @@ export default function CategoryManager() {
       rootSectionDesc: isVietnamese
         ? '6 thẻ ngang. Cuộn để xem thêm hoặc chọn bằng dropdown.'
         : 'Six cards across. Scroll to see more or pick from the dropdown.',
-      rootCountLabel: isVietnamese ? 'mục hiển thị' : 'items shown',
+      rootCountLabel: isVietnamese ? 'Danh muc sản phẩm' : 'Category',
       rootLoadError: isVietnamese ? 'Không thể tải danh mục. Vui lòng thử lại.' : 'Unable to load categories. Please try again.',
       rootEmpty: isVietnamese
         ? 'Không có danh mục gốc phù hợp với bộ lọc hiện tại.'
@@ -161,11 +161,8 @@ export default function CategoryManager() {
     staleTime: 0,
   })
 
-  const categories = data?.data ?? []
-  const searchResults: CategoryDTO[] = React.useMemo(() => {
-    if (!searchData?.data) return []
-    return Array.isArray(searchData.data) ? searchData.data : [searchData.data]
-  }, [searchData])
+  const categories = React.useMemo(() => normalizeCategoryList(data), [data])
+  const searchResults: CategoryDTO[] = React.useMemo(() => normalizeCategorySearch(searchData), [searchData])
 
   const parentMap = React.useMemo(() => createParentMap(categories), [categories])
   const childrenMap = React.useMemo(() => createChildrenMap(categories), [categories])
@@ -351,8 +348,8 @@ export default function CategoryManager() {
   const selectedHierarchyValue = selectedCategoryId ?? ''
 
   return (
-    <div className='space-y-6'>
-      <header className='flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4'>
+    <div className='mx-auto w-full max-w-none space-y-6 px-1'>
+      <header className='flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm'>
         <div>
           <h1 className='text-[22px] font-semibold text-gray-900'>{t.pageTitle}</h1>
           <p className='mt-1 text-sm text-gray-500'>{t.pageSubtitle}</p>
@@ -373,11 +370,11 @@ export default function CategoryManager() {
 
       <div className='grid gap-4 md:grid-cols-3'>
         {metrics.map((metric) => (
-          <div key={metric.label} className='rounded-xl border border-gray-100 bg-white p-4 shadow-sm'>
+          <div key={metric.label} className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
             <div className='flex items-center justify-between gap-3'>
               <div>
                 <p className='text-xs font-medium uppercase tracking-wide text-gray-500'>{metric.label}</p>
-                <p className='mt-1 text-xl font-semibold text-gray-900'>{isLoading ? '...' : metric.value}</p>
+                <p className='mt-2 text-2xl font-semibold text-gray-900'>{isLoading ? '...' : metric.value}</p>
               </div>
               <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${metric.iconBg}`}>
                 {metric.icon}
@@ -387,10 +384,9 @@ export default function CategoryManager() {
         ))}
       </div>
 
-      <div className='rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'>
-        <div className='flex gap-4 items-start justify-between'>
-          {/* Search - Left */}
-          <div className='flex-[0.5] flex flex-col space-y-2'>
+      <div className='rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
+        <div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]'>
+          <div className='flex flex-col space-y-2'>
             <label className='text-xs font-medium text-gray-700'>{t.searchLabel || 'Search'}</label>
             <div className='relative'>
               <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
@@ -418,9 +414,8 @@ export default function CategoryManager() {
             </div>
           </div>
 
-          {/* Filters + Actions - Right */}
-          <div className='flex gap-3 items-start mr-2'>
-            <div className='w-[120px] rounded-xl border border-gray-200 bg-white p-3'>
+          <div className='flex items-start gap-3'>
+            <div className='w-[150px] rounded-xl border border-gray-200 bg-white p-3'>
               <label className='mb-1 block text-xs font-medium text-gray-600'>{t.statusLabel}</label>
               <select
                 value={statusFilter}
@@ -457,23 +452,27 @@ export default function CategoryManager() {
         />
       </section>
 
-      <div className='grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]'>
-        <SubCategoryPanel
-          categories={displayedChildren}
-          isLoading={isLoading}
-          parentCategory={categories.find((cat) => cat.categoryId === selectedRootId) ?? null}
-          selectedId={selectedCategoryId}
-          texts={t}
-          onSelect={handleChildSelect}
-          onAddChild={openCreateForm}
-        />
+      <div className='space-y-6'>
+        <div className='min-w-0 w-full'>
+          <CategoryDetailPanel
+            category={selectedCategory}
+            onAddChild={openCreateForm}
+            texts={t}
+            locale={isVietnamese ? 'vi-VN' : 'en-US'}
+          />
+        </div>
 
-        <CategoryDetailPanel
-          category={selectedCategory}
-          onAddChild={openCreateForm}
-          texts={t}
-          locale={isVietnamese ? 'vi-VN' : 'en-US'}
-        />
+        <div className='min-w-0 w-full'>
+          <SubCategoryPanel
+            categories={displayedChildren}
+            isLoading={isLoading}
+            parentCategory={categories.find((cat) => cat.categoryId === selectedRootId) ?? null}
+            selectedId={selectedCategoryId}
+            texts={t}
+            onSelect={handleChildSelect}
+            onAddChild={openCreateForm}
+          />
+        </div>
       </div>
 
       {isCreateFormOpen && (
@@ -564,6 +563,22 @@ function sortByName(categories: CategoryDTO[]) {
   return [...categories].sort((a, b) => a.name.localeCompare(b.name))
 }
 
+function normalizeCategoryList(payload: unknown): CategoryDTO[] {
+  if (Array.isArray(payload)) return payload as CategoryDTO[]
+  if (!payload || typeof payload !== 'object') return []
+  const maybeData = (payload as { data?: unknown }).data
+  return Array.isArray(maybeData) ? (maybeData as CategoryDTO[]) : []
+}
+
+function normalizeCategorySearch(payload: unknown): CategoryDTO[] {
+  if (Array.isArray(payload)) return payload as CategoryDTO[]
+  if (!payload || typeof payload !== 'object') return []
+  const maybeData = (payload as { data?: unknown }).data
+  if (Array.isArray(maybeData)) return maybeData as CategoryDTO[]
+  if (maybeData && typeof maybeData === 'object') return [maybeData as CategoryDTO]
+  return []
+}
+
 interface RootCategoryGridProps {
   categories: CategoryDTO[]
   selectedId: string | null
@@ -576,10 +591,12 @@ interface RootCategoryGridProps {
 function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, texts, onSelect }: RootCategoryGridProps) {
   if (isLoading) {
     return (
-      <div className='grid min-w-[960px] grid-cols-6 gap-4 overflow-x-auto pb-2 lg:min-w-0 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2'>
+      <div className='overflow-x-auto pb-2'>
+        <div className='flex min-w-max gap-3'>
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className='h-32 rounded-2xl border border-dashed border-gray-200 bg-gray-50 animate-pulse' />
+            <div key={index} className='h-28 w-[180px] shrink-0 rounded-lg border border-dashed border-gray-200 bg-gray-50 animate-pulse' />
         ))}
+        </div>
       </div>
     )
   }
@@ -590,7 +607,7 @@ function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, tex
 
   return (
     <div className='overflow-x-auto pb-2'>
-      <div className='grid min-w-[960px] grid-cols-6 gap-4 lg:min-w-0 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2'>
+      <div className='flex min-w-max gap-3'>
         {categories.map((category) => {
           const isSelected = selectedId === category.categoryId
           const isHighlighted = highlightIds.has(category.categoryId)
@@ -600,24 +617,26 @@ function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, tex
               id={`root-card-${category.categoryId}`}
               type='button'
               onClick={() => onSelect(category.categoryId)}
-              className={`flex h-full flex-col rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md ${
-                isSelected ? 'border-stone-900 bg-stone-900/90 text-white shadow-lg' : 'border-stone-200 bg-white'
+              className={`flex h-28 w-[180px] shrink-0 flex-col overflow-hidden !rounded-xl border !px-3 !py-2.5 text-left transition duration-150 ${
+                isSelected
+                  ? 'border-stone-900 bg-gradient-to-br from-stone-900 to-stone-800 text-white shadow-md ring-1 ring-[#e8dccd] ring-offset-1 ring-offset-white'
+                  : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-[#fdfaf5] hover:shadow-sm'
               } ${isHighlighted && !isSelected ? 'ring-2 ring-stone-200 ring-offset-2' : ''}`}
             >
               <div className='flex items-start justify-between gap-2'>
-                <h3 className='text-base font-semibold leading-tight'>{category.name}</h3>
-                <span className={`inline-flex rounded-xl px-2 py-0.5 text-[11px] font-semibold ${
+                <h3 className='line-clamp-2 text-xs font-semibold leading-snug'>{category.name}</h3>
+                <span className={`inline-flex shrink-0 rounded-lg px-1.5 py-0.5 text-[9px] font-semibold ${
                   STATUS_BADGE[category.isActive ? 'true' : 'false']
                 } ${isSelected ? 'bg-white/20 text-white' : ''}`}>
                   {category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel}
                 </span>
               </div>
-              <p className={`mt-2 text-sm ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+              <p className={`mt-1 text-[10px] ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
                 {category.subCategoriesCount} {texts.rootSubCount}
               </p>
-              <span className={`mt-auto inline-flex items-center text-sm font-semibold ${isSelected ? 'text-white' : 'text-stone-900'}`}>
+              <span className={`mt-auto inline-flex items-center text-[10px] font-semibold ${isSelected ? 'text-white' : 'text-stone-900'}`}>
                 {texts.rootSelectAction}
-                <svg className='ml-1 h-4 w-4' viewBox='0 0 16 16' fill='none' stroke='currentColor' strokeWidth='1.4'>
+                <svg className='ml-1 h-3.5 w-3.5' viewBox='0 0 16 16' fill='none' stroke='currentColor' strokeWidth='1.4'>
                   <path d='M6 4l4 4-4 4' strokeLinecap='round' strokeLinejoin='round' />
                 </svg>
               </span>
@@ -672,7 +691,7 @@ function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, t
               ))}
             </div>
           ) : categories.length ? (
-            <div className='flex flex-wrap gap-3 overflow-x-auto pb-2 lg:flex-nowrap'>
+            <div className='grid gap-3 md:grid-cols-2'>
               {categories.map((category) => {
                 const isSelected = selectedId === category.categoryId
                 return (
@@ -680,7 +699,7 @@ function SubCategoryPanel({ categories, parentCategory, selectedId, isLoading, t
                     key={category.categoryId}
                     type='button'
                     onClick={() => onSelect(category.categoryId)}
-                    className={`min-w-[240px] flex-1 rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-stone-300 ${
+                    className={`rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-stone-300 ${
                       isSelected ? 'border-stone-900 bg-stone-900/90 text-white shadow-lg' : 'border-stone-100 bg-white'
                     }`}
                   >
@@ -726,53 +745,60 @@ function CategoryDetailPanel({
 }) {
   if (!category) {
     return (
-      <section className='flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm'>
+      <section className='flex min-h-[360px] w-full flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm'>
         {texts.detailEmpty}
       </section>
     )
   }
 
+  const infoRows = [
+    { label: texts.detailParent, value: category.parentCategoryName ?? texts.detailRootParent },
+    { label: texts.detailChildrenCount, value: `${category.subCategoriesCount}` },
+    { label: texts.detailCreatedAt, value: formatDate(category.createdAt, locale, texts.dateUnknown) },
+    { label: texts.detailUpdatedAt, value: formatDate(category.updatedAt, locale, texts.dateUnknown) },
+  ]
+
   return (
-    <section className='space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
-      <div className='flex items-start justify-between gap-3 border-b border-gray-100 pb-4'>
-        <div>
+    <section className='w-full space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6'>
+      <div className='flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4'>
+        <div className='min-w-0 flex-1'>
           <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{texts.detailSectionTitle}</p>
-          <h2 className='text-xl font-semibold text-gray-900'>{category.name}</h2>
-          <p className='mt-1 text-sm text-gray-500'>{category.description || texts.detailDescriptionNone}</p>
+          <h2 className='mt-1 text-xl font-semibold text-gray-900'>{category.name}</h2>
+          <p className='mt-2 line-clamp-2 text-sm text-gray-500 sm:line-clamp-none'>{category.description || texts.detailDescriptionNone}</p>
         </div>
-        <span className={`inline-flex rounded-2xl px-3 py-1 text-xs font-semibold ${STATUS_BADGE[category.isActive ? 'true' : 'false']}`}>
+        <span className={`inline-flex shrink-0 self-start rounded-2xl px-3 py-1 text-xs font-semibold ${STATUS_BADGE[category.isActive ? 'true' : 'false']}`}>
           {category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel}
         </span>
       </div>
+
       <div className='space-y-4'>
-        <div className='flex flex-wrap items-center justify-between gap-3'>
+        <div className='flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50/80 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between'>
           <h3 className='text-sm font-semibold text-gray-900'>{texts.detailQuickInfo}</h3>
-          <span className='text-xs text-gray-500'>
-            {texts.detailIdLabel} #{category.categoryId}
+          <span className='max-w-full font-mono text-[11px] text-gray-500 sm:max-w-[420px] sm:text-right sm:text-xs'>
+            <span className='block truncate'>
+              {texts.detailIdLabel} #{category.categoryId}
+            </span>
           </span>
         </div>
 
-        <div className='flex flex-wrap gap-4 overflow-x-auto pb-2 lg:flex-nowrap'>
-          <DetailCard label={texts.detailDescriptionLabel} value={category.description || texts.detailDescriptionNone} tone='muted' />
-          <DetailCard label={texts.detailStatusLabel} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} highlight />
-          <DetailCard
-            label={texts.detailParent}
-            value={category.parentCategoryName ?? texts.detailRootParent}
-          />
-          <DetailCard label={texts.detailChildrenCount} value={`${category.subCategoriesCount}`} />
-          <DetailCard label={texts.detailCreatedAt} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
-          <DetailCard label={texts.detailUpdatedAt} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
+        <div className='overflow-hidden rounded-xl border border-gray-100 bg-white p-3 sm:p-4'>
+          <dl className='grid gap-3 sm:grid-cols-2'>
+            {infoRows.map((item) => (
+              <div key={item.label} className='rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-2.5'>
+                <dt className='text-[10px] font-semibold uppercase tracking-wide text-gray-500'>{item.label}</dt>
+                <dd className='mt-1 text-sm font-semibold text-gray-900 break-words'>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-      </div>
 
-      <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4'>
-        <h3 className='text-sm font-semibold text-gray-900'>{texts.timelineTitle}</h3>
-        <div className='mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
-          <TimelineItem label={texts.timelineCreated} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
-          <span className='hidden lg:block h-px flex-1 bg-gray-200' />
-          <TimelineItem label={texts.timelineUpdated} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
-          <span className='hidden lg:block h-px flex-1 bg-gray-200' />
-          <TimelineItem label={texts.timelineStatus} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} />
+        <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4'>
+          <h3 className='text-sm font-semibold text-gray-900'>{texts.timelineTitle}</h3>
+          <div className='mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3'>
+            <TimelineItem label={texts.timelineCreated} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
+            <TimelineItem label={texts.timelineUpdated} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
+            <TimelineItem label={texts.timelineStatus} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} />
+          </div>
         </div>
       </div>
 
@@ -802,26 +828,11 @@ function CategoryDetailPanel({
   )
 }
 
-function DetailCard({ label, value, highlight, tone }: { label: string; value: string; highlight?: boolean; tone?: 'muted' }) {
-  return (
-    <div
-      className={`flex min-w-[220px] flex-1 rounded-2xl border p-4 ${
-        highlight ? 'border-stone-900 bg-stone-900/90 text-white' : 'border-gray-100 bg-white'
-      } ${tone === 'muted' && !highlight ? 'bg-gray-50/70' : ''}`}
-    >
-      <div>
-      <dt className={`text-[11px] font-medium uppercase tracking-wide ${highlight ? 'text-white/70' : 'text-gray-500'}`}>{label}</dt>
-      <dd className={`mt-2 text-sm font-semibold ${highlight ? 'text-white' : 'text-gray-900'}`}>{value}</dd>
-      </div>
-    </div>
-  )
-}
-
 function TimelineItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className='flex items-center gap-3 rounded-xl bg-white px-4 py-2 shadow-sm'>
-      <span className='text-[11px] font-semibold uppercase tracking-wide text-gray-400'>{label}</span>
-      <span className='text-sm font-medium text-gray-900'>{value}</span>
+    <div className='flex min-w-0 items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm'>
+      <span className='shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400'>{label}</span>
+      <span className='min-w-0 text-xs font-medium text-gray-900 break-words'>{value}</span>
     </div>
   )
 }
