@@ -53,10 +53,14 @@ export interface RoleDto {
 export type OrderStatusApi = 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | string
 
 export interface AdminShopOrderItemDto {
+  orderItemId?: string
   productName?: string
+  versionName?: string
   sellerSku?: string
   quantity?: number
   price?: number
+  unitPriceVnd?: number
+  lineTotalVnd?: number
 }
 
 /** GET /orders/Shop/{shopId} item shape (spec §4.3) */
@@ -67,7 +71,12 @@ export interface AdminShopOrderDto {
   items?: AdminShopOrderItemDto[]
   status?: OrderStatusApi
   createdDate?: string
+  createdAt?: string
+  updatedAt?: string
   totalPrice?: number
+  subtotalVnd?: number
+  totalAmountVnd?: number
+  deliveryAddress?: string
   orderCode?: string
   accountId?: string
 }

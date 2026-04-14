@@ -93,6 +93,8 @@ function parseDate(value?: string): number {
 }
 
 function orderTotal(o: AdminShopOrderDto): number {
+  if (typeof o.totalAmountVnd === 'number') return o.totalAmountVnd
+  if (typeof o.subtotalVnd === 'number') return o.subtotalVnd
   if (typeof o.totalPrice === 'number') return o.totalPrice
   const items = o.orderItems ?? o.items ?? []
   return items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1), 0)
@@ -231,7 +233,21 @@ function readNumField(obj: Record<string, unknown>, keys: string[]): number {
 
 function normalizeRevenueTrendPayload(raw: unknown): RevenueTrendSeries {
   const source = pickData<unknown>(raw)
-  const root = (source && typeof source === 'object' ? (source as Record<string, unknown>) : {}) as Record<string, unknown>
+  const unwrapObject = (input: unknown): Record<string, unknown> => {
+    let cur: unknown = input
+    for (let i = 0; i < 4; i += 1) {
+      if (!cur || typeof cur !== 'object' || Array.isArray(cur)) break
+      const obj = cur as Record<string, unknown>
+      const nested =
+        (obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data) ? obj.data : null) ??
+        (obj.result && typeof obj.result === 'object' && !Array.isArray(obj.result) ? obj.result : null) ??
+        (obj.payload && typeof obj.payload === 'object' && !Array.isArray(obj.payload) ? obj.payload : null)
+      if (!nested) return obj
+      cur = nested
+    }
+    return (cur && typeof cur === 'object' && !Array.isArray(cur) ? cur : {}) as Record<string, unknown>
+  }
+  const root = unwrapObject(source)
 
   const labels = Array.isArray(root.labels) ? root.labels.map((x) => String(x)) : null
   const gross = Array.isArray(root.gross) ? root.gross.map((x) => Number(x) || 0) : null
@@ -344,25 +360,63 @@ export const adminService = {
     const today = `${yyyy}-${mm}-${dd}`
     const monthStart = `${yyyy}-${mm}-01`
 
-    let paths: readonly string[] = ADMIN_API.DASHBOARD.REVENUE_DAILY
-    let params: Record<string, string> | undefined
-
-    if (range === 'day') {
-      paths = [...ADMIN_API.DASHBOARD.METRICS_TODAY, ...ADMIN_API.DASHBOARD.REVENUE_DAILY]
-      params = { startDate: today, endDate: today }
-    } else if (range === 'month') {
-      paths = [...ADMIN_API.DASHBOARD.REVENUE_CUSTOM, ...ADMIN_API.DASHBOARD.REVENUE_DAILY]
-      params = { startDate: monthStart, endDate: today, granularity: 'DAILY' }
-    } else if (range === 'quarter') {
-      paths = [...ADMIN_API.DASHBOARD.REVENUE_QUARTERLY, ...ADMIN_API.DASHBOARD.REVENUE_CUSTOM]
-      params = { granularity: 'QUARTERLY' }
-    } else if (range === 'year') {
-      paths = [...ADMIN_API.DASHBOARD.REVENUE_YEARLY, ...ADMIN_API.DASHBOARD.REVENUE_CUSTOM]
-      params = { granularity: 'YEARLY' }
+    const fetchTodayFallback = async (): Promise<RevenueTrendSeries> => {
+      const todayMetrics = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.METRICS_TODAY)
+      return normalizeRevenueTrendPayload(todayMetrics)
     }
 
-    const raw = await getFirstOkOrEmpty<unknown>(paths, params ? { params } : undefined)
-    return normalizeRevenueTrendPayload(raw)
+    if (range === 'day') {
+      const todayMetrics = await fetchTodayFallback()
+      const normalizedToday = normalizeRevenueTrendPayload(todayMetrics)
+      if (normalizedToday.labels.length > 0) return normalizedToday
+
+      const daily = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.REVENUE_DAILY, {
+        params: { startDate: today, endDate: today },
+      })
+      return normalizeRevenueTrendPayload(daily)
+    }
+
+    if (range === 'month') {
+      const monthly = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.REVENUE_CUSTOM, {
+        params: { startDate: monthStart, endDate: today, granularity: 'DAILY' },
+      })
+      const normalizedMonthly = normalizeRevenueTrendPayload(monthly)
+      if (normalizedMonthly.labels.length > 0) return normalizedMonthly
+
+      const daily = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.REVENUE_DAILY, {
+        params: { startDate: monthStart, endDate: today },
+      })
+      const normalizedDaily = normalizeRevenueTrendPayload(daily)
+      if (normalizedDaily.labels.length > 0) return normalizedDaily
+
+      return fetchTodayFallback()
+    }
+
+    if (range === 'quarter') {
+      const quarterly = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.REVENUE_QUARTERLY)
+      const normalizedQuarterly = normalizeRevenueTrendPayload(quarterly)
+      if (normalizedQuarterly.labels.length > 0) return normalizedQuarterly
+
+      const customQuarterly = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.REVENUE_CUSTOM, {
+        params: { startDate: monthStart, endDate: today, granularity: 'QUARTERLY' },
+      })
+      const normalizedCustomQuarterly = normalizeRevenueTrendPayload(customQuarterly)
+      if (normalizedCustomQuarterly.labels.length > 0) return normalizedCustomQuarterly
+
+      return fetchTodayFallback()
+    }
+
+    const yearly = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.REVENUE_YEARLY)
+    const normalizedYearly = normalizeRevenueTrendPayload(yearly)
+    if (normalizedYearly.labels.length > 0) return normalizedYearly
+
+    const customYearly = await getFirstOkOrEmpty<unknown>(ADMIN_API.DASHBOARD.REVENUE_CUSTOM, {
+      params: { startDate: `${yyyy}-01-01`, endDate: today, granularity: 'YEARLY' },
+    })
+    const normalizedCustomYearly = normalizeRevenueTrendPayload(customYearly)
+    if (normalizedCustomYearly.labels.length > 0) return normalizedCustomYearly
+
+    return fetchTodayFallback()
   },
 
   getAdminShops: async (): Promise<AdminShopDto[]> => {

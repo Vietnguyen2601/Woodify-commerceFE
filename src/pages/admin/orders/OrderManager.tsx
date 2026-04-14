@@ -7,15 +7,6 @@ import type { AdminShopDto } from '@/types'
 const fmtMoney = (n: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n)
 
-const fmtDateTime = (iso: string | undefined, locale: 'vi-VN' | 'en-US') => {
-  if (!iso) return ''
-  try {
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
 const ORDER_STATUS_STYLES: Record<string, string> = {
   DELIVERED: 'bg-green-100 text-green-700 border border-green-200',
   SHIPPED: 'bg-indigo-100 text-indigo-700 border border-indigo-200',
@@ -40,6 +31,7 @@ export default function OrderManager() {
   const [dateFrom, setDateFrom] = React.useState('')
   const [dateTo, setDateTo] = React.useState('')
   const [page, setPage] = React.useState(1)
+  const [expandedOrderIds, setExpandedOrderIds] = React.useState<Record<string, boolean>>({})
   const pageSize = 20
 
   const t = {
@@ -48,6 +40,8 @@ export default function OrderManager() {
     subtitle: isVietnamese
       ? 'Theo dõi đơn của merchant, trạng thái giao hàng và điểm nghẽn xử lý.'
       : 'Track merchant orders, monitor delivery states and quickly investigate issue clusters.',
+    sourceInfo: isVietnamese ? 'Nguồn dữ liệu: API đơn hàng admin + tổng hợp theo shop.' : 'Source: admin orders API + per-shop fallback.',
+    aggregate: isVietnamese ? 'Đang hiển thị dữ liệu tổng hợp fallback từ từng shop.' : 'Showing aggregated fallback data from shops.',
     loadFailed: isVietnamese ? 'Không tải được danh sách đơn hàng' : 'Failed to load orders',
     filterTitle: isVietnamese ? 'Lọc đơn hàng' : 'Filter orders',
     filterSub: isVietnamese ? 'Lọc theo trạng thái, shop và khoảng ngày.' : 'Refine by status, shop and date range.',
@@ -71,7 +65,14 @@ export default function OrderManager() {
     details: isVietnamese ? 'Chi tiết' : 'Details',
     loading: isVietnamese ? 'Đang tải...' : 'Loading...',
     noOrders: isVietnamese ? 'Không tìm thấy đơn hàng.' : 'No orders found.',
-    apiDetails: isVietnamese ? 'API: dòng sản phẩm trong đơn' : 'API: order line items',
+    viewDetails: isVietnamese ? 'Xem' : 'View',
+    hideDetails: isVietnamese ? 'Ẩn' : 'Hide',
+    noItems: isVietnamese ? 'Không có dòng sản phẩm trong đơn.' : 'No order line items.',
+    product: isVietnamese ? 'Sản phẩm' : 'Product',
+    sku: isVietnamese ? 'SKU' : 'SKU',
+    quantity: isVietnamese ? 'SL' : 'Qty',
+    unitPrice: isVietnamese ? 'Đơn giá' : 'Unit price',
+    lineTotal: isVietnamese ? 'Thành tiền' : 'Line total',
     previous: isVietnamese ? 'Trước' : 'Previous',
     next: isVietnamese ? 'Sau' : 'Next',
   }
@@ -138,6 +139,10 @@ export default function OrderManager() {
     setShopId('')
     setDateFrom('')
     setDateTo('')
+  }
+
+  const toggleOrderDetails = (orderId: string) => {
+    setExpandedOrderIds((prev) => ({ ...prev, [orderId]: !prev[orderId] }))
   }
 
   return (
@@ -319,22 +324,87 @@ export default function OrderManager() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
-                  <tr key={order.orderId} className='hover:bg-gray-50/75'>
-                    <td className='whitespace-nowrap px-6 py-4 font-mono text-sm'>
-                      {order.orderCode || order.orderId}
-                    </td>
-                    <td className='px-6 py-4 text-gray-700'>{order.shopName ?? order.shopId ?? ''}</td>
-                    <td className='px-6 py-4 font-semibold'>{fmtMoney(adminOrderUtils.orderTotal(order))}</td>
-                    <td className='px-6 py-4'>
-                      <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${styleForStatus(order.status)}`}>
-                        {order.status ?? ''}
-                      </span>
-                    </td>
-                    <td className='px-6 py-4 text-gray-700'>{fmtDateTime(order.createdDate, isVietnamese ? 'vi-VN' : 'en-US')}</td>
-                    <td className='px-6 py-4 text-center text-xs text-gray-500'>{t.apiDetails}</td>
-                  </tr>
-                ))
+                filteredOrders.map((order) => {
+                  const items = order.orderItems ?? order.items ?? []
+                  const isExpanded = Boolean(expandedOrderIds[order.orderId])
+
+                  return (
+                    <React.Fragment key={order.orderId}>
+                      <tr className='hover:bg-gray-50/75'>
+                        <td className='whitespace-nowrap px-6 py-4 font-mono text-sm'>
+                          {order.orderCode || order.orderId}
+                        </td>
+                        <td className='px-6 py-4 text-gray-700'>{order.shopName ?? order.shopId ?? ''}</td>
+                        <td className='px-6 py-4 font-semibold'>{fmtMoney(adminOrderUtils.orderTotal(order))}</td>
+                        <td className='px-6 py-4'>
+                          <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${styleForStatus(order.status)}`}>
+                            {order.status ?? ''}
+                          </span>
+                        </td>
+                        <td className='max-w-[280px] px-6 py-4 text-gray-700' title={order.deliveryAddress ?? '-'}>
+                          {order.deliveryAddress?.trim() || '-'}
+                        </td>
+                        <td className='px-6 py-4 text-center'>
+                          <button
+                            type='button'
+                            onClick={() => toggleOrderDetails(order.orderId)}
+                            className='rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                          >
+                            {isExpanded ? t.hideDetails : t.viewDetails}
+                          </button>
+                        </td>
+                      </tr>
+
+                      {isExpanded && (
+                        <tr className='bg-gray-50/60'>
+                          <td colSpan={6} className='px-6 py-4'>
+                            {items.length === 0 ? (
+                              <p className='text-sm text-gray-500'>{t.noItems}</p>
+                            ) : (
+                              <div className='overflow-x-auto rounded-xl border border-gray-200 bg-white'>
+                                <table className='min-w-full divide-y divide-gray-100 text-sm'>
+                                  <thead className='bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500'>
+                                    <tr>
+                                      <th className='px-4 py-2 text-left'>{t.product}</th>
+                                      <th className='px-4 py-2 text-left'>{t.sku}</th>
+                                      <th className='px-4 py-2 text-right'>{t.quantity}</th>
+                                      <th className='px-4 py-2 text-right'>{t.unitPrice}</th>
+                                      <th className='px-4 py-2 text-right'>{t.lineTotal}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className='divide-y divide-gray-100 text-gray-900'>
+                                    {items.map((item, index) => {
+                                      const itemExtra = item as Record<string, unknown>
+                                      const qty = item.quantity ?? 0
+                                      const unitPrice =
+                                        (typeof itemExtra.unitPriceVnd === 'number' ? itemExtra.unitPriceVnd : undefined) ??
+                                        item.price ??
+                                        0
+                                      const lineTotal =
+                                        (typeof itemExtra.lineTotalVnd === 'number' ? itemExtra.lineTotalVnd : undefined) ??
+                                        unitPrice * qty
+                                      const orderItemId = typeof itemExtra.orderItemId === 'string' ? itemExtra.orderItemId : undefined
+                                      const versionName = typeof itemExtra.versionName === 'string' ? itemExtra.versionName : undefined
+                                      return (
+                                        <tr key={`${order.orderId}-${orderItemId ?? index}`}>
+                                          <td className='px-4 py-2'>{item.productName ?? versionName ?? '-'}</td>
+                                          <td className='px-4 py-2 text-gray-600'>{item.sellerSku ?? '-'}</td>
+                                          <td className='px-4 py-2 text-right'>{qty}</td>
+                                          <td className='px-4 py-2 text-right'>{fmtMoney(unitPrice)}</td>
+                                          <td className='px-4 py-2 text-right font-semibold'>{fmtMoney(lineTotal)}</td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  )
+                })
               )}
             </tbody>
           </table>

@@ -214,12 +214,12 @@ export const API_ENDPOINTS = {
  */
 export const ADMIN_API = {
   DASHBOARD: {
-    OVERVIEW: ['/admin/dashboard/overview'],
-    METRICS_TODAY: ['/admin/dashboard/metrics/today'],
-    REVENUE_DAILY: ['/admin/dashboard/revenue/daily'],
-    REVENUE_QUARTERLY: ['/admin/dashboard/revenue/quarterly'],
-    REVENUE_YEARLY: ['/admin/dashboard/revenue/yearly'],
-    REVENUE_CUSTOM: ['/admin/dashboard/revenue/custom'],
+    OVERVIEW: ['/admin/dashboard/overview', '/order/admin/dashboard/overview'],
+    METRICS_TODAY: ['/admin/dashboard/metrics/today', '/order/admin/dashboard/metrics/today'],
+    REVENUE_DAILY: ['/admin/dashboard/revenue/daily', '/order/admin/dashboard/revenue/daily'],
+    REVENUE_QUARTERLY: ['/admin/dashboard/revenue/quarterly', '/order/admin/dashboard/revenue/quarterly'],
+    REVENUE_YEARLY: ['/admin/dashboard/revenue/yearly', '/order/admin/dashboard/revenue/yearly'],
+    REVENUE_CUSTOM: ['/admin/dashboard/revenue/custom', '/order/admin/dashboard/revenue/custom'],
   },
   ACCOUNTS: {
     GET_ALL: '/accounts/GetAllAccounts',

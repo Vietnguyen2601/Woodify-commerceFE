@@ -563,7 +563,7 @@ export default function Checkout() {
         const rows = cart.items
           .map((item) => resolveLine(item.cart_item_id, item.shop_id, item.product_id))
           .filter((row): row is CartItemDto => Boolean(row))
-        if (rows.length !== cartItemIds.length) {
+        if (rows.length !== cart.items.length) {
           setPlaceOrderFeedback({
             kind: 'error',
             message:
