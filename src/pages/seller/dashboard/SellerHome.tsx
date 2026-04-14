@@ -34,20 +34,6 @@ const TOP_PRODUCTS = [
   { name: 'Mahogany Desk', value: 26 }
 ]
 
-const PERFORMANCE = [
-  { label: 'Hiệu quả bán hàng', value: 'Xuất sắc', detail: 'Điểm phạt 0 • Tỉ lệ giao hàng đúng hạn 97%' },
-  { label: 'Trải nghiệm khách', value: 'Tốt', detail: '4.9 / 5.0 • 132 đánh giá mới' },
-  { label: 'Hỗ trợ xử lý', value: 'Cần cải thiện', detail: 'Đáp ứng chat chậm hơn 30p so với chuẩn' }
-]
-
-const ANALYTICS = [
-  { label: 'Doanh số', value: '₫3.2B', delta: '+18%', context: '30 ngày gần nhất' },
-  { label: 'Lượt truy cập', value: '312K', delta: '+11%', context: 'Từ tìm kiếm và Shopee Live' },
-  { label: 'Product clicks', value: '98K', delta: '+6%', context: 'Tăng nhờ Flash Sale' },
-  { label: 'Đơn hàng', value: '11.5K', delta: '+4%', context: 'Giá trị trung bình ₫280K' },
-  { label: 'Conversion rate', value: '3.4%', delta: '-0.2%', context: 'Cần tối ưu trang trí shop' }
-]
-
 const SERVICES = [
   { title: 'Dịch vụ hiển thị Shopee', desc: 'Đẩy sản phẩm lên vị trí nổi bật và remarketing tự động', cta: 'Bật quảng cáo ngay' },
   { title: 'Gói Freeship Xtra', desc: 'Tăng tỷ lệ mua bằng hỗ trợ phí vận chuyển', cta: 'Đăng ký' }
@@ -166,48 +152,6 @@ export default function SellerHome() {
         </article>
       </section>
 
-      <section className='seller-home__performance'>
-        <div className='seller-home__section-header'>
-          <div>
-            <p className='seller-home__eyebrow'>Hiệu quả bán hàng</p>
-            <h2>Trạng thái tổng quan</h2>
-          </div>
-          <button type='button'>Xem chi tiết báo cáo</button>
-        </div>
-        <div className='seller-home__performance-grid'>
-          {PERFORMANCE.map(item => (
-            <div key={item.label} className='seller-home__performance-card'>
-              <p>{item.label}</p>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className='seller-home__analytics'>
-        <div className='seller-home__analysis-header'>
-          <div>
-            <p className='seller-home__eyebrow'>Phân tích bán hàng</p>
-            <h2>Tăng trưởng 30 ngày gần nhất</h2>
-          </div>
-          <select aria-label='Khoảng thời gian'>
-            <option>30 ngày gần nhất</option>
-            <option>14 ngày</option>
-            <option>7 ngày</option>
-          </select>
-        </div>
-        <div className='seller-home__analysis-grid'>
-          {ANALYTICS.map(item => (
-            <div key={item.label} className='seller-home__analysis-card'>
-              <p>{item.label}</p>
-              <strong>{item.value}</strong>
-              <span>{item.delta}</span>
-              <small>{item.context}</small>
-            </div>
-          ))}
-        </div>
-      </section>
 
       <section className='seller-home__services'>
         {SERVICES.map(service => (

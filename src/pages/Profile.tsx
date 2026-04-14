@@ -8,6 +8,7 @@ import type { WalletTransactionItem } from '@/services/wallet.service'
 import { BuyerOrdersPanel, type CustomerOrderBucket } from './profile/BuyerOrdersPanel'
 import { APP_CONFIG } from '../constants/app.config'
 import { CreditCard, Filter, Landmark, Wallet } from 'lucide-react'
+import { useOrderShipmentRealtime } from '@/realtime/useOrderShipmentRealtime'
 
 // Import Icons
 import UserIcon from '@/assets/icons/essential/interface/user.svg'
@@ -197,6 +198,8 @@ export default function Profile() {
   const accountIdForOrders =
     (authenticatedUser as { accountId?: string; id?: string } | undefined)?.accountId ||
     (authenticatedUser as { accountId?: string; id?: string } | undefined)?.id
+
+  useOrderShipmentRealtime({ accountId: accountIdForOrders })
 
   const { data: rawBuyerOrders = [], isLoading: buyerOrdersLoading, isError: buyerOrdersError } = useQuery({
     queryKey: [...queryKeys.orders.all(), 'account', accountIdForOrders],
