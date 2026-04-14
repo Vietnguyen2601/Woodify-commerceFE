@@ -5,11 +5,17 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useShopStore } from '@/store/shopStore'
 import { shopService } from '@/services'
 import { ROUTES } from '@/constants/routes'
+import { useOrderShipmentRealtime } from '@/realtime/useOrderShipmentRealtime'
 
 export default function SellerLayout() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const { shop, isLoading, setShop, setLoading } = useShopStore()
   const navigate = useNavigate()
+
+  useOrderShipmentRealtime({
+    shopId: shop?.shopId,
+    accountId: user?.accountId,
+  })
 
   useEffect(() => {
     if (authLoading) return

@@ -807,8 +807,7 @@ body.checkout-route-bg {
 	gap: 32px;
 }
 
-.seller-home__section-header,
-.seller-home__analysis-header {
+.seller-home__section-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -977,44 +976,6 @@ body.checkout-route-bg {
 .chart-bars__value {
 	font-weight: 600;
 	color: #8a5b30;
-}
-
-.seller-home__performance-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-	gap: 16px;
-}
-
-.seller-home__performance-card {
-	background: white;
-	border-radius: 18px;
-	padding: 18px;
-	box-shadow: 0 20px 45px -40px rgba(0, 0, 0, 0.6);
-}
-
-.seller-home__analytics {
-	background: white;
-	border-radius: 24px;
-	padding: 24px;
-	box-shadow: 0 30px 70px -60px rgba(0, 0, 0, 0.7);
-}
-
-.seller-home__analysis-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-	gap: 16px;
-}
-
-.seller-home__analysis-card {
-	background: #fdfdff;
-	border-radius: 16px;
-	padding: 16px;
-	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-}
-
-.seller-home__analysis-card span {
-	color: #1f8f5f;
-	font-weight: 600;
 }
 
 .seller-home__service-card,

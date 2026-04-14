@@ -9,16 +9,10 @@ import Returns from './orders/Returns'
 import ShippingSettings from './orders/ShippingSettings'
 import ProductList from './products/ProductList'
 import AddProduct from './products/AddProduct'
-import AIOptimizer from './products/AIOptimizer'
 import ProductVersionList from './products/ProductVersionList'
 import Revenue from './finance/Revenue'
-import Wallet from './finance/Wallet'
 import BankAccount from './finance/BankAccount'
 import ShopProfile from './shop/ShopProfile'
-import ShopDecoration from './shop/ShopDecoration'
-import ShopSettings from './shop/ShopSettings'
-import Complaints from './shop/Complaints'
-import FeedbackRating from './support/FeedbackRating'
 import ChatManagement from './support/ChatManagement'
 import ShopRatingManagement from './support/ShopRatingManagement'
 
@@ -36,22 +30,15 @@ export default function SellerDashboard() {
 
         <Route path='products' element={<ProductList />} />
         <Route path='products/add' element={<AddProduct />} />
-        <Route path='products/ai' element={<AIOptimizer />} />
         <Route path='products/:productId/versions' element={<ProductVersionList />} />
 
         <Route path='finance' element={<Revenue />} />
         <Route path='finance/revenue' element={<Revenue />} />
-        <Route path='finance/wallet' element={<Wallet />} />
         <Route path='finance/bank' element={<BankAccount />} />
 
-
         <Route path='shop/profile' element={<ShopProfile />} />
-        <Route path='shop/decoration' element={<ShopDecoration />} />
-        <Route path='shop/settings' element={<ShopSettings />} />
-        <Route path='shop/complaints' element={<Complaints />} />
 
-        <Route path='support' element={<FeedbackRating />} />
-        <Route path='support/feedback' element={<FeedbackRating />} />
+        <Route path='support' element={<ChatManagement />} />
         <Route path='support/chat-management' element={<ChatManagement />} />
         <Route path='support/shop-rating' element={<ShopRatingManagement />} />
 

@@ -79,12 +79,12 @@ export default function Catalog() {
       hasFreeship: false,
       badge: undefined,
       thumbnailUrl: p.thumbnailUrl ?? undefined,
-      shopName: p.shopName,
+      shopName: p.shopName ?? shopMap[p.shopId] ?? null,
       shopId: p.shopId,
       category: p.categoryId,
       createdAt: p.publishedAt || p.createdAt,
     }))
-  ), [productsToUse])
+  ), [productsToUse, shopMap])
 
   const filteredProducts = React.useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()

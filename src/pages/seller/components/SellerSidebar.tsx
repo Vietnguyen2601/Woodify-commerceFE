@@ -21,65 +21,49 @@ interface SellerNavGroup {
 const NAV_GROUPS: SellerNavGroup[] = [
   {
     id: 'overview',
-    label: 'Tổng quan',
+    label: 'T\u1ed5ng quan',
     defaultOpen: true,
-    links: [{ label: 'Bảng điều khiển', to: '/seller' }]
+    links: [{ label: 'B\u1ea3ng \u0111i\u1ec1u khi\u1ec3n', to: '/seller' }]
   },
   {
     id: 'orders',
-    label: 'Quản Lý Đơn Hàng',
+    label: 'Qu\u1ea3n L\u00fd \u0110\u01a1n H\u00e0ng',
     links: [
-      { label: 'Tất cả', to: '/seller/orders' },
-      { label: 'Giao hàng loạt', to: '/seller/orders/bulk-shipping' },
-      { label: 'Bàn giao đơn hàng', to: '/seller/orders/handover' },
-      { label: 'Trả hàng / Hoàn tiền', to: '/seller/orders/returns' },
-      { label: 'Cài đặt vận chuyển', to: '/seller/orders/shipping-settings', description: 'Thiết lập dịch vụ' }
+      { label: 'T\u1ea5t c\u1ea3', to: '/seller/orders' },
+      { label: 'Giao h\u00e0ng lo\u1ea1t', to: '/seller/orders/bulk-shipping' },
+      { label: 'B\u00e0n giao \u0111\u01a1n h\u00e0ng', to: '/seller/orders/handover' },
+      { label: 'Tr\u1ea3 h\u00e0ng / Ho\u00e0n ti\u1ec1n', to: '/seller/orders/returns' },
+      { label: 'C\u00e0i \u0111\u1eb7t v\u1eadn chuy\u1ec3n', to: '/seller/orders/shipping-settings', description: 'Thi\u1ebft l\u1eadp d\u1ecbch v\u1ee5' }
     ]
   },
   {
     id: 'products',
-    label: 'Quản Lý Sản Phẩm',
+    label: 'Qu\u1ea3n L\u00fd S\u1ea3n Ph\u1ea9m',
     links: [
-      { label: 'Tất cả sản phẩm', to: '/seller/products' },
-      { label: 'Thêm sản phẩm', to: '/seller/products/add' },
-      { label: 'Công cụ tối ưu AI', to: '/seller/products/ai' }
+      { label: 'T\u1ea5t c\u1ea3 s\u1ea3n ph\u1ea9m', to: '/seller/products' },
+      { label: 'Th\u00eam s\u1ea3n ph\u1ea9m', to: '/seller/products/add' }
     ]
   },
   {
     id: 'support',
-    label: 'Feedback & Hỗ Trợ',
+    label: 'Feedback & H\u1ed7 Tr\u1ee3',
     links: [
-      { label: 'Feedback & Rating', to: '/seller/support/feedback', description: 'Hub chat & đánh giá' },
       { label: 'Chat Management', to: '/seller/support/chat-management' },
       { label: 'Shop Rating Management', to: '/seller/support/shop-rating' }
     ]
   },
   {
     id: 'finance',
-    label: 'Tài Chính',
+    label: 'T\u00e0i Ch\u00ednh',
     links: [
       { label: 'Doanh thu', to: '/seller/finance/revenue' },
-      { label: 'Số dư TK Shopee', to: '/seller/finance/wallet' },
-      { label: 'Tài khoản ngân hàng', to: '/seller/finance/bank' }
-    ]
-  },
-  {
-    id: 'analytics',
-    label: 'Dữ Liệu',
-    links: [
-      { label: 'Phân tích bán hàng', to: '/seller/analytics/sales' },
-      { label: 'Hiệu quả hoạt động', to: '/seller/analytics/performance' }
+      { label: 'T\u00e0i kho\u1ea3n ng\u00e2n h\u00e0ng', to: '/seller/finance/bank' }
     ]
   },
   {
     id: 'shop',
-    label: 'Quản Lý Shop',
-    links: [
-      { label: 'Hồ sơ shop', to: '/seller/shop/profile' },
-      { label: 'Trang trí shop', to: '/seller/shop/decoration' },
-      { label: 'Thiết lập shop', to: '/seller/shop/settings' },
-      { label: 'Quản lý khiếu nại', to: '/seller/shop/complaints' }
-    ]
+    label: 'Qu\u1ea3n L\u00fd Shop',
+    links: [{ label: 'H\u1ed3 s\u01a1 shop', to: '/seller/shop/profile' }]
   }
 ]
 
@@ -145,7 +129,7 @@ export default function SellerSidebar() {
               >
                 <div className='pl-1'>{group.label}</div>
                 <span className='text-xs text-white/70' aria-hidden>
-                  {openGroups[group.id] ? '▾' : '▸'}
+                  {openGroups[group.id] ? '\u25be' : '\u25b8'}
                 </span>
               </button>
 

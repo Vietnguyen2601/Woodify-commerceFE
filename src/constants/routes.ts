@@ -45,7 +45,6 @@ export const ROUTES = {
   SELLER_DASHBOARD: '/seller/dashboard',
   SELLER_ORDERS: '/seller/orders',
   SELLER_PRODUCTS: '/seller/products',
-  SELLER_ANALYTICS: '/seller/analytics',
   SELLER_FINANCE: '/seller/finance',
   SELLER_SHOP: '/seller/shop',
 
