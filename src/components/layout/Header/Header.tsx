@@ -183,43 +183,45 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
 
         {/* Controls */}
         <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
-          {/* Search */}
-          <button
-            type="button"
-            aria-label="Tìm kiếm sản phẩm"
-            onClick={() => {
-              setIsSearching(!isSearching)
-              if (isSearching) setSearchValue('')
-            }}
-            className="p-1 md:p-1.5 text-white hover:opacity-100 transition-all duration-300"
-          >
-            {isSearching ? (
-              <svg width="16" height="16" className="w-4 md:w-4 lg:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            ) : (
-              <svg width="16" height="16" className="w-4 md:w-4 lg:w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M19.6 18.1L14 12.6c1.1-1.4 1.7-3.1 1.7-4.9 0-4.5-3.6-8.1-8.1-8.1S-1.5 3.3-1.5 7.8s3.6 8.1 8.1 8.1c1.8 0 3.5-.6 4.9-1.7l5.6 5.6 1.8-1.8zM7.6 13.6c-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8 5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8z" />
-              </svg>
-            )}
-          </button>
+          <div className="flex items-center gap-0.5">
+            {/* Search */}
+            <button
+              type="button"
+              aria-label="Tìm kiếm sản phẩm"
+              onClick={() => {
+                setIsSearching(!isSearching)
+                if (isSearching) setSearchValue('')
+              }}
+              className="p-1 md:p-1.5 text-white hover:opacity-100 transition-all duration-300"
+            >
+              {isSearching ? (
+                <svg width="16" height="16" className="w-4 md:w-4 lg:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              ) : (
+                <svg width="16" height="16" className="w-4 md:w-4 lg:w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M19.6 18.1L14 12.6c1.1-1.4 1.7-3.1 1.7-4.9 0-4.5-3.6-8.1-8.1-8.1S-1.5 3.3-1.5 7.8s3.6 8.1 8.1 8.1c1.8 0 3.5-.6 4.9-1.7l5.6 5.6 1.8-1.8zM7.6 13.6c-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8 5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8z" />
+                </svg>
+              )}
+            </button>
 
-          {/* Cart */}
-          <Link
-            to={ROUTES.CART}
-            className="relative p-1 md:p-1.5 text-white hover:opacity-80 transition"
-            aria-label="Giỏ hàng"
-          >
-            <svg width="18" height="16" className="w-5 md:w-5 lg:w-6" viewBox="0 0 24 20" fill="currentColor">
-              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
-            </svg>
-            {cartItemCount > 0 && (
-              <span className="absolute -top-2.5 -right-1.5 inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center px-1 text-[10px] font-bold leading-none text-white md:min-h-5 md:min-w-5 md:px-1.5 md:text-xs bg-red-500 rounded-full">
-                {cartItemCount}
-              </span>
-            )}
-          </Link>
+            {/* Cart */}
+            <Link
+              to={ROUTES.CART}
+              className="relative p-1 md:p-1.5 text-white hover:opacity-80 transition"
+              aria-label="Giỏ hàng"
+            >
+              <svg width="18" height="16" className="w-5 md:w-5 lg:w-6" viewBox="0 0 24 20" fill="currentColor">
+                <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
+              </svg>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2.5 -right-1.5 inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center px-1 text-[10px] font-bold leading-none text-white md:min-h-5 md:min-w-5 md:px-1.5 md:text-xs bg-red-500 rounded-full">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+          </div>
 
           {/* Auth Links */}
           <div className="flex items-center gap-2 text-white text-xs font-arbutus border-l border-white border-opacity-40 pl-4 whitespace-nowrap">

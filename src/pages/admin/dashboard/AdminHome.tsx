@@ -107,6 +107,11 @@ export default function AdminHome() {
     queryFn: adminService.getDashboardSnapshot,
     staleTime: 60 * 1000,
   })
+  const { data: revenueFromApi, isLoading: isRevenueLoading } = useQuery({
+    queryKey: queryKeys.admin.revenue(revenueRange),
+    queryFn: () => adminService.getRevenueTrend(revenueRange),
+    staleTime: 60 * 1000,
+  })
 
   const metricCards = React.useMemo(() => {
     if (!data) return [] as MetricCard[]
@@ -164,45 +169,88 @@ export default function AdminHome() {
   const productsCount = data?.productsSample.length ?? 0
   const skeletonMetrics = Array.from({ length: 6 })
   const revenueSeries = React.useMemo(() => {
-    if (revenueRange === 'day') {
+    if (revenueFromApi && revenueFromApi.labels.length > 0) {
+      return revenueFromApi
+    }
+
+    if (revenueRange === 'day' && data) {
+      const gross = Number(data.revenueToday ?? 0)
       return {
-        labels: isVietnamese ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        gross: [56, 44, 62, 51, 70, 58, 46],
-        commission: [16, 12, 19, 15, 22, 18, 13],
-        net: [40, 32, 43, 36, 48, 40, 33],
+        labels: [isVietnamese ? 'Hôm nay' : 'Today'],
+        gross: [gross],
+        commission: [0],
+        net: [gross],
       }
     }
-    if (revenueRange === 'year') {
-      return {
-        labels: ['2022', '2023', '2024', '2025', '2026'],
-        gross: [520, 610, 480, 690, 560],
-        commission: [140, 165, 120, 180, 150],
-        net: [380, 445, 360, 510, 410],
-      }
+
+    return { labels: [], gross: [], commission: [], net: [] }
+  }, [revenueFromApi, revenueRange, data, isVietnamese])
+  const isSinglePointSeries = revenueSeries.labels.length === 1
+  const shouldUseDonut = isSinglePointSeries || revenueRange === 'month'
+  const singlePointLabel = revenueSeries.labels[0] ?? (isVietnamese ? 'Hôm nay' : 'Today')
+  const displaySinglePointLabel = React.useMemo(() => {
+    if (!singlePointLabel) return isVietnamese ? 'Hôm nay' : 'Today'
+    const parsed = Date.parse(singlePointLabel)
+    if (!Number.isNaN(parsed)) {
+      return new Intl.DateTimeFormat(isVietnamese ? 'vi-VN' : 'en-US', {
+        day: '2-digit',
+        month: '2-digit',
+      }).format(new Date(parsed))
     }
-    if (revenueRange === 'quarter') {
+    return singlePointLabel
+  }, [singlePointLabel, isVietnamese])
+  const singlePointValues = React.useMemo(() => {
+    if (revenueRange === 'month' && revenueSeries.labels.length > 0) {
       return {
-        labels: ['Q1-2026', 'Q2-2026', 'Q3-2026', 'Q4-2026'],
-        gross: [180, 210, 160, 230],
-        commission: [50, 60, 45, 70],
-        net: [130, 150, 115, 160],
+        gross: revenueSeries.gross.reduce((s, v) => s + (Number(v) || 0), 0),
+        commission: revenueSeries.commission.reduce((s, v) => s + (Number(v) || 0), 0),
+        net: revenueSeries.net.reduce((s, v) => s + (Number(v) || 0), 0),
       }
     }
     return {
-      labels: isVietnamese
-        ? ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12']
-        : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-      gross: [62, 48, 70, 52, 80, 60, 68, 54, 76, 58, 72, 64],
-      commission: [18, 14, 22, 16, 24, 19, 20, 16, 23, 17, 21, 19],
-      net: [44, 34, 48, 36, 56, 41, 48, 38, 53, 41, 51, 45],
+      gross: revenueSeries.gross[0] ?? 0,
+      commission: revenueSeries.commission[0] ?? 0,
+      net: revenueSeries.net[0] ?? 0,
     }
-  }, [isVietnamese, revenueRange])
+  }, [revenueRange, revenueSeries])
+  const singlePointTotal = Math.max(
+    1,
+    singlePointValues.gross + singlePointValues.commission + singlePointValues.net
+  )
+  const grossPct = (singlePointValues.gross / singlePointTotal) * 100
+  const commissionPct = (singlePointValues.commission / singlePointTotal) * 100
+  const netPct = Math.max(0, 100 - grossPct - commissionPct)
+  const donutRadius = 42
+  const donutCircumference = 2 * Math.PI * donutRadius
+  const donutSegments = React.useMemo(() => {
+    const rows = [
+      { key: 'gross', color: '#10b981', pct: grossPct },
+      { key: 'commission', color: '#f59e0b', pct: commissionPct },
+      { key: 'net', color: '#3b82f6', pct: netPct },
+    ]
+    let offset = 0
+    return rows.map((row) => {
+      const length = (Math.max(0, row.pct) / 100) * donutCircumference
+      const segment = { ...row, length, offset }
+      offset += length
+      return segment
+    })
+  }, [grossPct, commissionPct, netPct, donutCircumference])
+  const chartSeries = React.useMemo(() => {
+    if (revenueSeries.labels.length >= 2) return revenueSeries
+    return {
+      labels: [isVietnamese ? 'Chưa có dữ liệu' : 'No data', isVietnamese ? 'Chưa có dữ liệu' : 'No data'],
+      gross: [0, 0],
+      commission: [0, 0],
+      net: [0, 0],
+    }
+  }, [revenueSeries, isVietnamese])
   const revenueChart = React.useMemo(() => {
-    const width = Math.max(600, (revenueSeries.labels.length - 1) * 160)
+    const width = Math.max(600, (chartSeries.labels.length - 1) * 160)
     const height = 140
-    const pad = 0
-    const max = Math.max(1, ...revenueSeries.gross, ...revenueSeries.net)
-    const step = (width - pad * 2) / (revenueSeries.labels.length - 1)
+    const pad = 8
+    const max = Math.max(1, ...chartSeries.gross, ...chartSeries.net, ...chartSeries.commission)
+    const step = (width - pad * 2) / (chartSeries.labels.length - 1)
     const toPath = (values: number[]) =>
       values
         .map((v, i) => {
@@ -218,7 +266,7 @@ export default function AdminHome() {
       return `${line} L${lastX},${baseY} L${pad},${baseY} Z`
     }
     return { width, height, toPath, toArea }
-  }, [revenueSeries])
+  }, [chartSeries])
 
   return (
     <div className='admin-home'>
@@ -240,11 +288,11 @@ export default function AdminHome() {
         </p>
       )}
 
-      <section className='admin-home__insights'>
+      <section className='admin-home__insights grid grid-cols-1 gap-6 xl:grid-cols-2'>
         <article className='admin-home__panel'>
           <header className='admin-home__panel-head'>
             <div>
-              <h2>{isVietnamese ? 'Xu hướng doanh thu (ví dụ)' : 'Revenue trend (example)'}</h2>
+              <h2>{isVietnamese ? 'Xu hướng doanh thu' : 'Revenue trend'}</h2>
               <p>{isVietnamese ? 'Tổng tiền hàng, hoa hồng và trả về shop' : 'Gross, commission, and net to shop'}</p>
             </div>
             <div className='ml-auto flex items-center gap-2'>
@@ -285,18 +333,84 @@ export default function AdminHome() {
               </div>
             </div>
             <div className='rounded-xl border border-gray-100 bg-white p-2'>
-              <svg viewBox={`0 0 ${revenueChart.width} ${revenueChart.height}`} className='h-36 w-full'>
-                <path d={revenueChart.toArea(revenueSeries.gross)} fill='rgba(16, 185, 129, 0.12)' />
-                <path d={revenueChart.toArea(revenueSeries.net)} fill='rgba(59, 130, 246, 0.1)' />
-                <path d={revenueChart.toPath(revenueSeries.gross)} stroke='#10b981' strokeWidth='2.25' fill='none' />
-                <path d={revenueChart.toPath(revenueSeries.net)} stroke='#3b82f6' strokeWidth='2.25' fill='none' />
-                <path d={revenueChart.toPath(revenueSeries.commission)} stroke='#f59e0b' strokeWidth='2.25' fill='none' />
-              </svg>
-              <div className='mt-2 flex justify-between px-1 text-[11px] text-gray-400'>
-                {revenueSeries.labels.map((label) => (
-                  <span key={label}>{label}</span>
-                ))}
-              </div>
+              {shouldUseDonut ? (
+                <div className='flex flex-col items-start gap-4 px-2 py-2 sm:flex-row sm:items-center'>
+                  <div className='ml-7 flex w-40 shrink-0 flex-col items-center gap-1 sm:mx-0 sm:ml-8'>
+                    <div className='w-full aspect-square'>
+                      <svg viewBox='0 0 120 120' className='h-full w-full -rotate-90'>
+                        <circle cx='60' cy='60' r={donutRadius} fill='none' stroke='#e5e7eb' strokeWidth='14' />
+                        {donutSegments.map((segment) => (
+                          <circle
+                            key={segment.key}
+                            cx='60'
+                            cy='60'
+                            r={donutRadius}
+                            fill='none'
+                            stroke={segment.color}
+                            strokeWidth='14'
+                            strokeLinecap='butt'
+                            strokeDasharray={`${segment.length} ${Math.max(0, donutCircumference - segment.length)}`}
+                            strokeDashoffset={-segment.offset}
+                          />
+                        ))}
+                      </svg>
+                    </div>
+                    <div className='text-center text-xs text-gray-500 sm:text-[11px]'>
+                      {revenueRange === 'month' ? (isVietnamese ? 'Tháng này' : 'This month') : displaySinglePointLabel}
+                    </div>
+                  </div>
+
+                  <div className='ml-auto w-full max-w-[210px] space-y-1.5'>
+                    {[
+                      { key: 'gross', label: isVietnamese ? 'Tổng tiền hàng' : 'Gross revenue', color: 'bg-emerald-500', value: singlePointValues.gross },
+                      { key: 'commission', label: isVietnamese ? 'Hoa hồng' : 'Commission', color: 'bg-amber-500', value: singlePointValues.commission },
+                      { key: 'net', label: isVietnamese ? 'Trả về shop' : 'Net to shop', color: 'bg-blue-500', value: singlePointValues.net },
+                    ].map((row) => (
+                      <div key={row.key} className='rounded-lg border border-gray-100 px-2 py-1.5 text-[11px]'>
+                        <div className='flex items-center gap-2 text-gray-600'>
+                          <span className={`h-2.5 w-2.5 rounded-full ${row.color}`} />
+                          <span>{row.label}</span>
+                        </div>
+                        <div className='mt-1 text-right font-semibold text-gray-800'>{fmtMoney(row.value)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <svg viewBox={`0 0 ${revenueChart.width} ${revenueChart.height}`} className='h-36 w-full'>
+                    <path d={revenueChart.toArea(chartSeries.gross)} fill='rgba(16, 185, 129, 0.12)' />
+                    <path d={revenueChart.toArea(chartSeries.net)} fill='rgba(59, 130, 246, 0.1)' />
+                    <path d={revenueChart.toPath(chartSeries.gross)} stroke='#10b981' strokeWidth='2.25' fill='none' />
+                    <path d={revenueChart.toPath(chartSeries.net)} stroke='#3b82f6' strokeWidth='2.25' fill='none' />
+                    <path d={revenueChart.toPath(chartSeries.commission)} stroke='#f59e0b' strokeWidth='2.25' fill='none' />
+                  </svg>
+                  <div className='mt-2 flex justify-between px-1 text-[11px] text-gray-400'>
+                    {chartSeries.labels.map((label, idx) => (
+                      <span key={`${label}-${idx}`}>{label}</span>
+                    ))}
+                  </div>
+                </>
+              )}
+              {isRevenueLoading && (
+                <p className='px-1 pb-1 text-[11px] text-gray-400'>
+                  {isVietnamese ? 'Đang tải dữ liệu doanh thu...' : 'Loading revenue data...'}
+                </p>
+              )}
+            </div>
+          </div>
+        </article>
+
+        <article className='admin-home__panel'>
+          <header className='admin-home__panel-head'>
+            <div>
+              <h2>{isVietnamese ? 'Biểu đồ 2' : 'Chart 2'}</h2>
+              <p>{isVietnamese ? 'Khu vực biểu đồ mở rộng' : 'Secondary chart area'}</p>
+            </div>
+          </header>
+          <div className='flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-4'>
+            <div className='text-center text-sm text-gray-400'>
+              {isVietnamese ? 'Khu vực biểu đồ 2 (50%)' : 'Second chart area (50%)'}
             </div>
           </div>
         </article>
@@ -342,6 +456,7 @@ export default function AdminHome() {
                   data!.ordersSample.map((order) => {
                     const id = order.orderCode || order.orderId
                     const tone = orderStatusTone(order.status)
+                    const createdOn = order.createdAt || order.createdDate
                     return (
                       <tr key={order.orderId} className='border-b border-gray-100 last:border-b-0'>
                         <td className='px-6 py-4 font-medium text-gray-900'>{id}</td>
@@ -354,8 +469,12 @@ export default function AdminHome() {
                           </span>
                         </td>
                         <td className='px-6 py-4 text-gray-500'>
-                          {order.createdDate
-                            ? new Intl.DateTimeFormat(isVietnamese ? 'vi-VN' : 'en-US', { dateStyle: 'medium' }).format(new Date(order.createdDate))
+                          {createdOn
+                            ? new Intl.DateTimeFormat(isVietnamese ? 'vi-VN' : 'en-US', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                              }).format(new Date(createdOn))
                             : '-'}
                         </td>
                       </tr>
@@ -395,13 +514,21 @@ export default function AdminHome() {
                 {(data?.productsSample ?? []).map((product) => {
                   const pid = product.productId || product.id || '-'
                   const shop = (product.shopId && data?.shopNameById[product.shopId]) || product.shopId || '-'
+                  const productName =
+                    (product as { productName?: string; name?: string; title?: string }).productName ||
+                    (product as { productName?: string; name?: string; title?: string }).name ||
+                    (product as { productName?: string; name?: string; title?: string }).title ||
+                    '-'
+                  const rawPrice =
+                    (product as { basePrice?: number; price?: number }).basePrice ??
+                    (product as { basePrice?: number; price?: number }).price
                   return (
                     <tr key={pid} className='border-b border-gray-100 last:border-b-0'>
                       <td className='px-6 py-4 font-mono text-xs text-gray-600'>{product.globalSku || pid}</td>
-                      <td className='px-6 py-4 font-medium text-gray-900'>{product.productName ?? '-'}</td>
+                      <td className='px-6 py-4 font-medium text-gray-900'>{productName}</td>
                       <td className='px-6 py-4 text-gray-700'>{shop}</td>
                       <td className='px-6 py-4 text-gray-900'>
-                        {product.basePrice != null ? fmtMoney(Number(product.basePrice)) : '-'}
+                        {rawPrice != null ? fmtMoney(Number(rawPrice)) : '-'}
                       </td>
                     </tr>
                   )

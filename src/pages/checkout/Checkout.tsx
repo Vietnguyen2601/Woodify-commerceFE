@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { MapPin, Store, MessageSquare, CreditCard, Tag, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import AssetIcon from '@/components/AssetIcon'
@@ -68,13 +68,14 @@ const normCartLineId = (id: string) => id.trim().toLowerCase()
  */
 function mergeShopCartsWithServer(
   carts: ShopCart[],
-  freshById: Map<string, CartItemDto>
+  freshItems: CartItemDto[]
 ): { merged: ShopCart[]; hadCriticalDiff: boolean } {
+  const { resolveLine } = buildFreshCartLookup(freshItems)
   let hadCriticalDiff = false
   const merged = carts.map((shop) => {
     let subtotal = 0
     const items: CartItem[] = shop.items.map((ci) => {
-      const row = freshById.get(normCartLineId(ci.cart_item_id))
+      const row = resolveLine(ci.cart_item_id, ci.shop_id, ci.product_id)
       if (!row) {
         subtotal += ci.subtotal
         return ci
@@ -106,6 +107,108 @@ function mergeShopCartsWithServer(
     }
   })
   return { merged, hadCriticalDiff }
+}
+
+function readOrderMoneyField(obj: unknown, ...keys: string[]): number {
+  if (!obj || typeof obj !== 'object') return 0
+  const o = obj as Record<string, unknown>
+  for (const key of keys) {
+    const v = o[key]
+    if (typeof v === 'number' && Number.isFinite(v)) return v
+    if (typeof v === 'string' && v.trim() !== '') {
+      const n = Number(v)
+      if (Number.isFinite(n)) return n
+    }
+  }
+  return 0
+}
+
+/**
+ * PayOS / createPayment expect total amount in VND (field name is legacy "cents").
+ * Order API may use camelCase or PascalCase. Subtotal/commission are often 1/10 catalog scale; shipping full VND.
+ * Uses max(parts, lump total scaled) so missing camelCase fields do not collapse to a tiny amount (e.g. 3�).
+ */
+function orderPaymentAmountVnd(order: CreateOrderResponse['data']): number {
+  const sub = readOrderMoneyField(order, 'subtotalCents', 'SubtotalCents')
+  const ship = readOrderMoneyField(order, 'shippingFeeCents', 'ShippingFeeCents')
+  const comm = readOrderMoneyField(order, 'commissionCents', 'CommissionCents')
+  const totalRaw = readOrderMoneyField(order, 'totalAmountCents', 'TotalAmountCents')
+
+  const fromParts = sub + ship + comm
+  const fromLump = totalRaw > 0 ? totalRaw : 0
+  return Math.round(Math.max(fromParts, fromLump))
+}
+
+/** When API money fields parse wrong, align with what the user sees on checkout. */
+function resolveCheckoutPaymentAmountVnd(
+  orders: CreateOrderResponse['data'][],
+  summaryTotalVnd: number
+): number {
+  const sum = orders.reduce((s, o) => s + orderPaymentAmountVnd(o), 0)
+  const rounded = Math.round(sum)
+  if (summaryTotalVnd > 0 && rounded < summaryTotalVnd * 0.5) {
+    return Math.round(summaryTotalVnd)
+  }
+  return rounded
+}
+
+/** Match checkout lines to GetCart rows by cartItemId, or by shopId+versionId if the id rotated. */
+function buildFreshCartLookup(items: CartItemDto[]) {
+  const byId = new Map<string, CartItemDto>()
+  const byVersion = new Map<string, CartItemDto>()
+  for (const i of items) {
+    const cid = i.cartItemId?.trim()
+    if (cid) byId.set(normCartLineId(cid), i)
+    byVersion.set(`${i.shopId}|${i.versionId}`, i)
+  }
+  function resolveLine(cartItemId: string, shopId: string, versionId: string): CartItemDto | undefined {
+    const id = (cartItemId || '').trim()
+    if (id) {
+      const hit = byId.get(normCartLineId(id))
+      if (hit) return hit
+    }
+    return byVersion.get(`${shopId}|${versionId}`)
+  }
+  return { resolveLine, byId }
+}
+
+/** After PayOS redirect or stale localStorage, remap cart line ids from latest GetCart. */
+function reconcileShopCartsFromFreshItems(carts: ShopCart[], freshItems: CartItemDto[]): ShopCart[] {
+  const byId = new Map<string, CartItemDto>()
+  const byVersion = new Map<string, CartItemDto>()
+  for (const i of freshItems) {
+    const cid = i.cartItemId?.trim().toLowerCase()
+    if (cid) byId.set(cid, i)
+    byVersion.set(`${i.shopId}|${i.versionId}`, i)
+  }
+  return carts.map((shop) => {
+    let subtotal = 0
+    const items: CartItem[] = shop.items.map((ci) => {
+      const idKey = (ci.cart_item_id || '').trim().toLowerCase()
+      let row = idKey ? byId.get(idKey) : undefined
+      if (!row) row = byVersion.get(`${ci.shop_id}|${ci.product_id}`)
+      if (!row) {
+        subtotal += ci.subtotal
+        return ci
+      }
+      const next: CartItem = {
+        ...ci,
+        cart_item_id: row.cartItemId,
+        product_id: row.versionId,
+        shop_id: row.shopId,
+        product_name: row.productMasterName,
+        variant_name: row.productVersionName,
+        product_image: row.thumbnailUrl,
+        price: row.price,
+        quantity: row.quantity,
+        subtotal: row.totalPrice,
+      }
+      subtotal += next.subtotal
+      return next
+    })
+    const shipping = shop.shipping_fee || 0
+    return { ...shop, items, subtotal, total: subtotal + shipping }
+  })
 }
 
 export default function Checkout() {
@@ -453,16 +556,14 @@ export default function Checkout() {
         return
       }
 
-      const freshById = new Map<string, CartItemDto>()
-      for (const i of freshCart.items ?? []) {
-        freshById.set(normCartLineId(i.cartItemId), i)
-      }
+      const freshList = freshCart.items ?? []
+      const { resolveLine } = buildFreshCartLookup(freshList)
 
-      for (const { cartItemIds } of orderPayloads) {
-        const rows = cartItemIds
-          .map((id) => freshById.get(normCartLineId(id)))
+      for (const { cart } of orderPayloads) {
+        const rows = cart.items
+          .map((item) => resolveLine(item.cart_item_id, item.shop_id, item.product_id))
           .filter((row): row is CartItemDto => Boolean(row))
-        if (rows.length !== cartItemIds.length) {
+        if (rows.length !== cart.items.length) {
           setPlaceOrderFeedback({
             kind: 'error',
             message:
@@ -494,7 +595,7 @@ export default function Checkout() {
         }
       }
 
-      const { merged, hadCriticalDiff } = mergeShopCartsWithServer(shopCarts, freshById)
+      const { merged, hadCriticalDiff } = mergeShopCartsWithServer(shopCarts, freshList)
       setShopCarts(merged)
       if (hadCriticalDiff) {
         setPlaceOrderFeedback({
@@ -506,10 +607,10 @@ export default function Checkout() {
       }
 
       // Step 1: Create orders for each shop in parallel (shopId + cartItemIds theo đúng dữ liệu server)
-      const orderPromises = orderPayloads.map(({ cart, cartItemIds }) => {
-        const rows = cartItemIds.map(
-          (id) => freshById.get(normCartLineId(id))!
-        ) as CartItemDto[]
+      const orderPromises = orderPayloads.map(({ cart }) => {
+        const rows = cart.items
+          .map((item) => resolveLine(item.cart_item_id, item.shop_id, item.product_id))
+          .filter((row): row is CartItemDto => Boolean(row))
         const orderShopId = rows[0]!.shopId
         const canonicalIds = rows.map((r) => r.cartItemId)
         const providerServiceCode = resolveCheckoutProviderServiceCode(cart)
