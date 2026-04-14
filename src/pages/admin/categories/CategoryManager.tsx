@@ -348,7 +348,7 @@ export default function CategoryManager() {
   const selectedHierarchyValue = selectedCategoryId ?? ''
 
   return (
-    <div className='mx-auto w-full max-w-[1500px] space-y-6 px-1'>
+    <div className='mx-auto w-full max-w-none space-y-6 px-1'>
       <header className='flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm'>
         <div>
           <h1 className='text-[22px] font-semibold text-gray-900'>{t.pageTitle}</h1>
@@ -452,9 +452,17 @@ export default function CategoryManager() {
         />
       </section>
 
-      <div className='overflow-x-auto'>
-        <div className='grid min-w-[1050px] gap-6 grid-cols-[280px_minmax(740px,1fr)] xl:grid-cols-[300px_minmax(760px,1fr)]'>
-        <div className='w-full'>
+      <div className='space-y-6'>
+        <div className='min-w-0 w-full'>
+          <CategoryDetailPanel
+            category={selectedCategory}
+            onAddChild={openCreateForm}
+            texts={t}
+            locale={isVietnamese ? 'vi-VN' : 'en-US'}
+          />
+        </div>
+
+        <div className='min-w-0 w-full'>
           <SubCategoryPanel
             categories={displayedChildren}
             isLoading={isLoading}
@@ -465,16 +473,6 @@ export default function CategoryManager() {
             onAddChild={openCreateForm}
           />
         </div>
-
-        <div className='w-full col-start-2 justify-self-stretch'>
-          <CategoryDetailPanel
-            category={selectedCategory}
-            onAddChild={openCreateForm}
-            texts={t}
-            locale={isVietnamese ? 'vi-VN' : 'en-US'}
-          />
-        </div>
-      </div>
       </div>
 
       {isCreateFormOpen && (
@@ -747,51 +745,60 @@ function CategoryDetailPanel({
 }) {
   if (!category) {
     return (
-      <section className='flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm'>
+      <section className='flex min-h-[360px] w-full flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm'>
         {texts.detailEmpty}
       </section>
     )
   }
 
+  const infoRows = [
+    { label: texts.detailParent, value: category.parentCategoryName ?? texts.detailRootParent },
+    { label: texts.detailChildrenCount, value: `${category.subCategoriesCount}` },
+    { label: texts.detailCreatedAt, value: formatDate(category.createdAt, locale, texts.dateUnknown) },
+    { label: texts.detailUpdatedAt, value: formatDate(category.updatedAt, locale, texts.dateUnknown) },
+  ]
+
   return (
-    <section className='min-h-[760px] space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'>
-      <div className='flex items-start justify-between gap-3 border-b border-gray-100 pb-4'>
-        <div>
+    <section className='w-full space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6'>
+      <div className='flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4'>
+        <div className='min-w-0 flex-1'>
           <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{texts.detailSectionTitle}</p>
-          <h2 className='text-xl font-semibold text-gray-900'>{category.name}</h2>
-          <p className='mt-1 text-sm text-gray-500'>{category.description || texts.detailDescriptionNone}</p>
+          <h2 className='mt-1 text-xl font-semibold text-gray-900'>{category.name}</h2>
+          <p className='mt-2 line-clamp-2 text-sm text-gray-500 sm:line-clamp-none'>{category.description || texts.detailDescriptionNone}</p>
         </div>
-        <span className={`inline-flex rounded-2xl px-3 py-1 text-xs font-semibold ${STATUS_BADGE[category.isActive ? 'true' : 'false']}`}>
+        <span className={`inline-flex shrink-0 self-start rounded-2xl px-3 py-1 text-xs font-semibold ${STATUS_BADGE[category.isActive ? 'true' : 'false']}`}>
           {category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel}
         </span>
       </div>
+
       <div className='space-y-4'>
-        <div className='flex flex-wrap items-center justify-between gap-3'>
+        <div className='flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50/80 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between'>
           <h3 className='text-sm font-semibold text-gray-900'>{texts.detailQuickInfo}</h3>
-          <span className='text-xs text-gray-500'>
-            {texts.detailIdLabel} #{category.categoryId}
+          <span className='max-w-full font-mono text-[11px] text-gray-500 sm:max-w-[420px] sm:text-right sm:text-xs'>
+            <span className='block truncate'>
+              {texts.detailIdLabel} #{category.categoryId}
+            </span>
           </span>
         </div>
 
-        <div className='grid gap-4 md:grid-cols-2'>
-          <DetailCard label={texts.detailDescriptionLabel} value={category.description || texts.detailDescriptionNone} tone='muted' />
-          <DetailCard label={texts.detailStatusLabel} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} highlight />
-          <DetailCard
-            label={texts.detailParent}
-            value={category.parentCategoryName ?? texts.detailRootParent}
-          />
-          <DetailCard label={texts.detailChildrenCount} value={`${category.subCategoriesCount}`} />
-          <DetailCard label={texts.detailCreatedAt} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
-          <DetailCard label={texts.detailUpdatedAt} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
+        <div className='overflow-hidden rounded-xl border border-gray-100 bg-white p-3 sm:p-4'>
+          <dl className='grid gap-3 sm:grid-cols-2'>
+            {infoRows.map((item) => (
+              <div key={item.label} className='rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-2.5'>
+                <dt className='text-[10px] font-semibold uppercase tracking-wide text-gray-500'>{item.label}</dt>
+                <dd className='mt-1 text-sm font-semibold text-gray-900 break-words'>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-      </div>
 
-      <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4'>
-        <h3 className='text-sm font-semibold text-gray-900'>{texts.timelineTitle}</h3>
-        <div className='mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
-          <TimelineItem label={texts.timelineCreated} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
-          <TimelineItem label={texts.timelineUpdated} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
-          <TimelineItem label={texts.timelineStatus} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} />
+        <div className='rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4'>
+          <h3 className='text-sm font-semibold text-gray-900'>{texts.timelineTitle}</h3>
+          <div className='mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3'>
+            <TimelineItem label={texts.timelineCreated} value={formatDate(category.createdAt, locale, texts.dateUnknown)} />
+            <TimelineItem label={texts.timelineUpdated} value={formatDate(category.updatedAt, locale, texts.dateUnknown)} />
+            <TimelineItem label={texts.timelineStatus} value={category.isActive ? texts.statusActiveLabel : texts.statusInactiveLabel} />
+          </div>
         </div>
       </div>
 
@@ -818,21 +825,6 @@ function CategoryDetailPanel({
         </button>
       </div>
     </section>
-  )
-}
-
-function DetailCard({ label, value, highlight, tone }: { label: string; value: string; highlight?: boolean; tone?: 'muted' }) {
-  return (
-    <div
-      className={`flex w-full min-w-0 rounded-2xl border p-4 ${
-        highlight ? 'border-stone-900 bg-stone-900/90 text-white' : 'border-gray-100 bg-white'
-      } ${tone === 'muted' && !highlight ? 'bg-gray-50/70' : ''}`}
-    >
-      <div className='min-w-0'>
-      <dt className={`text-[11px] font-medium uppercase tracking-wide ${highlight ? 'text-white/70' : 'text-gray-500'}`}>{label}</dt>
-      <dd className={`mt-2 text-sm font-semibold break-words ${highlight ? 'text-white' : 'text-gray-900'}`}>{value}</dd>
-      </div>
-    </div>
   )
 }
 
