@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAppLanguage } from '@/hooks'
 import { adminOrderUtils, adminService, queryKeys } from '@/services'
 import { ROUTES } from '@/constants'
+import { useAdminDashboardRealtime } from '@/realtime/useAdminDashboardRealtime'
 
 const iconStroke = 'currentColor'
 
@@ -101,6 +102,7 @@ const orderStatusTone = (status?: string): keyof typeof statusStyles => {
 export default function AdminHome() {
   const { isVietnamese } = useAppLanguage()
   const [revenueRange, setRevenueRange] = React.useState<'day' | 'month' | 'quarter' | 'year'>('month')
+  useAdminDashboardRealtime()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.admin.snapshot(),
@@ -293,7 +295,6 @@ export default function AdminHome() {
           <header className='admin-home__panel-head'>
             <div>
               <h2>{isVietnamese ? 'Xu hướng doanh thu' : 'Revenue trend'}</h2>
-              <p>{isVietnamese ? 'Tổng tiền hàng, hoa hồng và trả về shop' : 'Gross, commission, and net to shop'}</p>
             </div>
             <div className='ml-auto flex items-center gap-2'>
               {([
@@ -421,7 +422,6 @@ export default function AdminHome() {
           <div className='admin-home__table-head'>
             <div>
               <h2>{isVietnamese ? 'Đơn hàng gần đây' : 'Latest orders'}</h2>
-              <p>{isVietnamese ? 'Đơn mới nhất (dữ liệu mẫu gộp)' : 'Recent orders (merged sample)'}</p>
             </div>
             <Link to={ROUTES.ADMIN_ORDERS} className='text-sm font-medium text-stone-600 hover:text-stone-900'>
               {isVietnamese ? 'Xem tất cả' : 'View all'}
@@ -490,11 +490,6 @@ export default function AdminHome() {
           <div className='admin-home__table-head'>
             <div>
               <h2>{isVietnamese ? 'Sản phẩm gần đây' : 'Recent products'}</h2>
-              <p>
-                {isVietnamese
-                  ? 'Từ GetAllProducts - luồng kiểm duyệt chưa được backend mô hình hóa đầy đủ'
-                  : 'From GetAllProducts - moderation workflow is not yet modeled in API'}
-              </p>
             </div>
             <Link to={`${ROUTES.ADMIN}/products`} className='text-sm font-medium text-stone-600 hover:text-stone-900'>
               {isVietnamese ? 'Danh sách sản phẩm' : 'Product list'}

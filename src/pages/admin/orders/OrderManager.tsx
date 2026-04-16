@@ -9,6 +9,7 @@ const fmtMoney = (n: number) =>
 
 const ORDER_STATUS_STYLES: Record<string, string> = {
   DELIVERED: 'bg-green-100 text-green-700 border border-green-200',
+  COMPLETED: 'bg-green-100 text-green-700 border border-green-200',
   SHIPPED: 'bg-indigo-100 text-indigo-700 border border-indigo-200',
   CONFIRMED: 'bg-blue-100 text-blue-700 border border-blue-200',
   PENDING: 'bg-gray-100 text-gray-700 border border-gray-200',

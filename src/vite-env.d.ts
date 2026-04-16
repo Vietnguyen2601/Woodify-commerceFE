@@ -17,7 +17,9 @@ declare module '*.png' {
 
 interface ImportMetaEnv {
   readonly VITE_API_URL: string
+  readonly VITE_ADMIN_SERVICE_URL?: string
   readonly VITE_IDENTITY_SERVICE_URL?: string
+  readonly VITE_ORDER_SERVICE_URL?: string
   readonly VITE_SHOP_SERVICE_URL?: string
   readonly VITE_PRODUCT_SERVICE_URL?: string
   readonly VITE_WALLET_SERVICE_URL?: string
