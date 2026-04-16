@@ -433,10 +433,6 @@ export default function CategoryManager() {
 
       <section className='space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'>
         <div className='flex flex-wrap items-center justify-between gap-3'>
-          <div>
-            <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{t.rootSectionTitle}</p>
-            <p className='text-sm text-gray-600'>{t.rootSectionDesc}</p>
-          </div>
           <span className='text-xs font-semibold text-gray-400'>
             {filteredRootCategories.length} {t.rootCountLabel}
           </span>

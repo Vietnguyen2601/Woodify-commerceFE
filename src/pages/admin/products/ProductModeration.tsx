@@ -32,10 +32,19 @@ const STATUS_LABEL: Record<string, string> = {
   DELETED: 'Đã xóa',
 }
 
+const MODERATION_STATUS_STYLES: Record<string, string> = {
+  PENDING: 'border border-amber-200 bg-amber-50 text-amber-700',
+  APPROVED: 'border border-blue-200 bg-blue-50 text-blue-700',
+  REJECTED: 'border border-red-200 bg-red-50 text-red-700',
+}
+
+const MODERATION_PAGE_SIZE = 5
+
 export default function ProductModeration() {
   const { isVietnamese } = useAppLanguage()
   const [activeTab, setActiveTab] = useState<ProductStatus | 'ALL'>('PENDING_APPROVAL')
   const [search, setSearch] = useState('')
+  const [moderationPage, setModerationPage] = useState(1)
 
   const t = useMemo(
     () => ({
@@ -52,34 +61,53 @@ export default function ProductModeration() {
     [isVietnamese]
   )
 
-  const tabLabelMap = useMemo(() => ({
-    'ALL': t.allLabel,
-    'PENDING_APPROVAL': t.pendingLabel,
-    'APPROVED': t.approvedLabel,
-    'PUBLISHED': t.publishedLabel,
-    'REJECTED': t.rejectedLabel,
-  }), [t])
+  const tabLabelMap = useMemo<Record<ProductStatus | 'ALL', string>>(
+    () => ({
+      ALL: t.allLabel,
+      DRAFT: STATUS_LABEL.DRAFT,
+      PENDING_APPROVAL: t.pendingLabel,
+      APPROVED: t.approvedLabel,
+      PUBLISHED: t.publishedLabel,
+      REJECTED: t.rejectedLabel,
+      ARCHIVED: STATUS_LABEL.ARCHIVED,
+      DELETED: STATUS_LABEL.DELETED,
+    }),
+    [t]
+  )
 
   const { data: allProducts = [], isLoading, isError } = useQuery({
     queryKey: ['admin-all-products'],
     queryFn: () => productMasterService.getAllProducts(),
   })
 
-  const tabFiltered = activeTab === 'ALL'
-    ? allProducts
-    : allProducts.filter(p => p.status === activeTab)
+  const searchKeyword = search.trim().toLowerCase()
+  const matchesSearch = (p: ProductMaster) =>
+    !searchKeyword ||
+    p.name.toLowerCase().includes(searchKeyword) ||
+    p.globalSku?.toLowerCase().includes(searchKeyword)
 
-  const filtered = search.trim()
-    ? tabFiltered.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.globalSku?.toLowerCase().includes(search.toLowerCase())
-      )
-    : tabFiltered
+  const tabFiltered = activeTab === 'ALL' ? allProducts : allProducts.filter((p) => p.status === activeTab)
+  const filtered = tabFiltered.filter(matchesSearch)
+  const moderationFiltered = allProducts.filter(matchesSearch)
+  const moderationTotalPages = Math.max(1, Math.ceil(moderationFiltered.length / MODERATION_PAGE_SIZE))
+  const currentModerationPage = Math.min(moderationPage, moderationTotalPages)
+  const moderationStartIndex = (currentModerationPage - 1) * MODERATION_PAGE_SIZE
+  const moderationPageItems = moderationFiltered.slice(moderationStartIndex, moderationStartIndex + MODERATION_PAGE_SIZE)
+
+  React.useEffect(() => {
+    setModerationPage(1)
+  }, [searchKeyword])
+
+  React.useEffect(() => {
+    if (moderationPage > moderationTotalPages) {
+      setModerationPage(moderationTotalPages)
+    }
+  }, [moderationPage, moderationTotalPages])
 
   const counts = useMemo(() => ({
     all: allProducts.length,
-    pending: allProducts.filter(p => p.status === 'PENDING_APPROVAL').length,
-    approved: allProducts.filter(p => p.status === 'APPROVED').length,
+    pending: allProducts.filter((p) => p.moderationStatus === 'PENDING').length,
+    approved: allProducts.filter((p) => p.moderationStatus === 'APPROVED').length,
     published: allProducts.filter(p => p.status === 'PUBLISHED').length,
     rejected: allProducts.filter(p => p.status === 'REJECTED').length,
   }), [allProducts])
@@ -198,6 +226,11 @@ export default function ProductModeration() {
       {/* Product table */}
       {!isLoading && !isError && filtered.length > 0 && (
         <section className='overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm'>
+          <header className='border-b border-gray-100 px-6 py-4'>
+            <h3 className='text-sm font-semibold text-gray-900'>
+              {isVietnamese ? 'Danh sách kiểm duyệt' : 'Moderation list'}
+            </h3>
+          </header>
           <div className='overflow-x-auto'>
             <table className='min-w-full divide-y divide-gray-100 text-sm'>
               <thead className='bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500'>
@@ -219,6 +252,98 @@ export default function ProductModeration() {
           </div>
           <div className='border-t border-gray-100 px-6 py-3 text-xs text-gray-400'>
             Hiển thị {filtered.length} / {allProducts.length} sản phẩm
+          </div>
+        </section>
+      )}
+
+      {/* Moderation status table */}
+      {!isLoading && !isError && (
+        <section className='overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm'>
+          <header className='border-b border-gray-100 px-6 py-4'>
+            <h3 className='text-sm font-semibold text-gray-900'>
+              {isVietnamese ? 'Tổng hợp trạng thái kiểm duyệt' : 'Moderation status overview'}
+            </h3>
+          </header>
+          <div className='overflow-x-auto'>
+            <table className='min-w-[1180px] w-full divide-y divide-gray-100 text-sm'>
+              <thead className='bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500'>
+                <tr>
+                  <th className='px-4 py-3 text-left'>Product ID</th>
+                  <th className='px-4 py-3 text-left'>Shop Name</th>
+                  <th className='px-4 py-3 text-left'>Category</th>
+                  <th className='px-4 py-3 text-left'>Name</th>
+                  <th className='px-4 py-3 text-left'>Status</th>
+                  <th className='px-4 py-3 text-left'>Moderation</th>
+                  <th className='px-4 py-3 text-left'>Published At</th>
+                  <th className='px-4 py-3 text-right'>Price</th>
+                  <th className='px-4 py-3 text-right'>Stock</th>
+                  <th className='px-4 py-3 text-left'>Wood Type</th>
+                </tr>
+              </thead>
+              <tbody className='divide-y divide-gray-100'>
+                {moderationPageItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className='px-6 py-8 text-center text-gray-500'>
+                      {isVietnamese ? 'Không có sản phẩm phù hợp.' : 'No matching products found.'}
+                    </td>
+                  </tr>
+                ) : (
+                  moderationPageItems.map((product) => (
+                    <tr key={`moderation-${product.productId}`} className='text-gray-900 hover:bg-gray-50 transition'>
+                      <td className='px-4 py-3 font-mono text-xs text-gray-600'>{product.productId}</td>
+                      <td className='px-4 py-3 text-gray-700'>{''}</td>
+                      <td className='px-4 py-3 text-gray-700'>{product.categoryName || '—'}</td>
+                      <td className='px-4 py-3 font-medium text-gray-900'>{product.name || '—'}</td>
+                      <td className='px-4 py-3'>
+                        <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[product.status] ?? ''}`}>
+                          {STATUS_LABEL[product.status] ?? product.status}
+                        </span>
+                      </td>
+                      <td className='px-4 py-3'>
+                        <span
+                          className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                            MODERATION_STATUS_STYLES[product.moderationStatus] ?? 'border border-gray-200 bg-gray-50 text-gray-600'
+                          }`}
+                        >
+                          {product.moderationStatus}
+                        </span>
+                      </td>
+                      <td className='px-4 py-3 text-xs text-gray-600'>
+                        {product.publishedAt ? new Date(product.publishedAt).toLocaleString('vi-VN') : '—'}
+                      </td>
+                      <td className='px-4 py-3 text-right font-medium text-gray-900'>
+                        {typeof product.price === 'number' ? product.price.toLocaleString('vi-VN') : '—'}
+                      </td>
+                      <td className='px-4 py-3 text-right text-gray-700'>{product.stockQuantity ?? '—'}</td>
+                      <td className='px-4 py-3 text-gray-700'>{product.woodType || '—'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className='flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-6 py-3 text-xs text-gray-500'>
+            <div className='flex items-center gap-2'>
+              <button
+                type='button'
+                onClick={() => setModerationPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentModerationPage <= 1}
+                className='rounded-md border border-gray-200 px-3 py-1 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-50'
+              >
+                {isVietnamese ? 'Trước' : 'Prev'}
+              </button>
+              <span className='font-medium text-gray-700'>
+                {isVietnamese ? 'Trang' : 'Page'} {currentModerationPage}/{moderationTotalPages}
+              </span>
+              <button
+                type='button'
+                onClick={() => setModerationPage((prev) => Math.min(moderationTotalPages, prev + 1))}
+                disabled={currentModerationPage >= moderationTotalPages}
+                className='rounded-md border border-gray-200 px-3 py-1 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-50'
+              >
+                {isVietnamese ? 'Sau' : 'Next'}
+              </button>
+            </div>
           </div>
         </section>
       )}
