@@ -1,5 +1,22 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/services'
+import { APP_CONFIG } from '@/constants'
+import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
+import type { UserRole } from '@/types'
+
+function parseRoleFromToken(token: string): UserRole | undefined {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const role = (payload?.role as string)?.toLowerCase()
+    if (role === 'admin' || role === 'seller' || role === 'customer') return role
+  } catch {
+    // invalid token
+  }
+  return undefined
+}
+import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -8,6 +25,12 @@ const ADMIN_ACCOUNT = {
   email: 'admin@woodmarket.com',
   password: 'Admin#2026',
   name: 'Head of Operations'
+}
+
+const CUSTOMER_ACCOUNT = {
+  email: 'customer@woodmarket.com',
+  password: 'Customer#2026',
+  name: 'Premium Member'
 }
 
 const STRENGTH_PALETTE = [
@@ -30,25 +53,19 @@ function evaluateStrength(value: string) {
 
 const AuthHero: React.FC = () => (
   <div className='auth-hero' aria-hidden='true'>
-    <div>
-      <div className='auth-logo'>
-        <span>WM</span>
-        WoodMarket
-      </div>
-      <h1>Đăng nhập để tiếp tục khám phá gỗ tinh tuyển</h1>
-      <p>
-        Tận hưởng không gian mua sắm ấm áp, chọn lựa sản phẩm thủ công bền vững và quản lý đơn hàng
-        chỉ trong vài thao tác.
-      </p>
+    <div className='auth-logo'>WOODIFY</div>
+    <div className='auth-hero-logo'>
+      <img src={woodifyLogo} alt='Logo Woodify' loading='lazy' />
     </div>
-    <div>
-      <p className='auth-subtitle'>An tâm với bảo mật nhiều lớp, OTP và chính sách quyền riêng tư minh bạch.</p>
+    <div className='auth-hero-text'>
+      <h1>Đăng nhập để tiếp tục khám phá gỗ tinh tuyển</h1>
     </div>
   </div>
 )
 
 export default function Login() {
   const nav = useNavigate()
+  const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
@@ -82,35 +99,70 @@ export default function Login() {
 
     setFormState('loading')
     setBannerMessage('')
+    import('@/services/auth.service').then(({ authService }) => {
+      authService
+        .login({ email, password })
+        .then((res) => {
+          // Handle response structure: API may return { status, message, data: {...} }
+          // OR just the data object directly
+          const loginData = res.data || res
+          
+          // Check if login was successful
+          // With HttpOnly Cookies, tokens are in Set-Cookie headers (not in response body)
+          const isSuccessful = Boolean(
+            loginData?.success === true || 
+            loginData?.message?.includes('thành công') ||
+            loginData?.accountId ||
+            (res.status === 200 && loginData?.email)
+          )
 
-    window.setTimeout(() => {
-      const normalizedEmail = email.trim().toLowerCase()
-      const isAdminAccount =
-        normalizedEmail === ADMIN_ACCOUNT.email && password === ADMIN_ACCOUNT.password
+          if (isSuccessful && loginData.email) {
+            // Store only non-sensitive data in localStorage
+            const role = parseRoleFromToken(loginData.token) ?? 'customer'
 
-      localStorage.setItem('auth_token', 'mock-token')
-      if (rememberMe) {
-        localStorage.setItem('remember_me', 'true')
-      } else {
-        localStorage.removeItem('remember_me')
-      }
+            const normalizedUser: StoredUser = {
+              email: loginData.email || email,
+              username: loginData.username || loginData.email || email,
+              role,
+              accountId: loginData.accountId,
+            }
 
-      localStorage.setItem('user_role', isAdminAccount ? 'admin' : 'user')
-      if (isAdminAccount) {
-        localStorage.setItem(
-          'admin_profile',
-          JSON.stringify({
-            name: ADMIN_ACCOUNT.name,
-            lastLogin: new Date().toISOString()
-          })
-        )
-      } else {
-        localStorage.removeItem('admin_profile')
-      }
+            persistStoredUser(normalizedUser)
 
-      nav(isAdminAccount ? '/admin' : '/')
-      setFormState('idle')
-    }, 750)
+            if (rememberMe) {
+              localStorage.setItem('remember_me', 'true')
+            } else {
+              localStorage.removeItem('remember_me')
+            }
+
+            // Store user data in React Query cache
+            queryClient.setQueryData(queryKeys.user(), normalizedUser)
+
+            // Redirect based on role
+            if (role === 'admin') {
+              nav('/admin/dashboard')
+            } else {
+              nav('/')
+            }
+            setFormState('idle')
+          } else {
+            setFormState('error')
+            setBannerMessage(
+              loginData?.message || 
+              res.message || 
+              'Sai email hoặc mật khẩu.'
+            )
+          }
+        })
+        .catch((err) => {
+          setFormState('error')
+          setBannerMessage(
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+              (err as Error)?.message ||
+              'Sai email hoặc mật khẩu.'
+          )
+        })
+    })
   }
 
   function handlePrefillAdmin() {
@@ -120,15 +172,23 @@ export default function Login() {
     setFormState('idle')
   }
 
-  return (
-    <div className='auth-shell'>
-      <div className='auth-layer'>
-        <AuthHero />
+  function handlePrefillCustomer() {
+    setEmail(CUSTOMER_ACCOUNT.email)
+    setPassword(CUSTOMER_ACCOUNT.password)
+    setErrors({})
+    setFormState('idle')
+  }
 
-        <section className='auth-card' role='form' aria-live='polite'>
+  return (
+    <>
+      <div className='auth-shell'>
+        <div className='auth-layer'>
+          <AuthHero />
+
+          <section className='auth-card' role='form' aria-live='polite'>
           <div>
             <h2>Đăng nhập</h2>
-            <p className='auth-subtitle'>Chào mừng trở lại với WoodMarket</p>
+            <p className='auth-subtitle'>Chào mừng trở lại với Woodify</p>
           </div>
 
           {formState === 'error' && bannerMessage && <div className='auth-alert'>{bannerMessage}</div>}
@@ -163,7 +223,6 @@ export default function Login() {
               <label className='auth-label' htmlFor='login-password'>
                 Mật khẩu
               </label>
-              <div className='password-field'>
                 <input
                   id='login-password'
                   type={showPassword ? 'text' : 'password'}
@@ -177,56 +236,26 @@ export default function Login() {
                     if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }))
                   }}
                 />
-                <button
-                  type='button'
-                  className='password-toggle'
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? 'Ẩn' : 'Hiện'}
-                </button>
-              </div>
+                
               {errors.password && (
                 <span id='login-password-error' className='auth-error-text' role='status'>
                   {errors.password}
                 </span>
               )}
-              <div className='strength-meter' aria-live='polite'>
-                <div className='strength-bar'>
-                  <span style={{ width: strength.percent, background: strengthMeta?.color }} />
-                </div>
-                <span className='strength-label' style={{ color: strengthMeta?.color }}>
-                  {password ? strengthMeta?.label : 'Nhập mật khẩu'}
-                </span>
-              </div>
             </div>
 
-            <div className='auth-inline'>
+            <div className='auth-remember-row'>
               <label className='auth-checkbox'>
                 <input
                   type='checkbox'
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}
                 />
-                Ghi nhớ tôi
               </label>
-              <Link to='/forgot-password' className='auth-link'>
-                Quên mật khẩu?
-              </Link>
+              <span className='auth-checkbox-text'>Ghi nhớ tôi</span>
             </div>
 
-            <div className='auth-sample-card'>
-              <div>
-                <p className='auth-sample-card__title'>Tài khoản Admin mẫu</p>
-                <p className='auth-sample-card__meta'>Email: {ADMIN_ACCOUNT.email}</p>
-                <p className='auth-sample-card__meta'>Mật khẩu: {ADMIN_ACCOUNT.password}</p>
-              </div>
-              <button type='button' onClick={handlePrefillAdmin} className='auth-btn tertiary'>
-                Điền nhanh
-              </button>
-            </div>
-
-            <button className='auth-btn primary' type='submit' disabled={formState === 'loading'}>
+            <button className='auth-btn primary auth-btn-full' type='submit' disabled={formState === 'loading'}>
               {formState === 'loading' ? 'Đang xác thực...' : 'Đăng nhập'}
             </button>
           </form>
@@ -256,8 +285,12 @@ export default function Login() {
           <p className='auth-subtitle'>
             Bạn chưa có tài khoản? <Link to='/register' className='auth-link'>Đăng ký</Link>
           </p>
-        </section>
+          <Link to='/forgot-password' className='auth-link'>
+            Quên mật khẩu?
+          </Link>
+          </section>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

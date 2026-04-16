@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;600;700&display=swap');
+
+.footer {
+  width: 100%;
+  background: #fff;
+  color: #8b5e34;
+  padding: 32px 16px 24px;
+  font-family: 'Roboto Slab', 'Inter', serif;
+}
+
+.footer__inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.footer__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Roboto Slab', 'Inter', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #8b5e34;
+}
+
+.footer__logo-mark {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  background: rgba(139, 94, 52, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+}
+
+.footer__logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.footer__brand-name {
+  letter-spacing: 0.08em;
+}
+
+.footer__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.footer__column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.footer__column h4 {
+  font-family: 'Roboto Slab', 'Inter', serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #8b5e34;
+}
+
+.footer__column p,
+.footer__column li {
+  font-family: 'Roboto Slab', 'Inter', serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(95, 60, 32, 0.9);
+  margin: 0 0 6px 0;
+}
+
+.footer__column ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.footer__bottom {
+  text-align: center;
+  font-family: 'Roboto Slab', 'Inter', serif;
+  font-size: 13px;
+  color: rgba(95, 60, 32, 0.85);
+  margin-top: 16px;
+}
+
+@media (max-width: 992px) {
+  .footer__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .footer__brand {
+    font-size: 18px;
+  }
+
+  .footer__grid {
+    grid-template-columns: 1fr;
+  }
+}

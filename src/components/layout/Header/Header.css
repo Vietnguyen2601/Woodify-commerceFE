@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Arbutus+Slab:wght@400&display=swap');
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #C7A57A;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Font families */
+.font-poppins {
+  font-family: 'Poppins', sans-serif;
+}
+
+.font-arbutus {
+  font-family: 'Arbutus Slab', sans-serif;
+}
+
+/* Responsive utilities */
+@media (max-width: 1280px) {
+  .site-header {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .site-header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    font-size: 14px;
+  }
+
+  .site-header nav {
+    gap: 12px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .site-header {
+    flex-direction: column;
+  }
+
+  .site-header nav {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .site-header .flex-1 {
+    width: 100%;
+  }
+
+  .site-header .ml-12 {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-header {
+    font-size: 12px;
+  }
+
+  .site-header nav {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+/* Search animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Search input styling */
+input[placeholder="Tìm kiếm sản phẩm..."] {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease-out;
+}
+
+input[placeholder="Tìm kiếm sản phẩm..."]:focus {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background-color: #ffffff !important;
+  transform: scale(1.02);
+}
+
+/* Search button hover effect */
+header button[aria-label="Tìm kiếm sản phẩm"] {
+  transition: all 0.3s ease;
+}
+
+header button[aria-label="Tìm kiếm sản phẩm"]:hover {
+  transform: scale(1.15);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Select styling - Remove border and arrow */
+select {
+  border: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  padding-right: 0 !important;
+  cursor: pointer;
+}
+
+select::-webkit-inner-spin-button,
+select::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+select::-webkit-scrollbar {
+  display: none;
+}

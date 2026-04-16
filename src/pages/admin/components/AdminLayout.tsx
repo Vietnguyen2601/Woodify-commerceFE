@@ -1,58 +1,50 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
+import { useAppLanguage } from '@/hooks'
 import AdminSidebar from './AdminSidebar'
+import AdminHeader from './AdminHeader'
 import '../../../styles/admin.css'
 
 export default function AdminLayout() {
-  const todayLabel = new Intl.DateTimeFormat('vi-VN', {
+  const { isVietnamese } = useAppLanguage()
+  const todayLabel = new Intl.DateTimeFormat(isVietnamese ? 'vi-VN' : 'en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
   }).format(new Date())
 
   return (
-    <div className='admin-shell'>
-      <header className='admin-header'>
-        <div className='admin-header__brand'>
-          <p className='admin-header__eyebrow'>Woodify Admin Flow</p>
-          <h1>Trung tâm điều hành hệ sinh thái</h1>
-          <small>Giám sát seller, đơn hàng, marketing và chính sách theo thời gian thực.</small>
-        </div>
-
-        <div className='admin-header__actions'>
-          <div className='admin-header__signal'>
-            <span>Uptime</span>
-            <strong>99.98%</strong>
-          </div>
-          <div className='admin-header__signal is-warning'>
-            <span>Incident</span>
-            <strong>0 mới</strong>
-          </div>
-          <div className='admin-header__signal'>
-            <span>Queues</span>
-            <strong>4 SLA</strong>
-          </div>
-          <button type='button' className='admin-btn primary'>Chế độ trực</button>
-          <button type='button' className='admin-btn ghost'>Gửi broadcast</button>
-        </div>
-      </header>
-
-      <div className='admin-body'>
+    <div className='admin-surface min-h-screen text-neutral-900'>
+      <div className='admin-layout-grid flex flex-col gap-0 pl-0 pr-0 pb-0 lg:flex-row lg:items-start'>
         <AdminSidebar />
-        <section className='admin-content'>
-          <div className='admin-content__toolbar'>
-            <div>
-              <p className='admin-breadcrumb'>Admin • Toàn sàn TMĐT</p>
-              <strong>Ca trực ngày {todayLabel}</strong>
-            </div>
-            <div className='admin-toolbar__actions'>
-              <button type='button' className='admin-btn outline'>Tạo báo cáo nhanh</button>
-              <button type='button' className='admin-btn ghost'>Phân công nhiệm vụ</button>
-            </div>
-          </div>
+        <main className='admin-main flex-1 space-y-6'>
+          <AdminHeader />
 
-          <Outlet />
-        </section>
+          <section className='admin-workspace'>
+            <div className='admin-shift-bar'>
+              <div>
+                <p className='text-xs font-semibold uppercase tracking-wide text-gray-400'>
+                  {isVietnamese ? 'Admin • Toàn sàn TMĐT' : 'Admin • Marketplace'}
+                </p>
+                <strong className='text-lg text-gray-900'>
+                  {isVietnamese ? `Ca trực ngày ${todayLabel}` : `Shift for ${todayLabel}`}
+                </strong>
+              </div>
+              <div className='admin-shift-actions'>
+                <button type='button' className='admin-shift-btn'>
+                  {isVietnamese ? 'Tạo báo cáo nhanh' : 'Create quick report'}
+                </button>
+                <button type='button' className='admin-shift-btn admin-shift-btn--ghost'>
+                  {isVietnamese ? 'Phân công nhiệm vụ' : 'Assign tasks'}
+                </button>
+              </div>
+            </div>
+
+            <div className='admin-workspace__body'>
+              <Outlet />
+            </div>
+          </section>
+        </main>
       </div>
     </div>
   )

@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/services'
+import { APP_CONFIG } from '@/constants'
+import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
+import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const OTP_LENGTH = 6
 const MAX_RESEND = 5
+const PHONE_PATTERN = /^\d{9,11}$/
 
 const passwordChecks = (value: string) => ({
   length: value.length >= 8,
@@ -13,25 +19,52 @@ const passwordChecks = (value: string) => ({
   special: /[^A-Za-z0-9]/.test(value),
 })
 
+const EyeIcon: React.FC = () => (
+  <svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
+    <path
+      d='M1.5 12s3.75-6.5 10.5-6.5 10.5 6.5 10.5 6.5-3.75 6.5-10.5 6.5S1.5 12 1.5 12z'
+      stroke='currentColor'
+      strokeWidth='1.5'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    />
+    <circle cx='12' cy='12' r='3' stroke='currentColor' strokeWidth='1.5' />
+  </svg>
+)
+
+const EyeOffIcon: React.FC = () => (
+  <svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
+    <path
+      d='M1.5 12s3.75-6.5 10.5-6.5 10.5 6.5 10.5 6.5-3.75 6.5-10.5 6.5S1.5 12 1.5 12z'
+      stroke='currentColor'
+      strokeWidth='1.5'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    />
+    <circle cx='12' cy='12' r='3' stroke='currentColor' strokeWidth='1.5' />
+    <path d='M4 4l16 16' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' />
+  </svg>
+)
+
 const AuthHero: React.FC = () => (
   <div className='auth-hero' aria-hidden='true'>
-    <div>
-      <div className='auth-logo'>
-        <span>WM</span>
-        WoodMarket
-      </div>
+    <div className='auth-logo'>WOODIFY</div>
+    <div className='auth-hero-logo'>
+      <img src={woodifyLogo} alt='Logo Woodify' loading='lazy' />
+    </div>
+    <div className='auth-hero-text'>
       <h1>Chào mừng nghệ nhân và người yêu gỗ</h1>
       <p>
-        Tạo tài khoản để quản lý đơn hàng, theo dõi Shopee Xu và cập nhật ưu đãi dành riêng cho cộng đồng
-        yêu đồ gỗ thủ công.
+        Tạo tài khoản để nhận ưu đãi độc quyền, quản lý đơn hàng nhanh chóng và kết nối cùng cộng đồng
+        yêu gỗ thủ công.
       </p>
     </div>
-    <p className='auth-subtitle'>Luồng đăng ký 3 bước với OTP bảo mật, tuân thủ tiêu chuẩn accessibility.</p>
   </div>
 )
 
 export default function Register() {
   const nav = useNavigate()
+  const queryClient = useQueryClient()
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -47,7 +80,13 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [registerState, setRegisterState] = useState<'idle' | 'loading' | 'success'>('idle')
+  const [username, setUsername] = useState('')
+  const [phone, setPhone] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
   const [showTermsError, setShowTermsError] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     if (step !== 2 || timer <= 0) return
@@ -67,6 +106,14 @@ export default function Register() {
     }
   }, [step])
 
+  useEffect(() => {
+    if (step !== 4) return
+    const redirectId = window.setTimeout(() => {
+      nav('/')
+    }, 2000)
+    return () => window.clearTimeout(redirectId)
+  }, [step, nav])
+
   const maskedEmail = useMemo(() => {
     if (!email) return ''
     const [name, domain] = email.split('@')
@@ -81,6 +128,10 @@ export default function Register() {
   const strengthPalette = ['#C84545', '#E6A151', '#6EA36E']
   const strengthIndex = Math.max(normalizedStrength - 1, 0)
   const strengthLabel = ['Yếu', 'Trung bình', 'Mạnh'][strengthIndex]
+  const trimmedUsername = useMemo(() => username.trim(), [username])
+  const normalizedPhone = useMemo(() => phone.replace(/\D/g, ''), [phone])
+  const isUsernameValid = trimmedUsername.length >= 3
+  const isPhoneValid = PHONE_PATTERN.test(normalizedPhone)
 
   function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -90,17 +141,30 @@ export default function Register() {
     }
     setEmailError('')
     setIsSendingCode(true)
-
+    
+    // Fake wait: jump to step 2 after 1 second without waiting for API
     window.setTimeout(() => {
       setIsSendingCode(false)
-      if (email.toLowerCase() === 'demo@woodmarket.com') {
-        setEmailExists(true)
-        setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
-        return
-      }
       setEmailExists(false)
       setStep(2)
-    }, 900)
+    }, 1000)
+    
+    // Call API in background (don't wait for it)
+    import('@/services/auth.service').then(({ authService }) => {
+      authService.sendOtp({ email })
+        .catch((err) => {
+          const errorMessage = err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.'
+          console.error('Send OTP error:', errorMessage)
+          
+          if (errorMessage.toLowerCase().includes('exists')) {
+            setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
+            setEmailExists(true)
+            setStep(1)
+          } else {
+            console.warn('OTP sent but API failed. User can retry from OTP screen.')
+          }
+        })
+    })
   }
 
   function handleEmailChange(value: string) {
@@ -110,6 +174,12 @@ export default function Register() {
   }
 
   function handleOtpChange(index: number, value: string) {
+    if (/^\d{6}$/.test(value)) {
+      const arr = value.split('')
+      setOtpDigits(arr)
+      otpRefs.current[OTP_LENGTH - 1]?.focus()
+      return
+    }
     if (!/^\d?$/.test(value)) return
     const next = [...otpDigits]
     next[index] = value
@@ -134,21 +204,25 @@ export default function Register() {
       setOtpError('Vui lòng nhập đủ mã xác minh')
       return
     }
-    const maybeCode = otpDigits.join('')
-    if (maybeCode !== '123456') {
-      setOtpAttempts((prev) => {
-        const next = prev + 1
-        if (next >= 3) {
-          setOtpError('Bạn đã thử quá 3 lần. Vui lòng đợi 2 phút hoặc liên hệ hỗ trợ.')
-        } else {
-          setOtpError('Mã xác minh không đúng. Vui lòng thử lại.')
-        }
-        return next
-      })
-      return
-    }
+    const code = otpDigits.join('')
     setOtpError('')
-    setStep(3)
+    setOtpAttempts(0)
+    // Gọi API verify-otp
+    import('@/services/auth.service').then(({ authService }) => {
+      authService.verifyOtp({ email, otp: code })
+        .then((res: any) => {
+          if (res?.success) {
+            setStep(3)
+          } else {
+            setOtpError('Mã xác minh không đúng. Vui lòng thử lại.')
+            setOtpAttempts((prev) => prev + 1)
+          }
+        })
+        .catch((err) => {
+          setOtpError(err?.message || 'Mã xác minh không đúng hoặc đã hết hạn.')
+          setOtpAttempts((prev) => prev + 1)
+        })
+    })
   }
 
   function handleResend() {
@@ -168,17 +242,86 @@ export default function Register() {
     const meetsBasics = snapshot.length && snapshot.casing && snapshot.number
     if (!meetsBasics) return
     if (password !== confirmPassword) return
+    let hasDetailsError = false
+    if (!isUsernameValid) {
+      setUsernameError('Tên người dùng tối thiểu 3 ký tự')
+      hasDetailsError = true
+    } else {
+      setUsernameError('')
+    }
+    if (!isPhoneValid) {
+      setPhoneError('Số điện thoại cần 9-11 chữ số')
+      hasDetailsError = true
+    } else {
+      setPhoneError('')
+    }
+    if (hasDetailsError) return
     if (!acceptTerms) {
       setShowTermsError(true)
       return
     }
     setShowTermsError(false)
     setRegisterState('loading')
-    window.setTimeout(() => {
-      setRegisterState('success')
-      localStorage.setItem('auth_token', 'mock-token')
-      setStep(4)
-    }, 1200)
+    import('@/services/auth.service').then(({ authService }) => {
+      authService
+        .registerWithOtp({
+          email,
+          password,
+          confirmPassword,
+          username: trimmedUsername,
+          phone: normalizedPhone || undefined,
+        })
+        .then(async (registerRes: unknown) => {
+          // Register may not Set-Cookie the same way as login, so /auth/me returns 401 until
+          // the user signs in again. Mirror the manual login flow to establish the session.
+          try {
+            const loginRes: any = await authService.login({ email, password })
+            const loginData = loginRes?.data ?? loginRes
+            const isSuccessful = Boolean(
+              loginData?.success === true ||
+                loginData?.message?.includes('thành công') ||
+                loginData?.accountId ||
+                loginData?.email
+            )
+            if (isSuccessful && loginData?.email) {
+              const normalizedUser: StoredUser = {
+                email: loginData.email || email,
+                username: loginData.username || loginData.fullName || trimmedUsername,
+                role: loginData.role || 'customer',
+                accountId: loginData.accountId,
+              }
+              persistStoredUser(normalizedUser)
+              queryClient.setQueryData(queryKeys.user(), normalizedUser)
+              setRegisterState('success')
+              nav('/')
+              return
+            }
+          } catch {
+            // Fall through: still persist display data from register response
+          }
+
+          const raw = registerRes as Record<string, unknown> & { user?: Record<string, unknown> }
+          const profile = (raw?.user ?? raw) as Record<string, unknown> | null
+          if (profile && (profile.email || profile.accountId)) {
+            const normalizedUser: StoredUser = {
+              email: String(profile.email || email),
+              username: String(
+                profile.username || profile.fullName || trimmedUsername
+              ),
+              role: (profile.role as StoredUser['role']) || 'customer',
+              accountId: (profile.accountId || profile.id) as string | undefined,
+            }
+            persistStoredUser(normalizedUser)
+            queryClient.setQueryData(queryKeys.user(), normalizedUser)
+          }
+
+          setRegisterState('success')
+          nav('/')
+        })
+        .catch(() => {
+          setRegisterState('idle')
+        })
+    })
   }
 
   function goShopping() {
@@ -198,13 +341,16 @@ export default function Register() {
     confirmPassword &&
     password === confirmPassword &&
     acceptTerms &&
-    normalizedStrength >= 3
+    normalizedStrength >= 3 &&
+    isUsernameValid &&
+    isPhoneValid
 
   const resendLimitReached = resendCount >= MAX_RESEND
 
   return (
-    <div className='auth-shell'>
-      <div className='auth-layer'>
+    <>
+      <div className='auth-shell'>
+        <div className='auth-layer'>
         <AuthHero />
 
         <section className='auth-card'>
@@ -242,7 +388,6 @@ export default function Register() {
                         {emailError}
                       </span>
                     )}
-                    <p className='step-notes'>Chúng tôi sẽ gửi mã 6 chữ số tới email của bạn.</p>
                   </div>
 
                   <button className='auth-btn primary' type='submit' disabled={isSendingCode}>
@@ -287,6 +432,14 @@ export default function Register() {
                         aria-label={`Ký tự thứ ${index + 1}`}
                         onChange={(event) => handleOtpChange(index, event.target.value)}
                         onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                        onPaste={(event) => {
+                          const pasted = event.clipboardData.getData('text')
+                          if (/^\d{6}$/.test(pasted)) {
+                            setOtpDigits(pasted.split(''))
+                            otpRefs.current[OTP_LENGTH - 1]?.focus()
+                            event.preventDefault()
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -312,11 +465,6 @@ export default function Register() {
                     </button>
                   </div>
 
-                  <p className='step-notes'>
-                    Không nhận được email? Kiểm tra hộp Spam hoặc liên hệ hỗ trợ.{' '}
-                    Mẹo demo: nhập 123456 nếu chưa kết nối dịch vụ gửi OTP.
-                  </p>
-
                   <button className='auth-btn primary' type='submit'>
                     Xác minh &amp; tiếp tục
                   </button>
@@ -327,8 +475,17 @@ export default function Register() {
             {step === 3 && (
               <div className='step-panel' key='step-3'>
                 <form onSubmit={handleRegister}>
-                  <h3>Tạo mật khẩu</h3>
-                  <p className='auth-subtitle'>Chọn mật khẩu mạnh để bảo vệ tài khoản</p>
+                  <div className='password-section-header'>
+                    <h3>Tạo mật khẩu</h3>
+                  </div>
+
+                  <div className='password-checklist' id='password-checklist' aria-live='polite'>
+                    {checklist.map((item) => (
+                      <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
+                        {passwordState[item.key] ? '✓' : '•'} {item.label}
+                      </span>
+                    ))}
+                  </div>
 
                   <div className='auth-form-group'>
                     <label className='auth-label' htmlFor='register-password'>
@@ -342,14 +499,6 @@ export default function Register() {
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                     />
-                    <div className='strength-meter'>
-                      <div className='strength-bar'>
-                        <span style={{ width: `${(normalizedStrength / 3) * 100}%`, background: strengthColor }} />
-                      </div>
-                      <span className='strength-label' style={{ color: strengthColor }}>
-                        {password ? strengthLabel : 'Chưa nhập' }
-                      </span>
-                    </div>
                   </div>
 
                   <div className='auth-form-group'>
@@ -370,30 +519,78 @@ export default function Register() {
                     )}
                   </div>
 
-                  <div className='password-checklist' aria-live='polite'>
-                    {checklist.map((item) => (
-                      <span key={item.key} style={{ color: passwordState[item.key] ? '#2B2B2B' : '#A5A1A0' }}>
-                        {passwordState[item.key] ? '✓' : '•'} {item.label}
-                      </span>
-                    ))}
-                  </div>
-
-                  <label className='auth-checkbox' style={{ marginTop: 12 }}>
+                  <div className='auth-form-group'>
+                    <label className='auth-label' htmlFor='register-username'>
+                      Tên người dùng
+                    </label>
                     <input
-                      type='checkbox'
-                      checked={acceptTerms}
+                      id='register-username'
+                      type='text'
+                      className='auth-input'
+                      placeholder='Ví dụ: woodlover90'
+                      value={username}
+                      autoComplete='username'
+                      aria-invalid={Boolean(usernameError)}
+                      aria-describedby={usernameError ? 'register-username-error' : undefined}
                       onChange={(event) => {
-                        setAcceptTerms(event.target.checked)
-                        if (event.target.checked) setShowTermsError(false)
+                        setUsername(event.target.value)
+                        if (usernameError) setUsernameError('')
                       }}
                     />
-                    Tôi đồng ý với{' '}
-                    <a className='auth-link' href='/terms'>Điều khoản</a>{' '}
-                    &amp;{' '}
-                    <a className='auth-link' href='/privacy'>Chính sách Bảo mật</a>
-                  </label>
+                    {usernameError && (
+                      <span id='register-username-error' className='auth-error-text'>
+                        {usernameError}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className='auth-form-group'>
+                    <label className='auth-label' htmlFor='register-phone'>
+                      Số điện thoại
+                    </label>
+                    <input
+                      id='register-phone'
+                      type='tel'
+                      className='auth-input'
+                      placeholder='09xx xxx xxx'
+                      value={phone}
+                      inputMode='tel'
+                      aria-invalid={Boolean(phoneError)}
+                      aria-describedby={phoneError ? 'register-phone-error' : undefined}
+                      onChange={(event) => {
+                        setPhone(event.target.value)
+                        if (phoneError) setPhoneError('')
+                      }}
+                    />
+                    {phoneError && (
+                      <span id='register-phone-error' className='auth-error-text'>
+                        {phoneError}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className='auth-remember-row'>
+                    <label className="auth-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={acceptTerms}
+                        onChange={(event) => {
+                          setAcceptTerms(event.target.checked);
+                          if (event.target.checked) setShowTermsError(false);
+                        }}
+                      />
+                    </label>
+                    <span className="auth-checkbox-text">
+                        Tôi đồng ý với{' '}
+                        <a className="auth-link" href="/terms">Điều khoản</a>{' '}
+                        &amp;{' '}
+                        <a className="auth-link" href="/privacy">Chính sách Bảo mật</a>
+                    </span>
+                  </div>
+                  
+
                   {showTermsError && !acceptTerms && (
-                    <span className='auth-error-text'>Vui lòng đồng ý Điều khoản</span>
+                    <span className="auth-error-text">Vui lòng đồng ý Điều khoản</span>
                   )}
 
                   <button className='auth-btn primary' type='submit' disabled={!canSubmitPassword || registerState === 'loading'}>
@@ -405,17 +602,15 @@ export default function Register() {
 
             {step === 4 && (
               <div className='step-panel success-card' key='step-4'>
-                <h3>Chào mừng đến với WoodMarket</h3>
+                <h3>Chào mừng đến với Woodify</h3>
                 <p>Đăng ký thành công. Chúng tôi đã tự động đăng nhập để bạn bắt đầu mua sắm ngay.</p>
-                <button className='auth-btn primary' type='button' onClick={goShopping}>
-                  Bắt đầu mua sắm
-                </button>
                 <p className='auth-subtitle'>Gợi ý: hoàn thiện hồ sơ để nhận khuyến mãi cá nhân hóa.</p>
               </div>
             )}
           </div>
         </section>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

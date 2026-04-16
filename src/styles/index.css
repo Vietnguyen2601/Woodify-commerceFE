@@ -1,0 +1,48 @@
+/**
+ * Main Styles Entry Point
+ * Tailwind CSS v4
+ */
+
+/* Tailwind CSS v4 */
+@import "tailwindcss";
+
+/* Theme customization tokens */
+:root {
+  --color-primary-500: #c87852;
+  --color-primary-600: #b5613b;
+  --color-primary-700: #974f31;
+
+  --color-neutral-100: #f5f5f4;
+  --color-neutral-200: #e7e5e4;
+  --color-neutral-300: #d6d3d1;
+  --color-neutral-400: #a8a29e;
+  --color-neutral-500: #78716c;
+  --color-neutral-600: #57534e;
+  --color-neutral-900: #1c1917;
+
+  --color-brand-wood: #be9c73;
+  --color-brand-accent: #db814c;
+  --color-brand-accent-hover: #c46e3d;
+  --color-brand-bg: #e3dcc8;
+  --color-brand-dark: #6c5b50;
+
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+
+  --font-primary: 'Inter', sans-serif;
+  --font-secondary: 'Inria Sans', sans-serif;
+  --font-tertiary: 'Arimo', sans-serif;
+}
+
+/* Legacy App Styles */
+@import './app.css';
+@import './auth.css';
+@import './admin.css';
+@import './addProduct.css';
+@import './icon-badge.css';
