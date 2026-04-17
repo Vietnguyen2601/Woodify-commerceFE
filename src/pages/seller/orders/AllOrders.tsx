@@ -205,7 +205,7 @@ export default function AllOrders() {
       }
       if (!q) return true
       if (o.orderId.toLowerCase().includes(q)) return true
-      if (o.accountId.toLowerCase().includes(q)) return true
+      if (o.accountName.toLowerCase().includes(q)) return true
       return (o.orderItems || []).some(
         (it) =>
           (it.productName || '').toLowerCase().includes(q) ||
@@ -461,7 +461,7 @@ function OrderCard({
             </p>
             <p className='mt-0.5 text-xs text-stone-600'>
               {'Kh\u00e1ch: '}
-              <span className='font-mono'>{shortAccount(order.accountId)}</span>
+              <span className='font-mono'>{order.accountName}</span>
             </p>
             <p className='mt-1 line-clamp-2 text-xs text-stone-500' title={order.deliveryAddress}>
               {order.deliveryAddress}
@@ -591,8 +591,12 @@ function OrderDetailDrawer({
               {'Kh\u00e1ch h\u00e0ng & giao h\u00e0ng'}
             </h3>
             <p className='mt-2 text-sm text-stone-800'>
-              {'Mã tài khoản: '}
-              <span className='font-mono'>{order.accountId}</span>
+              {'Tên khách: '}
+              <span className='font-mono'>{order.accountName}</span>
+            </p>
+            <p className='mt-1 text-sm text-stone-800'>
+              {'Email: '}
+              <span className='font-mono'>{order.accountEmail}</span>
             </p>
             <p className='mt-2 text-sm leading-relaxed text-stone-700'>{order.deliveryAddress}</p>
             {order.providerServiceCode != null && order.providerServiceCode !== '' && (

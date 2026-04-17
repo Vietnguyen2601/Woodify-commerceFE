@@ -34,7 +34,7 @@ export function buildProductPathSegment(productId: string, productName?: string 
   const name = productName?.trim()
   if (name && UUID_RE.test(id)) {
     const slug = slugifyProductName(name)
-    if (slug) return slug
+    if (slug) return `${slug}--${productPublicRefHex(id)}`
   }
   return id
 }

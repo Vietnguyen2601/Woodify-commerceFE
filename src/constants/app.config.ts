@@ -40,4 +40,12 @@ export const APP_CONFIG = {
     CATEGORIES: 5 * 60 * 1000,  // 5 minutes
     LOCATION: 10 * 60 * 1000,   // 10 minutes
   },
+
+  // Marketing image references (stable GUIDs for BANNER/ADS)
+  MARKETING: {
+    BANNER_REFERENCE_ID:
+      import.meta.env.VITE_BANNER_REFERENCE_ID || '11111111-1111-1111-1111-111111111111',
+    ADS_REFERENCE_ID:
+      import.meta.env.VITE_ADS_REFERENCE_ID || '22222222-2222-2222-2222-222222222222',
+  },
 } as const

@@ -1,8 +1,8 @@
 import type { AxiosRequestConfig } from 'axios'
-import { apiClient } from './api/client'
+import { api, apiClient } from './api/client'
 import { shopApi } from './api/shopClient'
 import { productApi } from './api/productClient'
-import { ADMIN_API } from '@/constants'
+import { ADMIN_API, API_ENDPOINTS } from '@/constants'
 import type {
   AccountDto,
   AdminOrderListParams,
@@ -21,6 +21,8 @@ import type {
   UpdateAccountStatusPayload,
   UpdateShopStatusPayload,
 } from '@/types'
+import type { ShippingProvider, ShipmentService } from '@/types/shipping.types'
+import type { ImageUrlData } from '@/types/image.types'
 
 function pickData<T>(raw: unknown): T {
   if (raw === null || raw === undefined) return raw as T
@@ -352,6 +354,24 @@ function normalizeRevenueTrendPayload(raw: unknown): RevenueTrendSeries {
 }
 
 export const adminService = {
+  // ── Marketing images (BANNER / ADS) ────────────────────────────────────────
+  getAllBanners: async (): Promise<ImageUrlData[]> => {
+    const raw = await productApi.get<unknown>(API_ENDPOINTS.IMAGES.LIST_BY_TYPE('BANNER'))
+    return coerceArray<ImageUrlData>(raw)
+  },
+
+  getAllAds: async (): Promise<ImageUrlData[]> => {
+    const raw = await productApi.get<unknown>(API_ENDPOINTS.IMAGES.LIST_BY_TYPE('ADS'))
+    return coerceArray<ImageUrlData>(raw)
+  },
+
+  deleteBanner: async (imageId: string): Promise<void> => {
+    await productApi.delete<unknown>(API_ENDPOINTS.IMAGES.DELETE(imageId))
+  },
+
+  deleteAd: async (imageId: string): Promise<void> => {
+    await productApi.delete<unknown>(API_ENDPOINTS.IMAGES.DELETE(imageId))
+  },
   getRevenueTrend: async (range: RevenueTrendRange): Promise<RevenueTrendSeries> => {
     const now = new Date()
     const yyyy = now.getFullYear()
@@ -468,7 +488,7 @@ export const adminService = {
   },
 
   getAllShipments: async (): Promise<AdminShipmentDto[]> => {
-    const raw = await getFirstOkOrEmpty<unknown>(ADMIN_API.SHIPMENTS.GET_ALL)
+    const raw = await api.get<unknown>(API_ENDPOINTS.SHIPMENTS.LIST)
     return coerceArray<AdminShipmentDto>(raw)
   },
 
@@ -499,6 +519,41 @@ export const adminService = {
       /* providers optional if route missing */
     }
     return { items: [], totalItems: 0, pageNumber: page, pageSize: limit }
+  },
+
+  // ── ShipmentService (admin config) ─────────────────────────────────────────
+  getShippingProviders: async (page = 1, limit = 50): Promise<ProvidersPageDto> => {
+    return adminService.getShipmentProviders(page, limit)
+  },
+
+  createShippingProvider: async (payload: Partial<ShippingProvider>): Promise<unknown> => {
+    return api.post<unknown>(API_ENDPOINTS.PROVIDER.CREATE, payload)
+  },
+
+  updateShippingProvider: async (providerId: string, payload: Partial<ShippingProvider>): Promise<unknown> => {
+    return api.put<unknown>(API_ENDPOINTS.PROVIDER.UPDATE(providerId), payload)
+  },
+
+  deleteShippingProvider: async (providerId: string): Promise<unknown> => {
+    return api.delete<unknown>(API_ENDPOINTS.PROVIDER.DELETE(providerId))
+  },
+
+  listProviderServices: async (): Promise<ShipmentService[]> => {
+    const raw = await api.get<unknown>(API_ENDPOINTS.SHIPMENT_SERVICES.LIST)
+    return coerceArray<ShipmentService>(raw)
+  },
+
+  listProviderServicesByProvider: async (providerId: string): Promise<ShipmentService[]> => {
+    const raw = await api.get<unknown>(API_ENDPOINTS.SHIPMENT_SERVICES.BY_PROVIDER(providerId))
+    return coerceArray<ShipmentService>(raw)
+  },
+
+  updateProviderService: async (serviceId: string, payload: Partial<ShipmentService>): Promise<unknown> => {
+    return api.patch<unknown>(API_ENDPOINTS.SHIPMENT_SERVICES.UPDATE(serviceId), payload)
+  },
+
+  deleteProviderService: async (serviceId: string): Promise<unknown> => {
+    return api.delete<unknown>(API_ENDPOINTS.SHIPMENT_SERVICES.DELETE(serviceId))
   },
 
   /**
