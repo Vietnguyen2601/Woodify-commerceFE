@@ -83,6 +83,7 @@ export default function App() {
           <Route path='/payment' element={<Payment />} />
           <Route path='/payment/success' element={<PaymentSuccess />} />
           <Route path='/payment/cancel' element={<PaymentCancel />} />
+          <Route path={ROUTES.PAYMENT_CALLBACK_SUCCESS} element={<PaymentSuccess />} />
           <Route
             path={ROUTES.PAYMENT_CALLBACK_CANCEL}
             element={<Navigate to={`${ROUTES.PROFILE}?tab=wallet`} replace />}
