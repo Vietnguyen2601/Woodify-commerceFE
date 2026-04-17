@@ -40,6 +40,8 @@ export interface SellerOrderItem {
 export interface SellerOrder {
   orderId: string
   accountId: string
+  accountName: string
+  accountEmail: string
   shopId: string
   subtotalVnd: number
   totalAmountVnd: number
@@ -58,10 +60,13 @@ export interface SellerOrder {
 export interface BuyerOrder {
   orderId: string
   accountId: string
+  accountName: string
+  accountEmail: string
   shopId: string
   subtotalVnd: number
   totalAmountVnd: number
   voucherId: string | null
+  payment: unknown | null
   status: SellerOrderStatus | string
   deliveryAddress: string
   paymentStatus?: string | null

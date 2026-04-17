@@ -12,6 +12,15 @@ import type {
 
 export const imageService = {
   /**
+   * List images by type (BANNER / ADS), sorted by sort_order ASC.
+   * GET /api/product/images/type/{TYPE}
+   */
+  listByType: async (type: 'BANNER' | 'ADS'): Promise<ImageUrlData[]> => {
+    const response = await api.get<ImageListApiResponse | ImageUrlData[]>(API_ENDPOINTS.IMAGES.LIST_BY_TYPE(type))
+    return (response as unknown as ImageListApiResponse).data ?? (response as unknown as ImageUrlData[])
+  },
+
+  /**
    * Save a single image metadata after Cloudinary upload.
    * POST /api/images/save
    */
@@ -62,5 +71,13 @@ export const imageService = {
       if (error?.status === 404) return null
       throw error
     }
+  },
+
+  /**
+   * Delete image metadata record in DB.
+   * DELETE /api/product/images/{imageId}
+   */
+  deleteById: async (imageId: string): Promise<void> => {
+    await api.delete<unknown>(API_ENDPOINTS.IMAGES.DELETE(imageId))
   },
 }

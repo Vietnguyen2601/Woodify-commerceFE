@@ -181,18 +181,30 @@ export const API_ENDPOINTS = {
   IMAGES: {
     SAVE: '/product/images/save',
     SAVE_BULK: '/product/images/save-bulk',
+    LIST_BY_TYPE: (type: string) => `/product/images/type/${encodeURIComponent(type)}`,
     GET_BY_TYPE_AND_ID: (type: string, referenceId: string) =>
       `/product/images/${type.toLowerCase()}/${referenceId}`,
     GET_PRIMARY: (type: string, referenceId: string) =>
       `/product/images/${type.toLowerCase()}/${referenceId}/primary`,
+    DELETE: (imageId: string) => `/product/images/${encodeURIComponent(imageId)}`,
   },
 
   // ── Shipment Service (5016) ────────────────────────────────────────────────
   PROVIDER: {
     LIST: '/shipment/providers',
+    BY_ID: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
+    CREATE: '/shipment/providers',
+    UPDATE: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
+    DELETE: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
   },
   SHIPMENT_SERVICES: {
     BY_SHOP: (shopId: string) => `/shipment/shops/${encodeURIComponent(shopId)}/services`,
+    LIST: '/shipment/services',
+    BY_ID: (serviceId: string) => `/shipment/services/${encodeURIComponent(serviceId)}`,
+    BY_PROVIDER: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}/services`,
+    UPDATE: (serviceId: string) => `/shipment/services/${encodeURIComponent(serviceId)}`,
+    DELETE: (serviceId: string) => `/shipment/services/${encodeURIComponent(serviceId)}`,
+    CREATE: '/shipment/services',
   },
   /** Shipment entity — SHIPMENT_SELLER_FLOW.md (gateway `/api/shipment/shipments/...`) */
   SHIPMENTS: {

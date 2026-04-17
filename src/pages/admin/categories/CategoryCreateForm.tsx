@@ -219,7 +219,8 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
   }
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = event.target
+    const { name, value, type } = event.target
+    const checked = (event.target as HTMLInputElement).checked
     setFormState((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
