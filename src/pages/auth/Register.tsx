@@ -148,13 +148,19 @@ export default function Register() {
       setEmailExists(false)
       setStep(2)
     } catch (err: any) {
-      const errorMessage =
-        String(err?.message || err?.data?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.').toLowerCase()
+      const rawErrorMessage = String(
+        err?.message ||
+          err?.data?.message ||
+          err?.response?.data?.message ||
+          'Không gửi được mã xác minh. Vui lòng thử lại.'
+      )
+      const errorMessage = rawErrorMessage.toLowerCase()
       const isExistingEmail =
         errorMessage.includes('exists') ||
         errorMessage.includes('already') ||
         errorMessage.includes('đã tồn tại') ||
-        errorMessage.includes('đã đăng ký')
+        errorMessage.includes('được đăng ký') ||
+        (errorMessage.includes('email') && errorMessage.includes('đăng ký'))
 
       if (isExistingEmail) {
         setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
