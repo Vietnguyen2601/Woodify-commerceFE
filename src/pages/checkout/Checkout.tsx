@@ -642,8 +642,8 @@ export default function Checkout() {
         accountId: currentUser.accountId!,
         totalAmountVnd,
         ...(paymentMethod === 'PAYOS' && {
-          returnUrl: `${baseUrl}/payment/success`,
-          cancelUrl: `${baseUrl}/payment/cancel`
+          returnUrl: `${baseUrl}/payment/callback/success`,
+          cancelUrl: `${baseUrl}/payment/callback/cancel`
         })
       }
 
