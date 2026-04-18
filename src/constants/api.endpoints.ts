@@ -195,6 +195,12 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (walletId: string) => `/wallets/${walletId}`,
     TOPUP: '/wallets/topup',
     TRANSACTIONS: (walletId: string) => `/wallets/${walletId}/transactions`,
+    /** Seller — cùng ví Buyer theo account chủ shop (Payment service) */
+    SELLER_ACCOUNT: (accountId: string) =>
+      `/wallets/seller/account/${encodeURIComponent(accountId)}`,
+    SELLER_ACCOUNT_TRANSACTIONS: (accountId: string) =>
+      `/wallets/seller/account/${encodeURIComponent(accountId)}/transactions`,
+    SELLER_WITHDRAWALS: '/wallets/seller/withdrawals',
   },
 
   // ── Image Service ─────────────────────────────────────────────────────────
@@ -333,25 +339,16 @@ export const ADMIN_API = {
       `/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
     ] as const,
   /**
-   * Seller withdrawal tickets (net shop wallet → payout). Backend contract TBD;
-   * FE tries paths in order and treats 404 on all as empty list.
+   * Seller withdrawal tickets — Payment/Wallet service (ServiceResult envelope).
+   * GET `/wallets/admin/withdrawals?status=&page=&pageSize=`
    */
   WITHDRAWALS: {
-    LIST: [
-      '/wallets/withdrawal-requests',
-      '/wallets/admin/withdrawal-requests',
-      '/wallet/admin/withdrawal-requests',
-      '/payment/admin/withdrawal-requests',
-    ],
-    APPROVE: (id: string) => [
-      `/wallets/withdrawal-requests/${encodeURIComponent(id)}/approve`,
-      `/wallets/admin/withdrawal-requests/${encodeURIComponent(id)}/approve`,
-      `/payment/admin/withdrawal-requests/${encodeURIComponent(id)}/approve`,
-    ],
-    REJECT: (id: string) => [
-      `/wallets/withdrawal-requests/${encodeURIComponent(id)}/reject`,
-      `/wallets/admin/withdrawal-requests/${encodeURIComponent(id)}/reject`,
-      `/payment/admin/withdrawal-requests/${encodeURIComponent(id)}/reject`,
-    ],
+    LIST: '/wallets/admin/withdrawals',
+    APPROVE: (ticketId: string) =>
+      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/approve`,
+    REJECT: (ticketId: string) =>
+      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/reject`,
+    MARK_PAID: (ticketId: string) =>
+      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/mark-paid`,
   },
 } as const
