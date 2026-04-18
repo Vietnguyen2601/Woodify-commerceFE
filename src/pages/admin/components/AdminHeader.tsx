@@ -1,8 +1,12 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { useAppLanguage } from '@/hooks'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { ROUTES } from '@/constants/routes'
 
 export default function AdminHeader() {
   const { lang, setLang, isVietnamese } = useAppLanguage()
+  const { logout } = useAuth()
 
   const t = {
     menu: isVietnamese ? 'Mở menu điều hướng' : 'Open navigation menu',
@@ -11,6 +15,8 @@ export default function AdminHeader() {
     role: isVietnamese ? 'Quản trị viên' : 'Super Admin',
     title: isVietnamese ? 'Bảng Điều Khiển Admin' : 'Admin Control Desk',
     subtitle: isVietnamese ? 'Theo dõi vận hành toàn sàn' : 'Marketplace operations overview',
+    home: isVietnamese ? 'Trang chủ' : 'Home',
+    logout: isVietnamese ? 'Đăng xuất' : 'Logout',
   }
 
   const dateLabel = new Intl.DateTimeFormat(lang === 'vi' ? 'vi-VN' : 'en-US', {
@@ -36,7 +42,20 @@ export default function AdminHeader() {
             </div>
           </div>
 
-          <div className='flex items-center gap-3'>
+          <div className='flex flex-wrap items-center justify-end gap-2 sm:gap-3'>
+            <Link
+              to={ROUTES.HOME}
+              className='inline-flex items-center justify-center rounded-xl border border-white/70 bg-white/45 px-3 py-2 text-xs font-semibold text-gray-900 shadow-sm shadow-black/15 transition-all hover:bg-white/65'
+            >
+              {t.home}
+            </Link>
+            <button
+              type='button'
+              onClick={() => void logout()}
+              className='inline-flex items-center justify-center rounded-xl border border-white/70 bg-white/20 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-red-500/90 hover:text-white hover:border-red-400/80'
+            >
+              {t.logout}
+            </button>
             <div className='inline-flex items-center rounded-xl border border-white/45 bg-white/20 p-1 text-xs font-semibold'>
               <button
                 type='button'
