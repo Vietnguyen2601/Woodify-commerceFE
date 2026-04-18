@@ -353,7 +353,7 @@ body.checkout-route-bg {
 	max-width: 100%;
 }
 .footer { padding:16px 24px; text-align:center; border-top:1px solid #eee; color:var(--muted); }
-.grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+/* Không dùng `.grid` global: trùng tên Tailwind `grid` và ghi đè `grid-cols-*` → layout vỡ (vd. admin finance). */
 .card { background:white; padding:12px; border-radius:8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
 .btn { display:inline-block; padding:8px 12px; border-radius:6px; background:var(--accent); color:white; font-weight:600; }
 
