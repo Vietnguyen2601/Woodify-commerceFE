@@ -210,6 +210,7 @@ export const API_ENDPOINTS = {
   },
 
   // ── Shipment Service (5016) ────────────────────────────────────────────────
+  /** Nhà VC: GET/POST cùng `/shipment/providers` (list + create); BY_ID/UPDATE/DELETE = thao tác theo id */
   PROVIDER: {
     LIST: '/shipment/providers',
     BY_ID: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
