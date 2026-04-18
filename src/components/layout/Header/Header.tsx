@@ -21,7 +21,7 @@ type NavItem = {
 const mainNavigation: NavItem[] = [
   { label: 'Trang chủ', to: ROUTES.HOME },
   { label: 'Sản phẩm', to: ROUTES.CATALOG },
-  { label: 'Khuyến mãi', to: ROUTES.CATALOG },
+  { label: 'Khuyến mãi', to: ROUTES.PROMOTIONS },
   { label: 'Chăm Sóc Khách Hàng', to: '/support' },
 ]
 

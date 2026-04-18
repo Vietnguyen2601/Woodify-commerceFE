@@ -290,7 +290,7 @@ export default function AllOrders() {
               type='search'
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder='M\u00e3 \u0111\u01a1n, m\u00e3 kh\u00e1ch, t\u00ean SP, SKU...'
+              placeholder='Mã đơn, mã khách, tên SP, SKU…'
               className='w-full rounded-lg border border-yellow-800/20 bg-stone-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-yellow-800/50'
             />
           </div>
@@ -299,7 +299,7 @@ export default function AllOrders() {
             onClick={() => void refetch()}
             className='rounded-lg border border-yellow-800/30 bg-white px-4 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-50'
           >
-            {'L\u00e0m m\u1edbi'}
+            {'Làm mới'}
           </button>
         </div>
       </section>
@@ -307,16 +307,16 @@ export default function AllOrders() {
       {isLoading && (
         <div className='flex flex-col items-center justify-center gap-3 rounded-xl border border-yellow-800/20 bg-white py-20'>
           <div className='h-9 w-9 animate-spin rounded-full border-4 border-yellow-800 border-t-transparent' />
-          <p className='text-sm text-stone-600'>{'\u0110ang t\u1ea3i \u0111\u01a1n h\u00e0ng\u2026'}</p>
+          <p className='text-sm text-stone-600'>{'Đang tải đơn hàng…'}</p>
         </div>
       )}
 
       {isError && !isLoading && (
         <div className='rounded-xl border border-red-200 bg-red-50 px-5 py-6 text-sm text-red-800'>
-          <p className='font-medium'>{'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch \u0111\u01a1n.'}</p>
+          <p className='font-medium'>{'Không tải được danh sách đơn.'}</p>
           <p className='mt-1 opacity-90'>
             {(error as { message?: string })?.message ||
-              'Ki\u1ec3m tra k\u1ebft n\u1ed1i ho\u1eb7c \u0111\u0103ng nh\u1eadp seller.'}
+              'Kiểm tra kết nối hoặc đăng nhập seller.'}
           </p>
           <button
             type='button'
@@ -331,8 +331,8 @@ export default function AllOrders() {
       {!isLoading && !isError && filtered.length === 0 && (
         <div className='rounded-xl border border-dashed border-yellow-800/30 bg-white px-6 py-16 text-center text-sm text-stone-600'>
           {orders.length === 0
-            ? 'Ch\u01b0a c\u00f3 \u0111\u01a1n h\u00e0ng n\u00e0o cho shop.'
-            : 'Kh\u00f4ng c\u00f3 \u0111\u01a1n n\u00e0o kh\u1edbp b\u1ed9 l\u1ecdc / t\u00ecm ki\u1ebfm.'}
+            ? 'Chưa có đơn hàng nào cho shop.'
+            : 'Không có đơn nào khớp bộ lọc / tìm kiếm.'}
         </div>
       )}
 
@@ -373,7 +373,7 @@ function SellerStageProgressStrip({ stage }: { stage: SellerOrderStage }) {
         {SELLER_STAGE_LABEL_VI.exception}
         {' — '}
         <span className='font-normal opacity-90'>
-          {'Ngo\u1ea1i l\u1ec7 lu\u1ed3ng chu\u1ea9n (h\u1ee7y / ho\u00e0n / l\u1ed7i giao\u2026)'}
+          {'Ngoại lệ luồng chuẩn (hủy / hoàn / lỗi giao…)'}
         </span>
       </div>
     )
@@ -382,7 +382,7 @@ function SellerStageProgressStrip({ stage }: { stage: SellerOrderStage }) {
   return (
     <div>
       <p className='mb-2 text-[10px] font-bold uppercase tracking-wide text-stone-500'>
-        {'Ti\u1ebfn \u0111\u1ed9 \u0111\u01a1n (hi\u1ec3n th\u1ecb)'}
+        {'Tiến độ đơn (hiển thị)'}
       </p>
       <div className='grid grid-cols-4 gap-2'>
         {SELLER_MAIN_STAGE_SEQUENCE.map((s, i) => (
@@ -423,6 +423,10 @@ function OrderCard({
 
   const first = order.orderItems?.[0]
   const more = (order.orderItems?.length ?? 0) - 1
+  const firstThumb =
+    first != null && first.thumbnailUrl != null && String(first.thumbnailUrl).trim() !== ''
+      ? String(first.thumbnailUrl).trim()
+      : null
 
   return (
     <article className='overflow-hidden rounded-xl border border-yellow-800/20 bg-white shadow-sm'>
@@ -449,8 +453,26 @@ function OrderCard({
 
       <div className='px-4 py-3'>
         <div className='flex gap-3'>
-          <div className='flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg border border-yellow-800/15 bg-stone-100 text-[10px] text-stone-500'>
-            {(order.orderItems?.length ?? 0)} SP
+          <div className='relative h-14 w-14 flex-shrink-0'>
+            {firstThumb != null ? (
+              <img
+                src={firstThumb}
+                alt=''
+                className='h-14 w-14 rounded-lg border border-yellow-800/15 object-cover'
+              />
+            ) : (
+              <div
+                className='flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-yellow-800/25 bg-stone-100 text-[10px] text-stone-400'
+                aria-hidden
+              >
+                —
+              </div>
+            )}
+            {more > 0 ? (
+              <span className='absolute -bottom-0.5 -right-0.5 min-w-[1.25rem] rounded-full bg-yellow-800 px-1 py-0.5 text-center text-[9px] font-bold leading-none text-white shadow'>
+                +{more}
+              </span>
+            ) : null}
           </div>
           <div className='min-w-0 flex-1'>
             <p className='truncate text-sm font-medium text-stone-900'>
@@ -588,7 +610,7 @@ function OrderDetailDrawer({
 
           <section className='mb-5'>
             <h3 className='text-xs font-bold uppercase text-stone-500'>
-              {'Kh\u00e1ch h\u00e0ng & giao h\u00e0ng'}
+              {'Khách hàng & giao hàng'}
             </h3>
             <p className='mt-2 text-sm text-stone-800'>
               {'Tên khách: '}
@@ -612,19 +634,43 @@ function OrderDetailDrawer({
           <section className='mb-5'>
             <h3 className='text-xs font-bold uppercase text-stone-500'>{'S\u1ea3n ph\u1ea9m'}</h3>
             <ul className='mt-2 divide-y divide-yellow-800/10 rounded-lg border border-yellow-800/15'>
-              {(order.orderItems || []).map((it) => (
-                <li key={it.orderItemId} className='px-3 py-3 text-sm'>
-                  <p className='font-medium text-stone-900'>{it.productName}</p>
-                  <p className='text-xs text-stone-600'>{it.versionName}</p>
-                  <p className='mt-1 text-xs text-stone-500'>SKU: {it.sellerSku}</p>
-                  <div className='mt-2 flex flex-wrap justify-between gap-2 text-xs'>
-                    <span className='text-stone-600'>
-                      SL: <strong>{it.quantity}</strong> x {formatVnd(it.unitPriceVnd)}
-                    </span>
-                    <span className='font-semibold text-stone-900'>{formatVnd(it.lineTotalVnd)}</span>
-                  </div>
-                </li>
-              ))}
+              {(order.orderItems || []).map((it) => {
+                const thumb =
+                  it.thumbnailUrl != null && String(it.thumbnailUrl).trim() !== ''
+                    ? String(it.thumbnailUrl).trim()
+                    : null
+                return (
+                  <li key={it.orderItemId} className='px-3 py-3 text-sm'>
+                    <div className='flex gap-3'>
+                      {thumb != null ? (
+                        <img
+                          src={thumb}
+                          alt=''
+                          className='h-16 w-16 flex-shrink-0 rounded-md border border-yellow-800/15 object-cover'
+                        />
+                      ) : (
+                        <div
+                          className='flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md border border-dashed border-yellow-800/20 bg-stone-100 text-xs text-stone-400'
+                          aria-hidden
+                        >
+                          —
+                        </div>
+                      )}
+                      <div className='min-w-0 flex-1'>
+                        <p className='font-medium text-stone-900'>{it.productName}</p>
+                        <p className='text-xs text-stone-600'>{it.versionName}</p>
+                        <p className='mt-1 text-xs text-stone-500'>SKU: {it.sellerSku}</p>
+                        <div className='mt-2 flex flex-wrap justify-between gap-2 text-xs'>
+                          <span className='text-stone-600'>
+                            SL: <strong>{it.quantity}</strong> x {formatVnd(it.unitPriceVnd)}
+                          </span>
+                          <span className='font-semibold text-stone-900'>{formatVnd(it.lineTotalVnd)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </section>
 
@@ -639,18 +685,18 @@ function OrderDetailDrawer({
 
           <section className='rounded-lg border border-yellow-800/15 bg-orange-50/40 px-3 py-3 text-sm'>
             <div className='flex justify-between py-1'>
-              <span className='text-stone-600'>{'T\u1ea1m t\u00ednh'}</span>
+              <span className='text-stone-600'>{'Tạm tính'}</span>
               <span className='font-medium'>{formatVnd(order.subtotalVnd)}</span>
             </div>
             <div className='flex justify-between border-t border-yellow-800/10 py-2 font-semibold'>
-              <span>{'T\u1ed5ng thanh to\u00e1n'}</span>
+              <span>{'Tổng thanh toán'}</span>
               <span>{formatVnd(order.totalAmountVnd)}</span>
             </div>
           </section>
         </div>
 
         <div className='border-t border-yellow-800/15 bg-stone-50 px-5 py-4'>
-          <p className='mb-2 text-[11px] font-semibold uppercase text-stone-500'>{'C\u1eadp nh\u1eadt tr\u1ea1ng th\u00e1i'}</p>
+          <p className='mb-2 text-[11px] font-semibold uppercase text-stone-500'>{'Cập nhật trạng thái'}</p>
           <div className='flex flex-wrap gap-2'>
             {!locked &&
               forward.map((a) => (
@@ -676,7 +722,7 @@ function OrderDetailDrawer({
             )}
             {locked && (
               <p className='text-xs text-stone-500'>
-                {'\u0110\u01a1n \u1edf tr\u1ea1ng th\u00e1i k\u1ebft th\u00fac \u2014 kh\u00f4ng th\u1ec3 \u0111\u1ed5i th\u00eam.'}
+                {'Đơn ở trạng thái kết thúc không thể đổi thêm.'}
               </p>
             )}
           </div>

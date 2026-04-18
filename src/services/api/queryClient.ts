@@ -75,6 +75,12 @@ export const queryKeys = {
       [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'products'] as const,
     analytics: () => 
       [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'analytics'] as const,
+    bankAccount: (shopId: string) =>
+      [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'bank-account', shopId] as const,
+    revenueTrend: (shopId: string, days: number) =>
+      [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'revenue-trend', shopId, days] as const,
+    topSellingProducts: (shopId: string, limit: number) =>
+      [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'top-selling-products', shopId, limit] as const,
   },
   
   // Admin
@@ -92,6 +98,8 @@ export const queryKeys = {
     products: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'product-masters'] as const,
     snapshot: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'snapshot'] as const,
     revenue: (range: string) => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'revenue', range] as const,
+    topCategories: (topN: number) =>
+      [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'top-categories', topN] as const,
     categories: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'categories'] as const,
     banners: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'banners'] as const,
   },
@@ -101,6 +109,14 @@ export const queryKeys = {
   ADMIN_SHOPS: [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'shops'] as const,
   ADMIN_CATEGORIES: [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'categories'] as const,
   ADMIN_BANNERS: [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'banners'] as const,
+
+  // Home (public)
+  home: {
+    /** GET /product/images/type/BANNER — hero slider */
+    banners: () => ['home', 'marketing-banners'] as const,
+    /** GET /product/images/type/ADS — trang khuyến mãi / quảng cáo */
+    ads: () => ['home', 'marketing-ads'] as const,
+  },
 
   // Categories
   categories: {

@@ -1,23 +1,33 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
+/** Ảnh dự phòng khi API chưa có banner BANNER hoặc lỗi tải */
+const FALLBACK_HERO_IMAGE =
+  'https://api.builder.io/api/v1/image/assets/TEMP/f82779e269fd43005091ca94ff7a635eded6adfc?width=2542'
+
 interface HeroSectionProps {
+  /** URL từ GET /api/product/images/type/BANNER (originalUrl), đã sort */
+  bannerUrls: string[]
   activeSlide?: number
-  totalSlides?: number
   onSlideChange?: (index: number) => void
 }
 
-export default function HeroSection({ 
-  activeSlide = 0, 
-  totalSlides = 5,
-  onSlideChange 
+export default function HeroSection({
+  bannerUrls,
+  activeSlide = 0,
+  onSlideChange,
 }: HeroSectionProps) {
+  const slides = bannerUrls.length > 0 ? bannerUrls : [FALLBACK_HERO_IMAGE]
+  const safeIndex = slides.length > 0 ? activeSlide % slides.length : 0
+  const currentSrc = slides[safeIndex] ?? FALLBACK_HERO_IMAGE
+
   return (
     <section className="relative w-full h-[500px]">
-      <img 
+      <img
+        key={currentSrc}
         className="w-full h-full object-cover"
-        src="https://api.builder.io/api/v1/image/assets/TEMP/f82779e269fd43005091ca94ff7a635eded6adfc?width=2542" 
-        alt="Woodify Hero - Nội thất gỗ Việt Nam" 
+        src={currentSrc}
+        alt="Woodify Hero - Nội thất gỗ Việt Nam"
       />
       
       <div className="absolute left-[60px] top-[140px] lg:left-10 md:left-5 md:top-[150px]">
@@ -38,22 +48,25 @@ export default function HeroSection({
         </Link>
       </div>
 
-      <div className="absolute bottom-[18px] left-1/2 -translate-x-1/2 flex gap-[19px] lg:gap-3">
-        {Array.from({ length: totalSlides }).map((_, index) => (
-          <button
-            key={index}
-            className="relative w-[167px] h-[7px] lg:w-[120px] md:w-[60px] bg-white/20 rounded-[10px] border-none p-0 cursor-pointer overflow-hidden"
-            onClick={() => onSlideChange?.(index)}
-            aria-label={`Go to slide ${index + 1}`}
-          >
-            <span 
-              className={`absolute left-0 top-0 h-full bg-black/55 rounded-[10px] transition-[width] duration-300 ${
-                index === activeSlide ? 'w-[76%]' : 'w-0'
-              }`} 
-            />
-          </button>
-        ))}
-      </div>
+      {slides.length > 1 ? (
+        <div className="absolute bottom-[18px] left-1/2 flex -translate-x-1/2 gap-[19px] lg:gap-3">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              className="relative h-[7px] w-[167px] cursor-pointer overflow-hidden rounded-[10px] border-none bg-white/20 p-0 lg:w-[120px] md:w-[60px]"
+              onClick={() => onSlideChange?.(index)}
+              aria-label={`Go to slide ${index + 1}`}
+            >
+              <span
+                className={`absolute left-0 top-0 h-full rounded-[10px] bg-black/55 transition-[width] duration-300 ${
+                  index === safeIndex ? 'w-[76%]' : 'w-0'
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+      ) : null}
     </section>
   )
 }

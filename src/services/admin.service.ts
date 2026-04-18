@@ -20,6 +20,7 @@ import type {
   ShopStatus,
   UpdateAccountStatusPayload,
   UpdateShopStatusPayload,
+  TopCategoryAnalytics,
 } from '@/types'
 import type { ShippingProvider, ShipmentService } from '@/types/shipping.types'
 import type { ImageUrlData } from '@/types/image.types'
@@ -437,6 +438,15 @@ export const adminService = {
     if (normalizedCustomYearly.labels.length > 0) return normalizedCustomYearly
 
     return fetchTodayFallback()
+  },
+
+  /**
+   * Top danh mục theo lượng bán (GET Order service analytics).
+   * Gateway: /api/order/analytics/top-categories?topN= hoặc /api/analytics/top-categories?topN=
+   */
+  getTopCategories: async (topN = 10): Promise<TopCategoryAnalytics[]> => {
+    const raw = await getFirstOkOrEmpty<unknown>(ADMIN_API.ANALYTICS_TOP_CATEGORIES(topN))
+    return coerceArray<TopCategoryAnalytics>(raw)
   },
 
   getAdminShops: async (): Promise<AdminShopDto[]> => {
