@@ -5,18 +5,46 @@
  *   Identity (5010), Shop (5011), Product+Category (5012),
  *   Order (5014), Payment (5015), Shipment (5016)
  *
- * Rule: FE only calls http://localhost:5000 — never direct service ports.
+ * Rule: FE only calls one gateway base (VITE_API_URL) — never paste two hosts in one env.
  * withCredentials: true is mandatory (JWT stored in HttpOnly Cookie).
  */
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+/** Sửa env sai kiểu `https://vercel.app/admin/xxx.onrender.com` → chỉ lấy origin Render + path gateway (theo fallback). */
+function normalizeApiBaseUrl(raw: string | undefined, fallback: string): string {
+  const fb = fallback.trim()
+  const t = (raw ?? '').trim()
+  if (!t) return fb
 
-// Service URLs — all pointing to the unified API Gateway (YARP) on port 5000
-export const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL || API_BASE_URL
-export const SHOP_SERVICE_URL = import.meta.env.VITE_SHOP_SERVICE_URL || API_BASE_URL
-export const PRODUCT_SERVICE_URL = import.meta.env.VITE_PRODUCT_SERVICE_URL || API_BASE_URL
-export const SHIPMENT_SERVICE_URL = import.meta.env.VITE_SHIPMENT_SERVICE_URL || API_BASE_URL
-export const WALLET_SERVICE_URL = import.meta.env.VITE_WALLET_SERVICE_URL || API_BASE_URL
+  let s = t
+  if (!/^https?:\/\//i.test(s)) {
+    s = `https://${s.replace(/^\/+/, '')}`
+  }
+
+  const renderMatch = s.match(/https?:\/\/[a-zA-Z0-9.-]+\.onrender\.com/i)
+  if (renderMatch && s.includes('vercel.app')) {
+    const base = renderMatch[0].replace(/\/$/, '')
+    try {
+      const fbUrl = new URL(fb)
+      const p = fbUrl.pathname && fbUrl.pathname !== '/' ? fbUrl.pathname : '/api'
+      return `${base}${p.startsWith('/') ? p : `/${p}`}`
+    } catch {
+      return `${base}/api`
+    }
+  }
+
+  return s.replace(/\/+$/, '')
+}
+
+const DEFAULT_API_BASE = 'http://localhost:5000/api'
+
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL, DEFAULT_API_BASE)
+
+// Service URLs — mặc định cùng gateway; override từng service chỉ khi biết chắc URL đầy đủ (một origin + path /api).
+export const IDENTITY_SERVICE_URL = normalizeApiBaseUrl(import.meta.env.VITE_IDENTITY_SERVICE_URL, API_BASE_URL)
+export const SHOP_SERVICE_URL = normalizeApiBaseUrl(import.meta.env.VITE_SHOP_SERVICE_URL, API_BASE_URL)
+export const PRODUCT_SERVICE_URL = normalizeApiBaseUrl(import.meta.env.VITE_PRODUCT_SERVICE_URL, API_BASE_URL)
+export const SHIPMENT_SERVICE_URL = normalizeApiBaseUrl(import.meta.env.VITE_SHIPMENT_SERVICE_URL, API_BASE_URL)
+export const WALLET_SERVICE_URL = normalizeApiBaseUrl(import.meta.env.VITE_WALLET_SERVICE_URL, API_BASE_URL)
 
 export const API_ENDPOINTS = {
   // ── Identity Service (5010) ────────────────────────────────────────────────

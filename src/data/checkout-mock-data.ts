@@ -1,3 +1,4 @@
+import { PLACEHOLDER_IMAGE_URL } from '@/constants'
 import { ShopCart, DeliveryAddress, Voucher, CheckoutSummary, ShippingMethod } from './checkout-types'
 
 // Shipping Methods Configuration
@@ -60,7 +61,7 @@ export const MOCK_SHOP_CARTS: ShopCart[] = [
         product_id: 'prod_002',
         shop_id: 'shop_001',
         product_name: 'Ghế Ăn Gỗ Sồi',
-        product_image: 'https://mrseed.s3.amazonaws.com/public2/images/8b2c5f3e-1a9e-4c7d-9e8f-2b3c4d5e6f7g.jpg',
+        product_image: PLACEHOLDER_IMAGE_URL,
         variant_name: 'Màu Sồi Trắng',
         price: 2450000,
         quantity: 4,
@@ -84,7 +85,7 @@ export const MOCK_SHOP_CARTS: ShopCart[] = [
         product_id: 'prod_003',
         shop_id: 'shop_002',
         product_name: 'Sofa Gỗ 3 Chỗ',
-        product_image: 'https://mrseed.s3.amazonaws.com/public2/images/9c3d6e4f-2b1c-4e7d-8f9e-3c4d5e6f7g8h.jpg',
+        product_image: PLACEHOLDER_IMAGE_URL,
         variant_name: 'Đệm Xám, 2.0m',
         price: 12500000,
         quantity: 1,
@@ -95,7 +96,7 @@ export const MOCK_SHOP_CARTS: ShopCart[] = [
         product_id: 'prod_004',
         shop_id: 'shop_002',
         product_name: 'Bàn Sofa Gỗ',
-        product_image: 'https://mrseed.s3.amazonaws.com/public2/images/1d4e7f5g-3c2d-5e8f-9g0h-4d5e6f7g8h9i.jpg',
+        product_image: PLACEHOLDER_IMAGE_URL,
         variant_name: 'Màu Óc Chó, 1.2m',
         price: 4800000,
         quantity: 1,

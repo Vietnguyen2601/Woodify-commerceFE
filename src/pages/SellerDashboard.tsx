@@ -1,4 +1,5 @@
 import React, { ChangeEvent, useMemo, useState } from 'react'
+import { PLACEHOLDER_IMAGE_URL } from '@/constants'
 
 type OrderStatusKey = 'pending' | 'quote' | 'processing' | 'shipping' | 'completed' | 'dispute' | 'packing'
 type WorkKey = 'await_confirm' | 'pack_today' | 'prepare_ship' | 'dispute_queue'

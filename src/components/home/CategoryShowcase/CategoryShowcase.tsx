@@ -1,19 +1,20 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { PLACEHOLDER_IMAGE_URL } from '@/constants'
 
 const categories = [
   {
     id: 'decoration',
     title: 'Trang trí & kiến trúc',
     description: 'Tượng gỗ nghệ thuật, chi tiết, kiến trúc độc đáo',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/e2036c533868084ab01ca4ca64dfc9b4d5bcd6e8?width=1074'
+    image: PLACEHOLDER_IMAGE_URL,
   },
   {
     id: 'furniture',
     title: 'Nội thất đơn giản',
     description: 'Bàn, ghế, kệ thiết kế tinh gọn, hiện đại',
-    image: 'https://api.builder.io/api/v1/image/assets/TEMP/e2036c533868084ab01ca4ca64dfc9b4d5bcd6e8?width=1074'
-  }
+    image: PLACEHOLDER_IMAGE_URL,
+  },
 ]
 
 export default function CategoryShowcase() {

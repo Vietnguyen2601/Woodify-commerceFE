@@ -10,3 +10,5 @@ export {
   DATE_FORMATS 
 } from './ui.constants'
 export { APP_CONFIG } from './app.config'
+export { PLACEHOLDER_IMAGE_URL } from './placeholders'
+export { getProvincesOpenApiBase } from './externalUrls'
