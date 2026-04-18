@@ -6,7 +6,7 @@ import FeaturedCategories from '../components/home/FeaturedCategories'
 import ProductCard from '../components/home/ProductCard'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { imageService, productMasterService, queryKeys } from '@/services'
-import { ROUTES } from '@/constants'
+import { PLACEHOLDER_IMAGE_URL, ROUTES } from '@/constants'
 
 export default function Home() {
   const [activeSlide, setActiveSlide] = React.useState(0)
@@ -54,9 +54,7 @@ export default function Home() {
       originalPrice: undefined as number | undefined,
       rating: p.averageRating ?? 0,
       soldCount: 0,
-      image:
-        p.thumbnailUrl ??
-        'https://api.builder.io/api/v1/image/assets/TEMP/2b187d7da259323f608b11efa987b977ee1bdd99?width=704',
+      image: p.thumbnailUrl ?? PLACEHOLDER_IMAGE_URL,
       storeName: p.shopName ?? undefined,
     }))
   }, [publishedProducts])
