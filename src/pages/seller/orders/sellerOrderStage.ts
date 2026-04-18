@@ -1,6 +1,7 @@
 /**
- * Seller UI: collapse order + shipment into 5 display stages.
- * API/DB enums unchanged — mapping is display-only.
+ * Seller UI: collapse order + shipment into 5 display stages (view model).
+ * API/DB enums unchanged — không phải một chuỗi BE duy nhất: COMPLETED trên đơn
+ * và trạng thái vận đơn là hai trục (xem sellerOrderAxes.ts).
  *
  * @see docs/SELLER_ORDER_STAGE_UI.md
  */
@@ -21,7 +22,7 @@ export const SELLER_STAGE_LABEL_VI: Record<SellerOrderStage, string> = {
   prepare: 'Ch\u1ea9n b\u1ecb \u0111\u01a1n',
   handover: 'B\u00e0n giao v\u1eadn chuy\u1ec3n',
   in_delivery: '\u0110ang giao h\u00e0ng',
-  done: '\u0110\u00e3 giao / ho\u00e0n t\u1ea5t',
+  done: '\u0110\u00e3 giao / k\u1ebft th\u00fac (g\u1ee3i \u00fd hi\u1ec3n th\u1ecb)',
   exception: 'X\u1eed l\u00fd ngo\u1ea1i l\u1ec7',
 }
 

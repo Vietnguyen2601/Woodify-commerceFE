@@ -6,6 +6,7 @@ import {
   ORDER_STATUSES_ALLOW_CREATE_SHIPMENT,
   SHIP_QUERY_KEY,
   canMarkPickup,
+  hasNonTerminalShipment,
   shipmentStatusBadgeClass,
   shipmentStatusLabel,
   suggestedNextShipmentStatuses,
@@ -14,6 +15,36 @@ import {
 function errMsg(e: unknown): string {
   if (typeof e === 'object' && e !== null && 'message' in e) return String((e as { message: string }).message)
   return 'Không thực hiện được. Vui lòng thử lại.'
+}
+
+function getErrStatus(e: unknown): number | undefined {
+  if (typeof e === 'object' && e !== null && 'status' in e) {
+    const s = (e as { status: unknown }).status
+    return typeof s === 'number' ? s : undefined
+  }
+  return undefined
+}
+
+const CREATE_RETRY_DELAYS_MS = [800, 1600, 3200]
+
+function shouldRetryCreateShipment400(message: string): boolean {
+  const m = message.toLowerCase()
+  if (m.includes('validation') || m.includes('invalid') || m.includes('required field')) return false
+  return (
+    m.includes('cache') ||
+    m.includes('shipmentservice') ||
+    m.includes('order.created') ||
+    m.includes('order') ||
+    m.includes('created') ||
+    m.includes('sync') ||
+    m.includes('chưa') ||
+    m.includes('not found') ||
+    m.length < 4
+  )
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
 }
 
 function formatVnd(amount: number): string {
@@ -35,7 +66,6 @@ function formatDt(iso: string | null | undefined): string {
   }
 }
 
-/** Ưu tiên tên từ API; không có thì tra `providerCode` → danh sách provider (providerId). */
 function resolveShippingProviderLabel(
   shipment: ShipmentDto,
   providers: { providerId: string; name: string }[],
@@ -51,20 +81,23 @@ function resolveShippingProviderLabel(
 type Props = {
   shopId: string
   order: SellerOrder
-  /** Latest non-terminal shipment for this order, if any */
   shipment: ShipmentDto | null
   compact?: boolean
   onToast?: (ok: boolean, msg: string) => void
 }
 
+/**
+ * Thao tác vận đơn bổ sung sau khi đổi trạng thái đơn (UpdateStatus + orchestrate tạo vận đơn ở AllOrders).
+ * Dùng khi cần lấy hàng, chuyển bước vận chuyển, hoặc tạo tay nếu tự động thất bại.
+ */
 export default function ShipmentSellerPanel({ shopId, order, shipment, compact, onToast }: Props) {
   const queryClient = useQueryClient()
   const { data: providersData } = useQuery({
     queryKey: ['shipping-providers', 'list'],
-    queryFn: () => providerService.getProviders({ page: 1, limit: 100 }),
+    queryFn: () => providerService.getAllProviders(),
     staleTime: 5 * 60 * 1000,
   })
-  const providers = providersData?.providers?.filter((p) => p.isActive !== false) ?? []
+  const providers = providersData?.filter((p) => p.isActive !== false) ?? []
   const providerDisplayName = React.useMemo(
     () => (shipment ? resolveShippingProviderLabel(shipment, providers) : null),
     [shipment, providers],
@@ -80,17 +113,47 @@ export default function ShipmentSellerPanel({ shopId, order, shipment, compact, 
   }
 
   const createMu = useMutation({
-    mutationFn: () =>
-      shipmentService.createShipment({
+    mutationFn: async () => {
+      const body = {
         shopId,
         orderId: order.orderId,
         providerServiceCode: order.providerServiceCode ?? undefined,
-      }),
+      }
+      const maxAttempts = 1 + CREATE_RETRY_DELAYS_MS.length
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          return await shipmentService.createShipment(body)
+        } catch (e) {
+          const st = getErrStatus(e)
+          if (st === 409) throw e
+          const msg = errMsg(e)
+          const canRetry =
+            st === 400 && attempt < maxAttempts - 1 && shouldRetryCreateShipment400(msg)
+          if (canRetry) {
+            await sleep(CREATE_RETRY_DELAYS_MS[attempt]!)
+            continue
+          }
+          throw e
+        }
+      }
+      throw new Error('Không tạo được vận đơn.')
+    },
     onSuccess: () => {
       invalidate()
       onToast?.(true, 'Đã tạo vận đơn.')
     },
-    onError: (e) => onToast?.(false, errMsg(e)),
+    onError: (e) => {
+      const st = getErrStatus(e)
+      if (st === 409) {
+        invalidate()
+        onToast?.(
+          false,
+          'Đã có vận đơn đang hoạt động cho đơn này (409). Đã làm mới dữ liệu.',
+        )
+        return
+      }
+      onToast?.(false, errMsg(e))
+    },
   })
 
   const pickupMu = useMutation({
@@ -136,9 +199,7 @@ export default function ShipmentSellerPanel({ shopId, order, shipment, compact, 
   const ost = (order.status || '').toUpperCase()
   const sst = (shipment?.status || '').toUpperCase()
 
-  const hasLiveShipment =
-    shipment &&
-    !['DELIVERED', 'RETURNED', 'CANCELLED'].includes((shipment.status || '').toUpperCase())
+  const hasLiveShipment = hasNonTerminalShipment(shipment)
 
   const canCreate =
     !hasLiveShipment && ORDER_STATUSES_ALLOW_CREATE_SHIPMENT.has(ost)
@@ -180,14 +241,19 @@ export default function ShipmentSellerPanel({ shopId, order, shipment, compact, 
 
   const panelBody = (
     <>
+      <p className='text-xs text-stone-600'>
+        Ở bước Sẵn sàng giao hàng, nút trên danh sách đã gộp: tạo vận đơn (nếu chưa có) rồi chuyển đơn sang Đang
+        giao. Phần dưới dùng cho lấy hàng, chuyển bước vận chuyển, hoặc tạo tay nếu tự động lỗi.
+      </p>
+
       {!shipment && (
-        <p className='text-xs text-stone-600'>
-          Chưa có vận đơn. Khi đơn ở trạng thái sẵn sàng giao, hãy tạo vận đơn để ĐVVC lấy hàng.
+        <p className='mt-2 text-xs text-stone-600'>
+          Chưa có vận đơn trên danh sách — có thể đợi làm mới sau khi đổi trạng thái đơn, hoặc tạo tay bên dưới.
         </p>
       )}
 
       {shipment && (
-        <div className='space-y-2 text-xs text-stone-700'>
+        <div className='mt-2 space-y-2 text-xs text-stone-700'>
           <div className='flex flex-wrap items-center gap-2'>
             <span className='font-mono text-[11px] text-stone-500'>{shipment.shipmentId}</span>
             <span

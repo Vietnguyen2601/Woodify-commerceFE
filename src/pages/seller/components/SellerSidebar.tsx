@@ -29,9 +29,7 @@ const NAV_GROUPS: SellerNavGroup[] = [
     id: 'orders',
     label: 'Qu\u1ea3n L\u00fd \u0110\u01a1n H\u00e0ng',
     links: [
-      { label: 'T\u1ea5t c\u1ea3', to: '/seller/orders' },
-      { label: 'Giao h\u00e0ng lo\u1ea1t', to: '/seller/orders/bulk-shipping' },
-      { label: 'B\u00e0n giao \u0111\u01a1n h\u00e0ng', to: '/seller/orders/handover' },
+      { label: 'T\u1ea5t c\u1ea3 \u0111\u01a1n & v\u1eadn chuy\u1ec3n', to: '/seller/orders' },
       { label: 'Tr\u1ea3 h\u00e0ng / Ho\u00e0n ti\u1ec1n', to: '/seller/orders/returns' }
     ]
   },

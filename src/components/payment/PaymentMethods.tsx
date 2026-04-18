@@ -11,7 +11,7 @@ interface PaymentMethodsProps {
 const paymentOptions = [
   {
     id: 'momo',
-    label: 'Ví điện tử Momo',
+    label: 'Ví người dùng',
     description: 'Thanh toán bằng ví Momo',
     icon: 'momo',
   },

@@ -3,8 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import SellerLayout from './components/SellerLayout'
 import SellerHome from './dashboard/SellerHome'
 import AllOrders from './orders/AllOrders'
-import BulkShipping from './orders/BulkShipping'
-import Handover from './orders/Handover'
 import Returns from './orders/Returns'
 import ProductList from './products/ProductList'
 import AddProduct from './products/AddProduct'
@@ -21,8 +19,8 @@ export default function SellerDashboard() {
         <Route index element={<SellerHome />} />
 
         <Route path='orders' element={<AllOrders />} />
-        <Route path='orders/bulk-shipping' element={<BulkShipping />} />
-        <Route path='orders/handover' element={<Handover />} />
+        <Route path='orders/bulk-shipping' element={<Navigate to='/seller/orders' replace />} />
+        <Route path='orders/handover' element={<Navigate to='/seller/orders' replace />} />
         <Route path='orders/returns' element={<Returns />} />
         <Route path='products' element={<ProductList />} />
         <Route path='products/add' element={<AddProduct />} />

@@ -138,8 +138,14 @@ export default function ShopDetailPage() {
                 : stableSold(p.productId),
           price: typeof extra.price === 'number' ? extra.price : 0,
           originalPrice: extra.originalPrice,
-          rating: extra.rating,
-          reviewCount: extra.reviewCount,
+          rating:
+            typeof p.averageRating === 'number' && !Number.isNaN(p.averageRating)
+              ? p.averageRating
+              : undefined,
+          reviewCount:
+            typeof p.reviewCount === 'number' && !Number.isNaN(p.reviewCount)
+              ? p.reviewCount
+              : undefined,
         }
       })
   }, [shopProductsData, resolvedShopId])
