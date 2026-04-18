@@ -133,7 +133,7 @@ export default function Register() {
   const isUsernameValid = trimmedUsername.length >= 3
   const isPhoneValid = PHONE_PATTERN.test(normalizedPhone)
 
-  function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!EMAIL_PATTERN.test(email)) {
       setEmailError('Email không hợp lệ')
@@ -141,30 +141,31 @@ export default function Register() {
     }
     setEmailError('')
     setIsSendingCode(true)
-    
-    // Fake wait: jump to step 2 after 1 second without waiting for API
-    window.setTimeout(() => {
-      setIsSendingCode(false)
+
+    try {
+      const { authService } = await import('@/services/auth.service')
+      await authService.sendOtp({ email: email.trim() })
       setEmailExists(false)
       setStep(2)
-    }, 1000)
-    
-    // Call API in background (don't wait for it)
-    import('@/services/auth.service').then(({ authService }) => {
-      authService.sendOtp({ email })
-        .catch((err) => {
-          const errorMessage = err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.'
-          console.error('Send OTP error:', errorMessage)
-          
-          if (errorMessage.toLowerCase().includes('exists')) {
-            setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
-            setEmailExists(true)
-            setStep(1)
-          } else {
-            console.warn('OTP sent but API failed. User can retry from OTP screen.')
-          }
-        })
-    })
+    } catch (err: any) {
+      const errorMessage =
+        String(err?.message || err?.data?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.').toLowerCase()
+      const isExistingEmail =
+        errorMessage.includes('exists') ||
+        errorMessage.includes('already') ||
+        errorMessage.includes('đã tồn tại') ||
+        errorMessage.includes('đã đăng ký')
+
+      if (isExistingEmail) {
+        setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
+        setEmailExists(true)
+        setStep(1)
+      } else {
+        setEmailError('Không gửi được mã xác minh. Vui lòng thử lại.')
+      }
+    } finally {
+      setIsSendingCode(false)
+    }
   }
 
   function handleEmailChange(value: string) {
@@ -225,13 +226,19 @@ export default function Register() {
     })
   }
 
-  function handleResend() {
+  async function handleResend() {
     if (timer > 0 || resendCount >= MAX_RESEND) return
-    setResendCount((prev) => prev + 1)
-    setTimer(60)
-    setOtpDigits(Array(OTP_LENGTH).fill(''))
-    setOtpError('Mã mới đã được gửi. Vui lòng kiểm tra hộp thư.')
-    otpRefs.current[0]?.focus()
+    try {
+      const { authService } = await import('@/services/auth.service')
+      await authService.sendOtp({ email: email.trim() })
+      setResendCount((prev) => prev + 1)
+      setTimer(60)
+      setOtpDigits(Array(OTP_LENGTH).fill(''))
+      setOtpError('Mã mới đã được gửi. Vui lòng kiểm tra hộp thư.')
+      otpRefs.current[0]?.focus()
+    } catch {
+      setOtpError('Không thể gửi lại mã lúc này. Vui lòng thử lại sau.')
+    }
   }
 
   const formattedTimer = `00:${String(Math.max(timer, 0)).padStart(2, '0')}`
