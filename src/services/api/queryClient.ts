@@ -102,6 +102,7 @@ export const queryKeys = {
       [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'top-categories', topN] as const,
     categories: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'categories'] as const,
     banners: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'banners'] as const,
+    withdrawalTickets: () => [APP_CONFIG.QUERY_KEYS.ADMIN_DASHBOARD, 'withdrawal-tickets'] as const,
   },
 
   // Admin shortcuts

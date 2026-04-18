@@ -332,4 +332,26 @@ export const ADMIN_API = {
       `/order/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
       `/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
     ] as const,
+  /**
+   * Seller withdrawal tickets (net shop wallet → payout). Backend contract TBD;
+   * FE tries paths in order and treats 404 on all as empty list.
+   */
+  WITHDRAWALS: {
+    LIST: [
+      '/wallets/withdrawal-requests',
+      '/wallets/admin/withdrawal-requests',
+      '/wallet/admin/withdrawal-requests',
+      '/payment/admin/withdrawal-requests',
+    ],
+    APPROVE: (id: string) => [
+      `/wallets/withdrawal-requests/${encodeURIComponent(id)}/approve`,
+      `/wallets/admin/withdrawal-requests/${encodeURIComponent(id)}/approve`,
+      `/payment/admin/withdrawal-requests/${encodeURIComponent(id)}/approve`,
+    ],
+    REJECT: (id: string) => [
+      `/wallets/withdrawal-requests/${encodeURIComponent(id)}/reject`,
+      `/wallets/admin/withdrawal-requests/${encodeURIComponent(id)}/reject`,
+      `/payment/admin/withdrawal-requests/${encodeURIComponent(id)}/reject`,
+    ],
+  },
 } as const
