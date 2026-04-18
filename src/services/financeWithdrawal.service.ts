@@ -83,6 +83,8 @@ function buildListUrl(params: ListAdminWithdrawalsParams): string {
   const q = new URLSearchParams()
   q.set('page', String(page))
   q.set('pageSize', String(pageSize))
+  /** Một số bản BE chỉ đọc `maxRows` — gửi kèm để tương thích với `/wallets/admin/withdrawals/all` */
+  q.set('maxRows', '10000')
   const st = params.status?.trim()
   if (st) q.set('status', st)
   return `${ADMIN_API.WITHDRAWALS.LIST}?${q.toString()}`
