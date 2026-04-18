@@ -9,12 +9,13 @@ import { PaymentMethods } from '../components/payment/PaymentMethods';
 import { OrderSummary } from '../components/payment/OrderSummary';
 import { CartItem, OrderSummary as OrderSummaryType } from '../types/payment.types';
 import { paymentFormSchema, PaymentFormSchema } from '../utils/validation.schema';
+import { PLACEHOLDER_IMAGE_URL } from '@/constants';
 
 const mockCartItems: CartItem[] = [
   {
     id: '1',
     name: 'Ghế gỗ tự nhiên cao cấp',
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&h=200&fit=crop',
+    image: PLACEHOLDER_IMAGE_URL,
     currentPrice: 5900000,
     originalPrice: 7500000,
     quantity: 1,
@@ -22,7 +23,7 @@ const mockCartItems: CartItem[] = [
   {
     id: '2',
     name: 'Bàn gỗ hình chữ nhật',
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&h=200&fit=crop',
+    image: PLACEHOLDER_IMAGE_URL,
     currentPrice: 8900000,
     originalPrice: 11500000,
     quantity: 1,
@@ -30,7 +31,7 @@ const mockCartItems: CartItem[] = [
   {
     id: '3',
     name: 'Tủ gỗ lưu trữ',
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&h=200&fit=crop',
+    image: PLACEHOLDER_IMAGE_URL,
     currentPrice: 3500000,
     originalPrice: 4200000,
     quantity: 1,

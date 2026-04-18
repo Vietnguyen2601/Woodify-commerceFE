@@ -1,9 +1,8 @@
 import type { District, DistrictWithWards, Province, ProvinceWithDistricts, Ward } from './types'
-
-const BASE_URL = 'https://provinces.open-api.vn/api/v1'
+import { getProvincesOpenApiBase } from '@/constants/externalUrls'
 
 async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, { signal })
+  const response = await fetch(`${getProvincesOpenApiBase()}${path}`, { signal })
 
   if (!response.ok) {
     throw new Error(`Province API request failed for ${path}`)
