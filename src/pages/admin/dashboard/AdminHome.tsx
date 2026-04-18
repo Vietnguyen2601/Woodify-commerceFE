@@ -407,11 +407,6 @@ export default function AdminHome() {
           <header className='admin-home__panel-head'>
             <div>
               <h2>{isVietnamese ? 'Biểu đồ 2' : 'Chart 2'}</h2>
-              <p>
-                {isVietnamese
-                  ? 'Top danh mục theo lượt mua (GET /order/analytics/top-categories)'
-                  : 'Top categories by units sold (GET /order/analytics/top-categories)'}
-              </p>
             </div>
           </header>
           <div className='rounded-xl border border-gray-100 bg-white p-4 shadow-sm'>
