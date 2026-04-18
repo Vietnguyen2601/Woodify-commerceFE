@@ -83,7 +83,7 @@ export default function SellerLayout() {
                   <p className='text-xs font-semibold uppercase tracking-wider text-stone-500'>Woodify Seller Center</p>
                   <div className='flex items-center gap-3'>
                     <h1 className='text-lg font-semibold text-stone-900'>{shop.name}</h1>
-                    <span className='rounded-md bg-amber-800 px-2 py-0.5 text-[11px] font-medium text-white'>Beta</span>
+                    <span className='rounded-md bg-amber-800 px-2 py-0.5 text-[11px] font-medium text-white'>Alpha</span>
                   </div>
                 </div>
               </div>

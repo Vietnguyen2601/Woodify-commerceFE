@@ -77,6 +77,10 @@ export const queryKeys = {
       [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'analytics'] as const,
     bankAccount: (shopId: string) =>
       [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'bank-account', shopId] as const,
+    wallet: (accountId: string) =>
+      [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'wallet', accountId] as const,
+    walletTransactions: (accountId: string, page: number, pageSize: number) =>
+      [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'wallet-transactions', accountId, page, pageSize] as const,
     revenueTrend: (shopId: string, days: number) =>
       [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'revenue-trend', shopId, days] as const,
     topSellingProducts: (shopId: string, limit: number) =>
