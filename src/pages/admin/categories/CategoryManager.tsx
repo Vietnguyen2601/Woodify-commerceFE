@@ -96,9 +96,9 @@ export default function CategoryManager() {
       metricsActive: isVietnamese ? 'Đang hoạt động' : 'Active categories',
       rootSectionTitle: isVietnamese ? 'Danh mục gốc' : 'Root categories',
       rootSectionDesc: isVietnamese
-        ? '6 thẻ ngang. Cuộn để xem thêm hoặc chọn bằng dropdown.'
-        : 'Six cards across. Scroll to see more or pick from the dropdown.',
-      rootCountLabel: isVietnamese ? 'Danh muc sản phẩm' : 'Category',
+        ? 'Tối đa 5 ô mỗi hàng, tự xuống dòng. Có thể chọn nhanh bằng dropdown.'
+        : 'Up to five cards per row, then wraps. You can also pick from the dropdown.',
+      rootCountLabel: isVietnamese ? 'Danh mục sản phẩm' : 'Category',
       rootLoadError: isVietnamese ? 'Không thể tải danh mục. Vui lòng thử lại.' : 'Unable to load categories. Please try again.',
       rootEmpty: isVietnamese
         ? 'Không có danh mục gốc phù hợp với bộ lọc hiện tại.'
@@ -472,20 +472,32 @@ export default function CategoryManager() {
       </div>
 
       {isCreateFormOpen && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4'>
-          <div className='relative w-full max-w-xl'>
-            <button
-              type='button'
-              onClick={closeCreateForm}
-              className='absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow hover:text-gray-800'
-              aria-label={isVietnamese ? 'Đóng form tạo danh mục' : 'Close category form'}
-            >
-              <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
-                <path d='M6 6l12 12M18 6l-12 12' strokeLinecap='round' />
-              </svg>
-            </button>
+        <div
+          className='fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4'
+          role='presentation'
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeCreateForm()
+          }}
+        >
+          <div className='relative w-full max-w-3xl'>
+            <div className='mb-2 flex justify-end'>
+              <button
+                type='button'
+                onClick={closeCreateForm}
+                className='inline-flex items-center gap-2 rounded-xl border-2 border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-800 shadow-md transition hover:border-stone-500 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2'
+                aria-label={isVietnamese ? 'Đóng cửa sổ tạo danh mục' : 'Close create category dialog'}
+              >
+                <span>{isVietnamese ? 'Đóng' : 'Close'}</span>
+                <span className='inline-flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-white' aria-hidden>
+                  <svg className='h-4 w-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
+                    <path d='M6 6l12 12M18 6l-12 12' strokeLinecap='round' />
+                  </svg>
+                </span>
+              </button>
+            </div>
 
             <CategoryCreateForm
+              key={createParentId ?? 'new-root'}
               parentOptions={categories}
               defaultParentId={createParentId}
               onSuccess={handleCreateSuccess}
@@ -587,11 +599,14 @@ interface RootCategoryGridProps {
 function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, texts, onSelect }: RootCategoryGridProps) {
   if (isLoading) {
     return (
-      <div className='overflow-x-auto pb-2'>
-        <div className='flex min-w-max gap-3'>
-        {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className='h-28 w-[180px] shrink-0 rounded-lg border border-dashed border-gray-200 bg-gray-50 animate-pulse' />
-        ))}
+      <div className='pb-2'>
+        <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className='h-28 min-w-0 rounded-lg border border-dashed border-gray-200 bg-gray-50 animate-pulse'
+            />
+          ))}
         </div>
       </div>
     )
@@ -602,8 +617,8 @@ function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, tex
   }
 
   return (
-    <div className='overflow-x-auto pb-2'>
-      <div className='flex min-w-max gap-3'>
+    <div className='pb-2'>
+      <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'>
         {categories.map((category) => {
           const isSelected = selectedId === category.categoryId
           const isHighlighted = highlightIds.has(category.categoryId)
@@ -613,7 +628,7 @@ function RootCategoryGrid({ categories, selectedId, highlightIds, isLoading, tex
               id={`root-card-${category.categoryId}`}
               type='button'
               onClick={() => onSelect(category.categoryId)}
-              className={`flex h-28 w-[180px] shrink-0 flex-col overflow-hidden !rounded-xl border !px-3 !py-2.5 text-left transition duration-150 ${
+              className={`flex h-28 min-w-0 w-full flex-col overflow-hidden !rounded-xl border !px-3 !py-2.5 text-left transition duration-150 ${
                 isSelected
                   ? 'border-stone-900 bg-gradient-to-br from-stone-900 to-stone-800 text-white shadow-md ring-1 ring-[#e8dccd] ring-offset-1 ring-offset-white'
                   : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-[#fdfaf5] hover:shadow-sm'

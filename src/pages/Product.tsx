@@ -37,8 +37,6 @@ function writeCheckoutFromItems(accountId: string, selectedItems: CartItemDto[])
 const PRODUCT_DETAIL_FALLBACK =
   'Bàn làm việc gỗ óc chó cao cấp với thiết kế hiện đại, tối giản. Được chế tác từ 100% gỗ óc chó tự nhiên, bề mặt xử lý chống trầy xước và chống nước. Phù hợp cho không gian làm việc tại nhà hoặc văn phòng.'
 
-const DISPLAY_SOLD = 456
-
 const reviewFilters = ['Tất cả', '5 sao', '4 sao', '3 sao', 'Có ảnh']
 
 function reviewerDisplayName(accountId: string): string {
@@ -432,7 +430,9 @@ export default function Product() {
                     <span className="font-['Inter'] text-sm text-black/55">Chưa có đánh giá</span>
                   )}
                   <span className='product-rating__divider' aria-hidden />
-                  <span className='product-rating__sold'>Đã bán <strong>{DISPLAY_SOLD}</strong></span>
+                  <span className='product-rating__sold'>
+                    Đã bán <strong>{product.sales ?? 0}</strong>
+                  </span>
                 </div>
 
                 {selectedVersion && (
@@ -758,7 +758,6 @@ export default function Product() {
                       <span><strong>{shop.totalProducts}</strong> Sản phẩm</span>
                       <span><strong>{shop.totalOrders}</strong> Đơn hàng</span>
                       <span><strong>{shop.reviewCount}</strong> Đánh giá</span>
-                      <span><strong>98%</strong> Phản hồi</span>
                       <span><strong>{shopJoinYear}</strong> Tham gia</span>
                     </div>
                   </div>
@@ -793,6 +792,9 @@ export default function Product() {
                         <div className='product-related-figma__body min-w-0'>
                           <p className='product-related-figma__name'>{item.name}</p>
                           <p className='product-related-figma__price'>{item.price.toLocaleString('vi-VN')}₫</p>
+                          <p className='m-0 mt-0.5 font-["Inter"] text-[11px] text-black/45'>
+                            Đã bán {item.sales ?? 0}
+                          </p>
                         </div>
                       </Link>
                     </li>

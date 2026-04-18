@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import type { AxiosError } from 'axios'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../../constants/routes'
+import { ROUTES, EXTERNAL_LINKS } from '../../../constants/routes'
 import woodifyLogo from '../../../assets/logo/Woodify.jpg'
 import { Icon } from '../../ui'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -91,13 +91,25 @@ export default function Header({ cartItemCount = 0 }: HeaderProps) {
         <div className="flex items-center gap-3 lg:gap-4">
           {/* Social Icons */}
           <div className="hidden lg:flex items-center gap-3">
-            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên Facebook">
+            <a
+              href={EXTERNAL_LINKS.FACEBOOK_WOODIFY}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-80 transition"
+              aria-label="Woodify trên Facebook (mở tab mới)"
+            >
               <Icon name="facebook" size={20} strokeWidth={1.8} decorative className="text-white" />
             </a>
             <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên Instagram">
               <Icon name="instagram" size={20} strokeWidth={1.8} decorative className="text-white" />
             </a>
-            <a href="#" className="hover:opacity-80 transition" aria-label="Woodify trên TikTok">
+            <a
+              href={EXTERNAL_LINKS.TIKTOK_WOODIFY}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-80 transition"
+              aria-label="Woodify trên TikTok (mở tab mới)"
+            >
               <Icon name="tiktok" size={20} strokeWidth={1.8} decorative className="text-white" />
             </a>
           </div>

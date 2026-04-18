@@ -138,6 +138,8 @@ export interface ProductMasterDto {
   status?: string
   moderationStatus?: string
   stockQuantity?: number
+  /** Lượt bán (BE ProductMaster.Sales) */
+  sales?: number | null
   createdDate?: string
   createdAt?: string
   isArchived?: boolean

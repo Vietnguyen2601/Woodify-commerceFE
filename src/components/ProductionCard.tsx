@@ -108,7 +108,7 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
               {rating}
             </span>
             <span className='production-card__review-count'>({reviewCount})</span>
-            <span className='production-card__sold'>Đã bán {product.soldCount || 456}</span>
+            <span className='production-card__sold'>Đã bán {product.soldCount ?? 0}</span>
           </div>
         </div>
       </div>

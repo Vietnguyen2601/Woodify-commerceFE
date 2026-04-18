@@ -6,41 +6,31 @@ import { ROUTES } from '@/constants'
 import type { ImageUrlData } from '@/types'
 import Reveal from '@/components/animations/Reveal'
 
-function formatDateVi(iso: string | undefined): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
-function AdCard({ item, index }: { item: ImageUrlData; index: number }) {
+function AdBanner({ item, index }: { item: ImageUrlData; index: number }) {
   const url = item.originalUrl != null ? String(item.originalUrl).trim() : ''
   const delayMs = Math.min(index * 70, 560)
 
   return (
     <Reveal delayMs={delayMs}>
-      <article className='group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_12px_40px_-24px_rgba(0,0,0,0.25)] transition-shadow duration-300 hover:shadow-[0_20px_50px_-28px_rgba(61,37,14,0.35)]'>
-        <div className='relative aspect-[16/10] overflow-hidden bg-stone-200'>
+      <article
+        className='group w-full overflow-hidden rounded-2xl border border-stone-200/60 bg-stone-100/80'
+        style={{
+          boxShadow:
+            '0 28px 56px -20px rgba(61, 37, 14, 0.45), 0 14px 32px -18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255,255,255,0.4) inset',
+        }}
+      >
+        <div className='relative w-full overflow-hidden bg-stone-200 aspect-[21/9] min-h-[140px] sm:min-h-[180px] sm:aspect-[2.4/1]'>
           {url ? (
             <img
               src={url}
               alt=''
-              className='h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]'
+              className='h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]'
             />
           ) : (
-            <div className='flex h-full w-full items-center justify-center text-sm text-stone-500'>Không có ảnh</div>
+            <div className='flex h-full min-h-[140px] w-full items-center justify-center text-sm text-stone-500'>
+              Không có ảnh
+            </div>
           )}
-        </div>
-        <div className='border-t border-stone-100 px-4 py-3'>
-          <p className='font-["Inter"] text-sm font-semibold text-stone-900'>
-            Ưu đãi & quảng cáo
-            {item.sortOrder != null ? (
-              <span className='ml-2 font-normal text-stone-500'>#{item.sortOrder}</span>
-            ) : null}
-          </p>
-          <p className='mt-1 font-["Arimo",sans-serif] text-xs text-stone-500'>Cập nhật {formatDateVi(item.createdAt)}</p>
         </div>
       </article>
     </Reveal>
@@ -74,10 +64,6 @@ export default function PromotionsPage() {
         <Reveal delayMs={80}>
           <header className='mb-10 max-w-2xl'>
             <h1 className='font-["Inter"] text-[28px] font-extrabold text-stone-900 sm:text-[24px]'>Khuyến mãi & quảng cáo</h1>
-            <p className='mt-3 font-["Arimo",sans-serif] text-base leading-relaxed text-stone-700'>
-              Các chương trình ưu đãi và hình ảnh quảng cáo được cập nhật trên Woodify. Nội dung lấy từ hệ thống (imageType{' '}
-              <span className='font-mono text-sm'>ADS</span>).
-            </p>
           </header>
         </Reveal>
 
@@ -103,17 +89,13 @@ export default function PromotionsPage() {
         )}
 
         {isLoading && (
-          <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className='flex flex-col gap-8'>
+            {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className='animate-pulse overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100/80'
+                className='animate-pulse overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100/80 shadow-[0_24px_48px_-22px_rgba(61,37,14,0.35)]'
               >
-                <div className='aspect-[16/10] bg-stone-200' />
-                <div className='space-y-2 px-4 py-3'>
-                  <div className='h-4 w-2/3 rounded bg-stone-200' />
-                  <div className='h-3 w-1/3 rounded bg-stone-200' />
-                </div>
+                <div className='aspect-[21/9] min-h-[140px] bg-stone-200 sm:min-h-[180px]' />
               </div>
             ))}
           </div>
@@ -134,11 +116,9 @@ export default function PromotionsPage() {
         )}
 
         {!isLoading && !isError && items.length > 0 && (
-          <div
-            className={`grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 ${isFetching && !isLoading ? 'opacity-90' : ''}`}
-          >
+          <div className={`flex w-full flex-col gap-10 ${isFetching && !isLoading ? 'opacity-90' : ''}`}>
             {items.map((item, index) => (
-              <AdCard key={item.imageId} item={item} index={index} />
+              <AdBanner key={item.imageId} item={item} index={index} />
             ))}
           </div>
         )}
