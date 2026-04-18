@@ -333,6 +333,13 @@ export const ADMIN_API = {
       `/images/${encodeURIComponent(id)}`,
     ],
   },
+  /** Wallet — admin duyệt rút tiền seller (`financeWithdrawal.service`) */
+  WITHDRAWALS: {
+    LIST: '/wallets/admin/withdrawals/all',
+    APPROVE: (ticketId: string) => `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/approve`,
+    REJECT: (ticketId: string) => `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/reject`,
+    MARK_PAID: (ticketId: string) => `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/mark-paid`,
+  },
   /** Order service (5014) — GET top categories (gateway: /api/order/analytics/...) */
   ANALYTICS_TOP_CATEGORIES: (topN: number) =>
     [
