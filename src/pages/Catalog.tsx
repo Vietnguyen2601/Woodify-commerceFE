@@ -72,7 +72,7 @@ export default function Catalog() {
       originalPrice: undefined,
       rating: undefined,
       reviewCount: undefined,
-      soldCount: undefined,
+      soldCount: typeof p.sales === 'number' ? p.sales : undefined,
       location: undefined,
       discount: undefined,
       isFeatured: false,

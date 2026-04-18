@@ -2,6 +2,7 @@ import React from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { ROUTES } from './constants/routes'
 import Home from './pages/Home'
+import PromotionsPage from './pages/PromotionsPage'
 import Catalog from './pages/Catalog'
 import Product from './pages/Product'
 import ShopDetailPage from './pages/shop/ShopDetailPage'
@@ -44,8 +45,10 @@ export default function App() {
   const isProductDetailPage = location.pathname.startsWith('/product/')
   const isCartPage = location.pathname === '/cart'
   const isCheckoutPage = location.pathname === '/checkout'
+  const isPromotionsPage = location.pathname === ROUTES.PROMOTIONS
   const isFullBleedRoute =
     location.pathname === '/' ||
+    isPromotionsPage ||
     isShopPublicPage ||
     isProductDetailPage ||
     isCartPage ||
@@ -74,6 +77,7 @@ export default function App() {
       <main className={isFullBleedRoute ? 'app-full-bleed' : 'container'}>
         <Routes>
           <Route path='/' element={<Home />} />
+          <Route path={ROUTES.PROMOTIONS} element={<PromotionsPage />} />
           <Route path='/catalog' element={<Catalog />} />
           <Route path='/product/:id' element={<Product />} />
           <Route path={ROUTES.SHOP_PREVIEW} element={<Navigate to={ROUTES.CATALOG} replace />} />

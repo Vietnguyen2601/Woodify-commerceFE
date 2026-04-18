@@ -67,3 +67,17 @@ export interface WorkTile {
   severity: 'high' | 'medium' | 'low'
   filterKey: OrderStatusKey | WorkKey | 'all'
 }
+
+/** Một dòng trong analytics top-selling-products (Order service) */
+export interface TopSellingProduct {
+  rank: number
+  productId: string
+  unitsSold: number
+  productName: string
+  productStatus: string
+  thumbnailUrl: string | null
+  versionId: string
+  sellerSku: string
+  shopId: string
+  shopName: string
+}

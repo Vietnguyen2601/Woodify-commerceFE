@@ -9,6 +9,8 @@ import { buildProductPathSegment } from '@/utils/productUrl'
 export const ROUTES = {
   // Public routes
   HOME: '/',
+  /** Khuyến mãi / quảng cáo — ảnh ADS từ API */
+  PROMOTIONS: '/promotions',
   CATALOG: '/catalog',
   /** `productName` nên truyền — URL dạng `/product/ten-sp--hex8` thay vì lộ UUID. */
   PRODUCT: (productId: string, productName?: string | null) =>
@@ -57,6 +59,12 @@ export const ROUTES = {
   ADMIN_ORDERS: '/admin/orders',
   ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_MARKETING: '/admin/marketing',
+} as const
+
+/** Liên kết ngoài (mạng xã hội, v.v.) — dùng với `<a target="_blank" rel="noopener noreferrer">` */
+export const EXTERNAL_LINKS = {
+  FACEBOOK_WOODIFY: 'https://www.facebook.com/profile.php?id=61586575153862',
+  TIKTOK_WOODIFY: 'https://www.tiktok.com/@woodifyteam?_r=1&_t=ZS-95dRsq7iTT6',
 } as const
 
 export type RouteKey = keyof typeof ROUTES

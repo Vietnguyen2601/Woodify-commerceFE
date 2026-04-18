@@ -44,15 +44,24 @@ export function CategoryTreeSelect({ value, onChange, placeholder = 'Select a ca
 
   const debouncedSearch = useDebounce(searchValue.trim(), SEARCH_DELAY)
 
+  const coerceCategoryArray = (raw: unknown): CategoryDTO[] => {
+    if (Array.isArray(raw)) return raw as CategoryDTO[]
+    if (raw && typeof raw === 'object' && 'data' in raw) {
+      const data = (raw as { data?: unknown }).data
+      if (Array.isArray(data)) return data as CategoryDTO[]
+    }
+    return []
+  }
+
   useEffect(() => {
     let ignore = false
     setIsLoading(true)
 
     categoryService
       .getAllCategories()
-      .then(({ data }) => {
+      .then((res) => {
         if (ignore) return
-        setCategories(data ?? [])
+        setCategories(coerceCategoryArray(res))
       })
       .catch(() => {
         if (!ignore) setCategories([])
@@ -148,9 +157,10 @@ export function CategoryTreeSelect({ value, onChange, placeholder = 'Select a ca
 
     categoryService
       .searchCategoryByName(debouncedSearch)
-      .then(({ data }) => {
+      .then((res) => {
         if (ignore) return
-        const matches = normalizeSearchResponse(data)
+        const payload = Array.isArray(res) ? res : (res as any)?.data
+        const matches = normalizeSearchResponse(payload)
         const ids = new Set(matches.map((cat) => cat.categoryId))
         setApiMatchIds(ids)
 

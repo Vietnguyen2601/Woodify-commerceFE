@@ -41,8 +41,6 @@ export default function OrderManager() {
     subtitle: isVietnamese
       ? 'Theo dõi đơn của merchant, trạng thái giao hàng và điểm nghẽn xử lý.'
       : 'Track merchant orders, monitor delivery states and quickly investigate issue clusters.',
-    sourceInfo: isVietnamese ? 'Nguồn dữ liệu: API đơn hàng admin + tổng hợp theo shop.' : 'Source: admin orders API + per-shop fallback.',
-    aggregate: isVietnamese ? 'Đang hiển thị dữ liệu tổng hợp fallback từ từng shop.' : 'Showing aggregated fallback data from shops.',
     loadFailed: isVietnamese ? 'Không tải được danh sách đơn hàng' : 'Failed to load orders',
     filterTitle: isVietnamese ? 'Lọc đơn hàng' : 'Filter orders',
     filterSub: isVietnamese ? 'Lọc theo trạng thái, shop và khoảng ngày.' : 'Refine by status, shop and date range.',
@@ -151,13 +149,6 @@ export default function OrderManager() {
       <section className='space-y-1'>
         <h1 className='text-2xl font-bold text-gray-900'>{t.title}</h1>
         <p className='text-sm text-gray-500'>{t.subtitle}</p>
-        <p className='mt-2 text-sm text-gray-400'>{t.sourceInfo}</p>
-        {isError && (
-          <p className='text-sm text-red-600'>{error instanceof Error ? error.message : t.loadFailed}</p>
-        )}
-        {data?.source === 'aggregate' && (
-          <p className='mt-2 text-xs text-amber-700'>{t.aggregate}</p>
-        )}
       </section>
 
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>

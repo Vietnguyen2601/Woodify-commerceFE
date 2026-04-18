@@ -1,55 +1,173 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import DashboardCard from '../components/DashboardCard'
+import SellerRevenueTrendChart from './SellerRevenueTrendChart'
+import SellerTopSellingProductsChart from './SellerTopSellingProductsChart'
+import SellerDashboardAnalytics from './SellerDashboardAnalytics'
+import { useShopStore } from '@/store/shopStore'
+import { orderService, queryKeys, shipmentService, shopService } from '@/services'
+import { SHIP_QUERY_KEY, buildShipmentByOrderIdMap } from '../orders/shipmentSellerUi'
+import { resolveSellerOrderStage, type SellerOrderStage } from '../orders/sellerOrderStage'
+import type { SellerOrder, ShopRevenueTrend } from '@/types'
 
-const WORK_QUEUE = [
-  { id: 'pending', label: 'Chờ lấy hàng', count: 6, deadline: '< 45 phút', severity: 'high', note: 'Ưu tiên xác nhận để tránh SLA' },
-  { id: 'processing', label: 'Đã xử lý', count: 18, deadline: 'Hôm nay', severity: 'medium', note: 'Chuẩn bị bàn giao cho đơn vị vận chuyển' },
-  { id: 'returns', label: 'Trả / Hoàn / Hủy', count: 3, deadline: 'Trong 24h', severity: 'high', note: 'Cần phản hồi bằng chứng' },
-  { id: 'locked', label: 'Sản phẩm bị tạm khóa', count: 2, deadline: 'Kiểm tra ngay', severity: 'low', note: 'Do thiếu chứng từ hoặc ảnh' }
-]
+const DASHBOARD_REVENUE_DAYS = 7
 
-const KPI_CARDS = [
-  { title: 'Doanh thu hôm nay', value: '₫185.4M', trend: '+12% so với hôm qua', status: 'positive' as const },
-  { title: 'Lượt truy cập', value: '42.1K', trend: '+8% so với tuần trước', status: 'positive' as const },
-  { title: 'Tỉ lệ chuyển đổi', value: '3.4%', trend: '-0.4% tuần trước', status: 'negative' as const },
-  { title: 'Đơn chờ xử lý', value: '24', trend: '6 quá SLA', status: 'negative' as const }
-]
+const vndFull = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 })
 
-const REVENUE_SERIES = [
-  { day: 'Jan 20', value: 12 },
-  { day: 'Jan 21', value: 28 },
-  { day: 'Jan 22', value: 22 },
-  { day: 'Jan 23', value: 38 },
-  { day: 'Jan 24', value: 45 },
-  { day: 'Jan 25', value: 30 },
-  { day: 'Jan 26', value: 50 },
-  { day: 'Jan 27', value: 58 }
-]
+function formatFullVnd(n: number): string {
+  return vndFull.format(Math.round(n))
+}
 
-const TOP_PRODUCTS = [
-  { name: 'Oak Dining Table', value: 60 },
-  { name: 'Walnut Bookshelf', value: 48 },
-  { name: 'Pine Coffee Table', value: 36 },
-  { name: 'Teak Chair Set', value: 32 },
-  { name: 'Mahogany Desk', value: 26 }
-]
+/** YYYY-MM-DD theo timezone local (đồng bộ với cách bucket ngày trên UI) */
+function localDateKey(d: Date): string {
+  return d.toLocaleDateString('en-CA')
+}
 
-const SERVICES = [
-  { title: 'Dịch vụ hiển thị Shopee', desc: 'Đẩy sản phẩm lên vị trí nổi bật và remarketing tự động', cta: 'Bật quảng cáo ngay' },
-  { title: 'Gói Freeship Xtra', desc: 'Tăng tỷ lệ mua bằng hỗ trợ phí vận chuyển', cta: 'Đăng ký' }
-]
+function revenueOnLocalDay(trend: ShopRevenueTrend | undefined, day: Date): number {
+  if (!trend?.dailyRevenue?.length) return 0
+  const key = localDateKey(day)
+  const row = trend.dailyRevenue.find((r) => localDateKey(new Date(r.date)) === key)
+  return row?.revenue ?? 0
+}
 
-const NEWS = [
-  { title: 'Shopee Mega Sale 1.1', desc: 'Đăng ký deal tối thiểu ₫99K để nhận traffic từ banner', pill: 'Sự kiện' },
-  { title: 'Thay đổi chính sách vận chuyển', desc: 'Tối ưu cut-off time để giữ tỷ lệ đúng hẹn', pill: 'Thông báo' }
-]
+function todayRevenueTrendCopy(todayVnd: number, yesterdayVnd: number): {
+  trend: string
+  status: 'positive' | 'negative' | 'neutral'
+} {
+  if (todayVnd === 0 && yesterdayVnd === 0) {
+    return { trend: 'Không có dữ liệu hôm qua', status: 'neutral' }
+  }
+  if (yesterdayVnd <= 0) {
+    if (todayVnd > 0) return { trend: 'Có doanh thu trong ngày', status: 'positive' }
+    return { trend: 'So với hôm qua: 0 ₫', status: 'neutral' }
+  }
+  const pct = ((todayVnd - yesterdayVnd) / yesterdayVnd) * 100
+  const rounded = Math.round(pct)
+  const sign = rounded > 0 ? '+' : ''
+  return {
+    trend: `${sign}${rounded}% so với hôm qua`,
+    status: rounded >= 0 ? 'positive' : 'negative',
+  }
+}
 
-const MISSIONS = [
-  { title: 'Hoàn thành 3 nhiệm vụ quảng cáo', reward: '+₫500K voucher Ads', progress: '2/3', status: 'in-progress' },
-  { title: 'Đồng bộ ảnh chuẩn Shopee', reward: '+1,000 điểm uy tín', progress: '0/20', status: 'todo' }
-]
+/** Gộp đơn theo giai đoạn hiển thị (cùng logic trang Tất cả đơn) */
+function countOrdersByWorkStage(
+  orders: SellerOrder[],
+  shipmentByOrderId: ReturnType<typeof buildShipmentByOrderIdMap>
+): Record<'handover' | 'prepare' | 'in_delivery' | 'exception', number> {
+  const m = { handover: 0, prepare: 0, in_delivery: 0, exception: 0 }
+  for (const o of orders) {
+    const ship = shipmentByOrderId.get(o.orderId) ?? null
+    const stage = resolveSellerOrderStage(o.status, ship) as SellerOrderStage
+    if (stage === 'done') continue
+    if (stage === 'handover') m.handover += 1
+    else if (stage === 'prepare') m.prepare += 1
+    else if (stage === 'in_delivery') m.in_delivery += 1
+    else if (stage === 'exception') m.exception += 1
+  }
+  return m
+}
 
 export default function SellerHome() {
+  const shopId = useShopStore((s) => s.shop?.shopId ?? '')
+
+  const { data: shopOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ['seller-shop-orders', shopId],
+    queryFn: () => orderService.getShopOrders(shopId),
+    enabled: !!shopId,
+  })
+
+  const { data: shopShipments = [], isLoading: shipmentsLoading } = useQuery({
+    queryKey: [SHIP_QUERY_KEY, shopId],
+    queryFn: () => shipmentService.listShipmentsByShop(shopId),
+    enabled: !!shopId,
+  })
+
+  const shipmentByOrderId = React.useMemo(
+    () => buildShipmentByOrderIdMap(shopShipments),
+    [shopShipments]
+  )
+
+  const workCounts = React.useMemo(
+    () => countOrdersByWorkStage(shopOrders, shipmentByOrderId),
+    [shopOrders, shipmentByOrderId]
+  )
+
+  const workQueueItems = React.useMemo(
+    () => [
+      {
+        id: 'handover',
+        label: 'Chờ lấy hàng',
+        count: workCounts.handover,
+        severity: 'high' as const,
+      },
+      {
+        id: 'prepare',
+        label: 'Đã xử lý',
+        count: workCounts.prepare,
+        severity: 'medium' as const,
+      },
+      {
+        id: 'in_delivery',
+        label: 'Đơn hàng đang giao',
+        count: workCounts.in_delivery,
+        severity: 'medium' as const,
+      },
+      {
+        id: 'exception',
+        label: 'Trả / Hoàn / Hủy',
+        count: workCounts.exception,
+        severity: 'high' as const,
+      },
+    ],
+    [workCounts]
+  )
+
+  const workLoading = ordersLoading || shipmentsLoading
+
+  const { data: revenueTrend, isLoading: revenueLoading, isError: revenueError } = useQuery({
+    queryKey: queryKeys.seller.revenueTrend(shopId, DASHBOARD_REVENUE_DAYS),
+    queryFn: () => shopService.getRevenueTrend(shopId, DASHBOARD_REVENUE_DAYS),
+    enabled: !!shopId,
+  })
+
+  const todayRev = React.useMemo(() => {
+    if (!shopId) return 0
+    return revenueOnLocalDay(revenueTrend, new Date())
+  }, [shopId, revenueTrend])
+
+  const yesterdayRev = React.useMemo(() => {
+    if (!shopId) return 0
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    return revenueOnLocalDay(revenueTrend, d)
+  }, [shopId, revenueTrend])
+
+  const todayCard = React.useMemo(() => {
+    if (!shopId) {
+      return { title: 'Doanh thu hôm nay', value: '—', trend: 'Chưa có shop', status: 'neutral' as const }
+    }
+    if (revenueError) {
+      return {
+        title: 'Doanh thu hôm nay',
+        value: '—',
+        trend: 'Không tải được dữ liệu doanh thu',
+        status: 'neutral' as const,
+      }
+    }
+    if (revenueLoading && revenueTrend === undefined) {
+      return { title: 'Doanh thu hôm nay', value: '…', trend: 'Đang tải…', status: 'neutral' as const }
+    }
+    const { trend, status } = todayRevenueTrendCopy(todayRev, yesterdayRev)
+    return {
+      title: 'Doanh thu hôm nay',
+      value: `${formatFullVnd(todayRev)} ₫`,
+      trend,
+      status,
+    }
+  }, [shopId, revenueError, revenueLoading, revenueTrend, todayRev, yesterdayRev])
+
   return (
     <div className='seller-home'>
       <section className='seller-home__workbench'>
@@ -58,139 +176,41 @@ export default function SellerHome() {
             <p className='seller-home__eyebrow'>Danh sách cần làm</p>
             <h2>Xử lý các đầu việc ưu tiên trong ngày</h2>
           </div>
-          <button type='button'>Xem tất cả</button>
+          <Link
+            to='/seller/orders'
+            className='rounded-2xl border border-amber-900/25 bg-white px-4 py-2 text-xs font-semibold text-amber-900 shadow-sm transition hover:bg-amber-50'
+          >
+            Xem tất cả
+          </Link>
         </div>
         <div className='seller-home__work-grid'>
-          {WORK_QUEUE.map(item => (
+          {workQueueItems.map((item) => (
             <article key={item.id} className={`seller-home__work-card seller-home__work-card--${item.severity}`}>
               <header>
                 <p>{item.label}</p>
-                <strong>{item.count}</strong>
+                <strong>{workLoading ? '…' : item.count}</strong>
               </header>
-              <footer>
-                <span>{item.deadline}</span>
-                <small>{item.note}</small>
-              </footer>
             </article>
           ))}
         </div>
       </section>
 
-      <section className='seller-home__kpi'>
-        {KPI_CARDS.map(card => (
-          <DashboardCard key={card.title} title={card.title} value={card.value} trend={card.trend} status={card.status} highlight={card.status === 'positive'} />
-        ))}
+      <section className='seller-home__kpi seller-home__kpi--split'>
+        <DashboardCard
+          key={todayCard.title}
+          title={todayCard.title}
+          value={todayCard.value}
+          trend={todayCard.trend}
+          status={todayCard.status}
+          highlight={todayCard.status === 'positive'}
+        />
+        {shopId ? <SellerDashboardAnalytics shopId={shopId} /> : null}
       </section>
 
       <section className='seller-home__charts'>
-        <article className='seller-home__chart-card seller-home__chart-card--compact'>
-          <div>
-            <p className='seller-home__eyebrow'>Revenue Over Time</p>
-            <h3>Xu hướng doanh thu 8 ngày gần nhất</h3>
-            <span className='seller-home__chart-subtitle'>Last 8 days revenue trend</span>
-          </div>
-          <div className='chart-sparkline' aria-hidden='true'>
-            <div className='chart-sparkline__y-axis'>
-              {[0, 15, 30, 45, 60].map(label => (
-                <span key={label}>{label}M</span>
-              ))}
-            </div>
-            <div className='chart-sparkline__plot'>
-              <svg viewBox='0 0 100 60' preserveAspectRatio='none'>
-                <defs>
-                  <linearGradient id='revenueLine' x1='0%' y1='0%' x2='0%' y2='100%'>
-                    <stop offset='0%' stopColor='#c08457' stopOpacity='0.45' />
-                    <stop offset='100%' stopColor='#c08457' stopOpacity='0' />
-                  </linearGradient>
-                </defs>
-                <polyline
-                  points={REVENUE_SERIES.map((point, index) => {
-                    const x = (index / (REVENUE_SERIES.length - 1)) * 100
-                    const y = 60 - (point.value / 60) * 60
-                    return `${x},${y}`
-                  }).join(' ')}
-                  fill='url(#revenueLine)'
-                  stroke='#b87436'
-                  strokeWidth='1.2'
-                  strokeLinejoin='round'
-                  strokeLinecap='round'
-                />
-                {REVENUE_SERIES.map((point, index) => {
-                  const x = (index / (REVENUE_SERIES.length - 1)) * 100
-                  const y = 60 - (point.value / 60) * 60
-                  return <circle key={point.day} cx={x} cy={y} r={1.1} fill='#744420' />
-                })}
-              </svg>
-            </div>
-          </div>
-          <div className='chart-sparkline__x-axis'>
-            {REVENUE_SERIES.map(point => (
-              <span key={point.day}>{point.day}</span>
-            ))}
-          </div>
-        </article>
+        {shopId ? <SellerRevenueTrendChart shopId={shopId} /> : null}
 
-        <article className='seller-home__chart-card'>
-          <div>
-            <p className='seller-home__eyebrow'>Top Selling Products</p>
-            <h3>Sản phẩm perform tốt nhất</h3>
-            <span className='seller-home__chart-subtitle'>Best performers this month</span>
-          </div>
-          <div className='chart-bars'>
-            {TOP_PRODUCTS.map(item => (
-              <div key={item.name} className='chart-bars__row'>
-                <div>
-                  <strong>{item.name}</strong>
-                </div>
-                <div className='chart-bars__meter'>
-                  <span style={{ width: `${item.value / 60 * 100}%` }} />
-                </div>
-                <span className='chart-bars__value'>{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-
-
-      <section className='seller-home__services'>
-        {SERVICES.map(service => (
-          <div key={service.title} className='seller-home__service-card'>
-            <div>
-              <p className='seller-home__eyebrow'>{service.title}</p>
-              <h3>{service.desc}</h3>
-            </div>
-            <button type='button'>{service.cta}</button>
-          </div>
-        ))}
-      </section>
-
-      <section className='seller-home__news'>
-        <div>
-          <p className='seller-home__eyebrow'>Tin nổi bật</p>
-          {NEWS.map(item => (
-            <article key={item.title}>
-              <span>{item.pill}</span>
-              <h4>{item.title}</h4>
-              <p>{item.desc}</p>
-            </article>
-          ))}
-        </div>
-        <div>
-          <p className='seller-home__eyebrow'>Nhiệm vụ người bán</p>
-          {MISSIONS.map(item => (
-            <article key={item.title} className='seller-home__mission'>
-              <div>
-                <h4>{item.title}</h4>
-                <p>Phần thưởng: {item.reward}</p>
-              </div>
-              <div>
-                <strong>{item.progress}</strong>
-                <span>{item.status === 'in-progress' ? 'Đang triển khai' : 'Chưa bắt đầu'}</span>
-              </div>
-            </article>
-          ))}
-        </div>
+        {shopId ? <SellerTopSellingProductsChart shopId={shopId} /> : null}
       </section>
     </div>
   )

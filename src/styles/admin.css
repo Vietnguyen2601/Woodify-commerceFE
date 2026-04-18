@@ -1,8 +1,15 @@
 :root {
   --admin-bg: #04060f;
   --admin-card: rgba(12, 15, 27, 0.9);
+  /** @deprecated for new UI — panels dùng nền sáng; giữ biến cho đoạn legacy (card tối) */
   --admin-panel: rgba(14, 18, 33, 0.9);
   --admin-border: rgba(255, 255, 255, 0.1);
+  /** Theme Woodify — đồng bộ với accent marketplace (#BE9C73) */
+  --admin-theme-accent: #be9c73;
+  --admin-theme-accent-border: rgba(190, 156, 115, 0.22);
+  --admin-theme-accent-border-soft: rgba(190, 156, 115, 0.18);
+  --admin-theme-text: #111827;
+  --admin-theme-text-muted: #6b7280;
   --admin-primary: #ff7a45;
   --admin-primary-soft: rgba(255, 122, 69, 0.15);
   --admin-success: #8fd19e;
@@ -81,6 +88,39 @@
 
 .admin-workspace__body {
   padding: 22px;
+}
+
+/* Typography & CTA trong workspace sáng — khớp admin-shift-bar / ShipmentManager */
+.admin-workspace__body .admin-eyebrow {
+  color: #9ca3af;
+}
+
+.admin-workspace__body .admin-view__header h2 {
+  color: var(--admin-theme-text);
+}
+
+.admin-workspace__body .admin-view__header > div > span {
+  color: var(--admin-theme-text-muted);
+  font-size: 0.875rem;
+}
+
+.admin-workspace__body .admin-view__actions .admin-btn.primary {
+  background: var(--admin-theme-accent);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(190, 156, 115, 0.28);
+}
+
+.admin-workspace__body .admin-view__actions .admin-btn.outline {
+  border: 1px solid rgba(27, 47, 83, 0.18);
+  background: rgba(255, 255, 255, 0.95);
+  color: #1f2937;
+}
+
+.admin-workspace__body .admin-view__actions .admin-btn.ghost {
+  border: 1px dashed rgba(27, 47, 83, 0.22);
+  background: rgba(255, 255, 255, 0.95);
+  color: #374151;
+  box-shadow: none;
 }
 
 .admin-sidebar-panel {
@@ -581,8 +621,9 @@
 
 .admin-panel {
   border-radius: 20px;
-  border: 1px solid var(--admin-border);
-  background: var(--admin-panel);
+  border: 1px solid var(--admin-theme-accent-border);
+  background: linear-gradient(165deg, #ffffff 0%, #fdfbf7 48%, #f8f6f2 100%);
+  box-shadow: 0 16px 44px -32px rgba(45, 33, 20, 0.12);
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -594,12 +635,102 @@
   justify-content: space-between;
   gap: 16px;
   align-items: center;
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 1px solid var(--admin-theme-accent-border-soft);
   padding-bottom: 12px;
 }
 
-.admin-panel__header p {
-  color: var(--admin-neutral);
+.admin-panel__header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--admin-theme-text);
+}
+
+.admin-panel__header p,
+.admin-panel__header span {
+  color: var(--admin-theme-text-muted);
+  font-size: 0.875rem;
+}
+
+.admin-panel .admin-table__row {
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.admin-panel .admin-table__meta {
+  color: var(--admin-theme-text-muted);
+}
+
+.admin-panel .admin-table__row strong {
+  color: var(--admin-theme-text);
+}
+
+.admin-panel .admin-table__row p {
+  color: var(--admin-theme-text-muted);
+  font-size: 0.875rem;
+}
+
+.admin-panel .admin-profile__list li {
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.admin-panel .admin-profile__list span {
+  color: var(--admin-theme-text-muted);
+}
+
+.admin-panel .admin-profile__list strong {
+  color: var(--admin-theme-text);
+  font-weight: 600;
+}
+
+.admin-panel .admin-chip.neutral {
+  border-color: rgba(107, 114, 128, 0.28);
+  color: #4b5563;
+}
+
+.admin-panel .admin-policy article {
+  border: 1px solid var(--admin-theme-accent-border);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.admin-panel .admin-policy__status {
+  color: var(--admin-theme-text-muted);
+}
+
+.admin-panel .admin-policy h4 {
+  color: var(--admin-theme-text);
+}
+
+.admin-panel .admin-policy article > div > p:not(.admin-policy__status) {
+  color: var(--admin-theme-text-muted);
+}
+
+.admin-panel .admin-policy__meta {
+  color: var(--admin-theme-text-muted);
+}
+
+.admin-panel .admin-btn.ghost {
+  border: 1px dashed rgba(27, 47, 83, 0.22);
+  background: rgba(255, 255, 255, 0.95);
+  color: #374151;
+  box-shadow: none;
+}
+
+.admin-panel .admin-btn.ghost:hover,
+.admin-panel .admin-btn.ghost:focus-visible {
+  background: #fff;
+  border-color: rgba(190, 156, 115, 0.45);
+}
+
+.admin-panel .admin-btn.outline {
+  border: 1px solid rgba(27, 47, 83, 0.18);
+  background: rgba(255, 255, 255, 0.95);
+  color: #1f2937;
+}
+
+.admin-panel .admin-btn.primary {
+  background: var(--admin-theme-accent);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(190, 156, 115, 0.28);
 }
 
 .admin-table {

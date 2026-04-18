@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ROUTES } from '@/constants/routes'
-import { api } from '../services/api/client'
-import { authService, orderService, walletService, queryKeys } from '@/services'
+import { authService, orderService, walletService, queryKeys, accountService } from '@/services'
 import type { WalletTransactionItem } from '@/services/wallet.service'
 import { BuyerOrdersPanel, type CustomerOrderBucket } from './profile/BuyerOrdersPanel'
 import { APP_CONFIG } from '../constants/app.config'
@@ -110,6 +109,7 @@ const PROFILE_TAB_KEYS: TabType[] = ['profile', 'orders', 'wallet', 'settings']
 export default function Profile() {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [walletTab, setWalletTab] = useState<WalletTabType>('history')
   const [isEditing, setIsEditing] = useState(false)
@@ -132,6 +132,16 @@ export default function Profile() {
   })
   const [orderBucket, setOrderBucket] = useState<CustomerOrderBucket>('all')
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null)
+  const profileBeforeEditRef = React.useRef<{
+    name: string
+    email: string
+    phone: string
+    dateOfBirth: string
+    gender: string
+    address: string
+  } | null>(null)
   const [settings, setSettings] = useState({
     emailNotifications: true,
     orderNotifications: true,
@@ -227,19 +237,18 @@ export default function Profile() {
           return
         }
 
-        // Call API to get account details using the correct endpoint
-        const endpoint = `/Accounts/GetAccountById/${accountId}`
-        const response = await api.get(endpoint) as any
-        
-        // Extract account data - handle nested structure from API
-        // API returns: { status, message, data: { accountId, username, email, ... } }
-        let accountData = response?.data
-        
-        // If using api client that strips outer status, it might already be unwrapped
-        if (response?.accountId) {
-          accountData = response
+        const raw = await accountService.getById(accountId)
+        let accountData = raw as Record<string, unknown>
+        if (
+          accountData &&
+          'data' in accountData &&
+          accountData.data &&
+          typeof accountData.data === 'object' &&
+          !Array.isArray(accountData.data)
+        ) {
+          accountData = accountData.data as Record<string, unknown>
         }
-        
+
         if (!accountData) {
           const msg = 'Dữ liệu tài khoản không hợp lệ'
           setError(msg)
@@ -264,19 +273,26 @@ export default function Profile() {
           }
         }
 
-        // Update userInfo with API data
+        const pick = (camel: string, pascal: string) =>
+          accountData[camel] ?? accountData[pascal]
+
         const updatedUserInfo = {
-          name: accountData.name || '',
-          email: accountData.email || '',
-          phone: accountData.phoneNumber || '',
-          dateOfBirth: formatDate(accountData.dob),
-          gender: accountData.gender || '',
-          address: userInfo.address
+          name: String(pick('name', 'Name') ?? ''),
+          email: String(pick('email', 'Email') ?? ''),
+          phone: String(pick('phoneNumber', 'PhoneNumber') ?? ''),
+          dateOfBirth: formatDate(
+            (pick('dob', 'Dob') ?? pick('dateOfBirth', 'DateOfBirth')) as string | null | undefined
+          ),
+          gender: String(pick('gender', 'Gender') ?? ''),
+          address: String(pick('address', 'Address') ?? ''),
         }
         
         setUserInfo(updatedUserInfo)
-      } catch (err: any) {
-        const errorMsg = err.response?.data?.message || err.message || 'Không thể tải thông tin tài khoản'
+      } catch (err: unknown) {
+        const errorMsg =
+          err && typeof err === 'object' && 'message' in err
+            ? String((err as { message?: string }).message)
+            : 'Không thể tải thông tin tài khoản'
         setError(errorMsg)
       } finally {
         setIsLoading(false)
@@ -302,6 +318,54 @@ export default function Profile() {
 
   const displayValue = (value: string | null | undefined) => {
     return value && value.trim() ? value : 'Chưa cập nhật'
+  }
+
+  const handleStartEdit = () => {
+    profileBeforeEditRef.current = { ...userInfo }
+    setProfileSaveError(null)
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    if (profileBeforeEditRef.current) {
+      setUserInfo({ ...profileBeforeEditRef.current })
+    }
+    profileBeforeEditRef.current = null
+    setProfileSaveError(null)
+    setIsEditing(false)
+  }
+
+  const handleSaveProfile = async () => {
+    const accountId = authenticatedUser?.accountId || authenticatedUser?.id
+    if (!accountId) {
+      setProfileSaveError('Không xác định được tài khoản.')
+      return
+    }
+    setIsSavingProfile(true)
+    setProfileSaveError(null)
+    try {
+      const dobIso = userInfo.dateOfBirth.trim()
+        ? new Date(userInfo.dateOfBirth).toISOString()
+        : ''
+      await accountService.update(accountId, {
+        name: userInfo.name.trim(),
+        phoneNumber: userInfo.phone.trim(),
+        address: userInfo.address.trim(),
+        dob: dobIso,
+        gender: userInfo.gender.trim(),
+      })
+      profileBeforeEditRef.current = null
+      setIsEditing(false)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.user() })
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Không thể lưu thông tin'
+      setProfileSaveError(msg)
+    } finally {
+      setIsSavingProfile(false)
+    }
   }
 
   const getTransactionIcon = (type: string) => {
@@ -512,31 +576,7 @@ export default function Profile() {
                       </button>
                     </div>
 
-                    {/* Stats Boxes */}
-                    <div className='flex gap-4'>
-                      <div className='bg-white/20 backdrop-blur-sm rounded-[10px] p-4 min-w-[140px]'>
-                        <div className='flex items-center gap-2 mb-2'>
-                          <img src={MoneyInIcon} alt='Money In' className='w-6 h-6' style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(13%) saturate(814%) hue-rotate(343deg) brightness(94%) contrast(91%)' }} />
-                          <p className='text-xs' style={{ fontFamily: 'Arbutus Slab, serif', color: '#6C5B50', opacity: 0.8 }}>
-                            Tổng nạp
-                          </p>
-                        </div>
-                        <p className='text-xl font-bold' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                          25M
-                        </p>
-                      </div>
-                      <div className='bg-white/20 backdrop-blur-sm rounded-[10px] p-4 min-w-[140px]'>
-                        <div className='flex items-center gap-2 mb-2'>
-                          <img src={MoneyOutIcon} alt='Money Out' className='w-6 h-6' style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(13%) saturate(814%) hue-rotate(343deg) brightness(94%) contrast(91%)' }} />
-                          <p className='text-xs' style={{ fontFamily: 'Arbutus Slab, serif', color: '#6C5B50', opacity: 0.8 }}>
-                            Tổng chi
-                          </p>
-                        </div>
-                        <p className='text-xl font-bold' style={{ fontFamily: 'Poppins, sans-serif', color: '#6C5B50' }}>
-                          18.75M
-                        </p>
-                      </div>
-                    </div>
+          
                   </div>
                 </div>
 
@@ -806,7 +846,8 @@ export default function Profile() {
                     </div>
                     {!isEditing && (
                       <button
-                        onClick={() => setIsEditing(true)}
+                        type='button'
+                        onClick={handleStartEdit}
                         className='px-6 py-3 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity shadow-md flex items-center gap-2 flex-shrink-0'
                         style={{ fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' }}
                       >
@@ -815,6 +856,12 @@ export default function Profile() {
                       </button>
                     )}
                   </div>
+
+                  {profileSaveError && isEditing && (
+                    <p className='mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                      {profileSaveError}
+                    </p>
+                  )}
 
                   {/* Form Fields */}
                   <div className='grid grid-cols-2 gap-6'>
@@ -848,12 +895,12 @@ export default function Profile() {
                       {isEditing ? (
                         <input
                           type='email'
+                          readOnly
+                          disabled
                           value={userInfo.email}
-                          onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })}
-                          className='w-full px-4 py-3 border border-gray-300 rounded-[10px] focus:outline-none focus:border-2 transition-colors'
-                          style={{ fontFamily: 'Arimo, sans-serif', borderColor: '#D4B896' }}
-                          onFocus={(e) => e.target.style.borderColor = '#BE9C73'}
-                          onBlur={(e) => e.target.style.borderColor = '#D4B896'}
+                          title='Email không đổi qua form này'
+                          className='w-full cursor-not-allowed px-4 py-3 border border-gray-200 rounded-[10px] bg-gray-100 text-gray-600'
+                          style={{ fontFamily: 'Arimo, sans-serif' }}
                         />
                       ) : (
                         <div className='px-4 py-3 bg-gray-50 rounded-[10px] border border-gray-200' style={{ fontFamily: 'Arimo, sans-serif' }}>
@@ -920,6 +967,7 @@ export default function Profile() {
                           onFocus={(e) => e.target.style.borderColor = '#BE9C73'}
                           onBlur={(e) => e.target.style.borderColor = '#D4B896'}
                         >
+                          <option value=''>—</option>
                           <option value='Nam'>Nam</option>
                           <option value='Nữ'>Nữ</option>
                           <option value='Khác'>Khác</option>
@@ -958,15 +1006,19 @@ export default function Profile() {
                   {isEditing && (
                     <div className='flex gap-4 mt-8 pt-6 border-t border-gray-200'>
                       <button
-                        onClick={() => setIsEditing(false)}
-                        className='px-8 py-3 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity shadow-md'
+                        type='button'
+                        disabled={isSavingProfile}
+                        onClick={() => void handleSaveProfile()}
+                        className='px-8 py-3 text-white rounded-[10px] font-semibold hover:opacity-90 transition-opacity shadow-md disabled:cursor-not-allowed disabled:opacity-60'
                         style={{ fontFamily: 'Arimo, sans-serif', backgroundColor: '#BE9C73' }}
                       >
-                        Lưu thay đổi
+                        {isSavingProfile ? 'Đang lưu…' : 'Lưu thay đổi'}
                       </button>
                       <button
-                        onClick={() => setIsEditing(false)}
-                        className='px-8 py-3 border-2 rounded-[10px] font-semibold hover:bg-gray-50 transition-colors'
+                        type='button'
+                        disabled={isSavingProfile}
+                        onClick={handleCancelEdit}
+                        className='px-8 py-3 border-2 rounded-[10px] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-60'
                         style={{ fontFamily: 'Arimo, sans-serif', borderColor: '#D4B896', color: '#6C5B50' }}
                       >
                         Hủy

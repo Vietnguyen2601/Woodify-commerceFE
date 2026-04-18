@@ -843,6 +843,18 @@ body.checkout-route-bg {
 	gap: 16px;
 }
 
+/* Bảng điều khiển: doanh thu hôm nay + phân tích theo tháng/quý/năm */
+.seller-home__kpi--split {
+	grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+	align-items: start;
+}
+
+@media (max-width: 1024px) {
+	.seller-home__kpi--split {
+		grid-template-columns: 1fr;
+	}
+}
+
 .seller-home__charts {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

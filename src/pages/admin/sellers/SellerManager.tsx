@@ -1,8 +1,10 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAppLanguage } from '@/hooks'
+import { ROUTES } from '@/constants'
 import { adminService, queryKeys } from '@/services'
-import type { AdminShopDto, ShopStatus } from '@/types'
+import type { AdminShopDto, ProductMasterDto, ShopStatus } from '@/types'
 
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE: 'bg-green-100 text-green-700 border border-green-200',
@@ -27,12 +29,46 @@ const fmtDate = (iso?: string) => {
   }
 }
 
+const fmtVnd = (n: number | undefined) => {
+  if (n == null || Number.isNaN(n)) return '—'
+  try {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
+  } catch {
+    return String(n)
+  }
+}
+
+function pmId(p: ProductMasterDto): string {
+  return String(p.productId ?? p.id ?? '').trim()
+}
+
+function pmName(p: ProductMasterDto): string {
+  const raw = p.productName ?? p.name
+  return raw?.trim() ? raw.trim() : '—'
+}
+
+function pmThumb(p: ProductMasterDto): string | null {
+  const u = p.thumbnailUrl
+  if (u != null && String(u).trim() !== '') return String(u).trim()
+  return null
+}
+
+function pmPrice(p: ProductMasterDto): number | undefined {
+  const a = p.basePrice
+  const b = p.price
+  if (typeof a === 'number' && !Number.isNaN(a)) return a
+  if (typeof b === 'number' && !Number.isNaN(b)) return b
+  return undefined
+}
+
 export default function SellerManager() {
   const { isVietnamese } = useAppLanguage()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<string | ''>('')
   const [sortBy, setSortBy] = React.useState<'newest' | 'name'>('newest')
+  const [expandedShopId, setExpandedShopId] = React.useState<string | null>(null)
 
   const { data: shops = [], isLoading, isError, error } = useQuery({
     queryKey: queryKeys.admin.shops(),
@@ -69,6 +105,16 @@ export default function SellerManager() {
     }
     return m
   }, [productRows])
+
+  const {
+    data: expandedShopProducts = [],
+    isLoading: expandedProductsLoading,
+    isError: expandedProductsError,
+  } = useQuery({
+    queryKey: [queryKeys.ADMIN_SHOPS, 'product-masters', expandedShopId],
+    queryFn: () => adminService.getProductsByShopId(expandedShopId!),
+    enabled: !!expandedShopId,
+  })
 
   const mutation = useMutation({
     mutationFn: ({ shopId, status }: { shopId: string; status: ShopStatus }) =>
@@ -128,6 +174,21 @@ export default function SellerManager() {
       empty: isVietnamese ? 'Không tìm thấy cửa hàng.' : 'No shops found.',
       updateFailed: isVietnamese ? 'Cập nhật thất bại' : 'Update failed',
       errorLoad: isVietnamese ? 'Tải cửa hàng thất bại' : 'Failed to load shops',
+      detailCol: isVietnamese ? 'Chi tiết' : 'Detail',
+      expandShow: isVietnamese ? 'Xem' : 'View',
+      expandHide: isVietnamese ? 'Ẩn' : 'Hide',
+      productsInShop: isVietnamese ? 'Sản phẩm trong cửa hàng' : 'Products in this shop',
+      productsLoadError: isVietnamese ? 'Không tải được danh sách sản phẩm' : 'Failed to load products',
+      noProductsInShop: isVietnamese ? 'Chưa có sản phẩm' : 'No products',
+      colImage: isVietnamese ? 'Ảnh' : 'Image',
+      colProduct: isVietnamese ? 'Sản phẩm' : 'Product',
+      colSku: 'SKU',
+      colCategory: isVietnamese ? 'Danh mục' : 'Category',
+      colPrice: isVietnamese ? 'Giá' : 'Price',
+      colSales: isVietnamese ? 'Lượt bán' : 'Sales',
+      colProdStatus: isVietnamese ? 'Trạng thái' : 'Status',
+      colOpen: isVietnamese ? 'Xem' : 'Open',
+      noImageShort: isVietnamese ? 'Không ảnh' : 'No img',
     }),
     [isVietnamese]
   )
@@ -245,101 +306,233 @@ export default function SellerManager() {
                 <th className='px-6 py-3 text-left'>{t.products}</th>
                 <th className='px-6 py-3 text-left'>{t.statusLabel}</th>
                 <th className='px-6 py-3 text-left'>{t.created}</th>
+                <th className='px-6 py-3 text-center'>{t.detailCol}</th>
                 <th className='px-6 py-3 text-center'>{t.actions}</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-100'>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className='px-6 py-8 text-center text-gray-500'>
+                  <td colSpan={8} className='px-6 py-8 text-center text-gray-500'>
                     {t.loading}
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className='px-6 py-8 text-center text-gray-500'>
+                  <td colSpan={8} className='px-6 py-8 text-center text-gray-500'>
                     {t.empty}
                   </td>
                 </tr>
               ) : (
-                filtered.map((seller: AdminShopDto) => (
-                  <tr key={seller.shopId} className='text-gray-900'>
-                    <td className='whitespace-nowrap px-6 py-4'>
-                      <div className='flex items-center gap-3'>
-                        {seller.logoUrl ? (
-                          <img src={seller.logoUrl} alt={seller.name} className='h-12 w-12 rounded-full border border-gray-200 object-cover' />
-                        ) : (
-                          <div className='h-12 w-12 rounded-full border border-gray-200 bg-gray-100 flex items-center justify-center text-xs text-gray-500'>
-                            {seller.name.slice(0, 2).toUpperCase()}
+                filtered.map((seller: AdminShopDto) => {
+                  const isOpen = expandedShopId === seller.shopId
+
+                  const openProduct = (p: ProductMasterDto) => {
+                    const pid = pmId(p)
+                    const title = pmName(p)
+                    if (pid) navigate(ROUTES.PRODUCT(pid, title !== '—' ? title : null))
+                  }
+
+                  return (
+                    <React.Fragment key={seller.shopId}>
+                      <tr className='text-gray-900'>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='flex items-center gap-3'>
+                            {seller.logoUrl ? (
+                              <img src={seller.logoUrl} alt={seller.name} className='h-12 w-12 rounded-full border border-gray-200 object-cover' />
+                            ) : (
+                              <div className='h-12 w-12 rounded-full border border-gray-200 bg-gray-100 flex items-center justify-center text-xs text-gray-500'>
+                                {seller.name.slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                            <div>
+                              <p className='font-medium'>{seller.name}</p>
+                              <p className='text-xs text-gray-500 font-mono'>{seller.shopId.slice(0, 8)}…</p>
+                            </div>
                           </div>
-                        )}
-                        <div>
-                          <p className='font-medium'>{seller.name}</p>
-                          <p className='text-xs text-gray-500 font-mono'>{seller.shopId.slice(0, 8)}…</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className='whitespace-nowrap px-6 py-4'>
-                      <p className='font-medium text-sm'>{ownerName(seller.ownerId)}</p>
-                    </td>
-                    <td className='whitespace-nowrap px-6 py-4'>
-                      <div className='flex items-center gap-2 text-sm'>
-                        {Array.from({ length: 5 }, (_, idx) => (
-                          <svg
-                            key={idx}
-                            className={`h-4 w-4 ${idx < Math.floor(seller.rating || 0) ? 'fill-amber-400 stroke-amber-400' : 'fill-gray-200 stroke-gray-200'}`}
-                            viewBox='0 0 24 24'
-                            strokeWidth='1.5'
-                          >
-                            <path d='m12 3.5 2.4 5 5.6.8-4 3.9.9 5.6L12 16.8l-4.9 2.9.9-5.6-4-3.9 5.6-.8z' />
-                          </svg>
-                        ))}
-                        <span className='text-xs font-medium'>{seller.rating ? seller.rating.toFixed(1) : '—'}</span>
-                      </div>
-                    </td>
-                    <td className='px-6 py-4'>{productsByShop.get(seller.shopId) ?? 0}</td>
-                    <td className='px-6 py-4'>
-                      <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${STATUS_STYLES[normalizeStatus(seller.status)]}`}>
-                        {normalizeStatus(seller.status) === 'UNKNOWN' ? (seller.status || '—') : normalizeStatus(seller.status)}
-                      </span>
-                    </td>
-                    <td className='px-6 py-4 text-gray-700'>{fmtDate(seller.createdAt)}</td>
-                    <td className='px-6 py-4'>
-                      <div className='flex flex-wrap items-center justify-center gap-2'>
-                        {normalizeStatus(seller.status) === 'PENDING' && (
-                          <>
-                            <button
-                              type='button'
-                              disabled={mutation.isPending}
-                              onClick={() => mutation.mutate({ shopId: seller.shopId, status: 'ACTIVE' })}
-                              className='rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50'
-                            >
-                              Approve
-                            </button>
-                            <button
-                              type='button'
-                              disabled={mutation.isPending}
-                              onClick={() => mutation.mutate({ shopId: seller.shopId, status: 'REJECTED' })}
-                              className='rounded-xl bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50'
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {normalizeStatus(seller.status) === 'ACTIVE' && (
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <p className='font-medium text-sm'>{ownerName(seller.ownerId)}</p>
+                        </td>
+                        <td className='whitespace-nowrap px-6 py-4'>
+                          <div className='flex items-center gap-2 text-sm'>
+                            {Array.from({ length: 5 }, (_, idx) => (
+                              <svg
+                                key={idx}
+                                className={`h-4 w-4 ${idx < Math.floor(seller.rating || 0) ? 'fill-amber-400 stroke-amber-400' : 'fill-gray-200 stroke-gray-200'}`}
+                                viewBox='0 0 24 24'
+                                strokeWidth='1.5'
+                              >
+                                <path d='m12 3.5 2.4 5 5.6.8-4 3.9.9 5.6L12 16.8l-4.9 2.9.9-5.6-4-3.9 5.6-.8z' />
+                              </svg>
+                            ))}
+                            <span className='text-xs font-medium'>{seller.rating ? seller.rating.toFixed(1) : '—'}</span>
+                          </div>
+                        </td>
+                        <td className='px-6 py-4'>{productsByShop.get(seller.shopId) ?? 0}</td>
+                        <td className='px-6 py-4'>
+                          <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ${STATUS_STYLES[normalizeStatus(seller.status)]}`}>
+                            {normalizeStatus(seller.status) === 'UNKNOWN' ? (seller.status || '—') : normalizeStatus(seller.status)}
+                          </span>
+                        </td>
+                        <td className='px-6 py-4 text-gray-700'>{fmtDate(seller.createdAt)}</td>
+                        <td className='px-6 py-4 text-center'>
                           <button
                             type='button'
-                            disabled={mutation.isPending}
-                            onClick={() => mutation.mutate({ shopId: seller.shopId, status: 'SUSPENDED' })}
-                            className='rounded-xl border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-50'
+                            onClick={() =>
+                              setExpandedShopId((id) => (id === seller.shopId ? null : seller.shopId))
+                            }
+                            className='text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline'
                           >
-                            Suspend
+                            {isOpen ? t.expandHide : t.expandShow}
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                        </td>
+                        <td className='px-6 py-4'>
+                          <div className='flex flex-wrap items-center justify-center gap-2'>
+                            {normalizeStatus(seller.status) === 'PENDING' && (
+                              <>
+                                <button
+                                  type='button'
+                                  disabled={mutation.isPending}
+                                  onClick={() => mutation.mutate({ shopId: seller.shopId, status: 'ACTIVE' })}
+                                  className='rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50'
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type='button'
+                                  disabled={mutation.isPending}
+                                  onClick={() => mutation.mutate({ shopId: seller.shopId, status: 'REJECTED' })}
+                                  className='rounded-xl bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50'
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {normalizeStatus(seller.status) === 'ACTIVE' && (
+                              <button
+                                type='button'
+                                disabled={mutation.isPending}
+                                onClick={() => mutation.mutate({ shopId: seller.shopId, status: 'SUSPENDED' })}
+                                className='rounded-xl border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-50'
+                              >
+                                Suspend
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {isOpen && (
+                        <tr className='bg-gray-50'>
+                          <td colSpan={8} className='border-t border-gray-200 px-4 py-4 align-top'>
+                            <p className='mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500'>
+                              {t.productsInShop}
+                            </p>
+                            {expandedProductsLoading && (
+                              <div className='py-8 text-center text-sm text-gray-500'>{t.loading}</div>
+                            )}
+                            {expandedProductsError && (
+                              <div className='rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700'>
+                                {t.productsLoadError}
+                              </div>
+                            )}
+                            {!expandedProductsLoading &&
+                              !expandedProductsError &&
+                              expandedShopProducts.length === 0 && (
+                                <div className='rounded-lg border border-dashed border-gray-200 py-10 text-center text-sm text-gray-500'>
+                                  {t.noProductsInShop}
+                                </div>
+                              )}
+                            {!expandedProductsLoading &&
+                              !expandedProductsError &&
+                              expandedShopProducts.length > 0 && (
+                                <div className='overflow-x-auto rounded-lg border border-gray-200 bg-white'>
+                                  <table className='min-w-[720px] w-full text-left text-sm'>
+                                    <thead>
+                                      <tr className='border-b border-gray-200 bg-gray-100 text-xs font-semibold uppercase tracking-wide text-gray-600'>
+                                        <th className='whitespace-nowrap px-3 py-2.5'>{t.colImage}</th>
+                                        <th className='min-w-[12rem] px-3 py-2.5'>{t.colProduct}</th>
+                                        <th className='whitespace-nowrap px-3 py-2.5'>{t.colSku}</th>
+                                        <th className='min-w-[8rem] px-3 py-2.5'>{t.colCategory}</th>
+                                        <th className='whitespace-nowrap px-3 py-2.5 text-right'>{t.colPrice}</th>
+                                        <th className='whitespace-nowrap px-3 py-2.5 text-right tabular-nums'>{t.colSales}</th>
+                                        <th className='whitespace-nowrap px-3 py-2.5'>{t.colProdStatus}</th>
+                                        <th className='whitespace-nowrap px-3 py-2.5 text-center'>{t.colOpen}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className='divide-y divide-gray-100 text-gray-900'>
+                                      {expandedShopProducts.map((p, idx) => {
+                                        const thumb = pmThumb(p)
+                                        const name = pmName(p)
+                                        const price = pmPrice(p)
+                                        const cat = p.categoryName?.trim() || '—'
+                                        const st = (p.status || p.moderationStatus || '—').toString()
+                                        const idOk = !!pmId(p)
+                                        return (
+                                          <tr key={String(p.productId ?? p.id ?? `${idx}-${p.globalSku ?? ''}`)}>
+                                            <td className='align-middle px-3 py-2'>
+                                              <div className='flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-100'>
+                                                {thumb ? (
+                                                  <img
+                                                    src={thumb}
+                                                    alt=''
+                                                    className='h-full w-full object-cover'
+                                                    loading='lazy'
+                                                  />
+                                                ) : (
+                                                  <span className='text-[10px] text-gray-400'>{t.noImageShort}</span>
+                                                )}
+                                              </div>
+                                            </td>
+                                            <td className='max-w-xs align-middle px-3 py-2'>
+                                              <p className='line-clamp-2 font-medium' title={name}>
+                                                {name}
+                                              </p>
+                                              {p.description ? (
+                                                <p className='mt-0.5 line-clamp-1 text-xs text-gray-500'>{p.description}</p>
+                                              ) : null}
+                                            </td>
+                                            <td className='align-middle whitespace-nowrap px-3 py-2 font-mono text-xs text-gray-700'>
+                                              {p.globalSku?.trim() || '—'}
+                                            </td>
+                                            <td className='align-middle px-3 py-2 text-gray-700'>{cat}</td>
+                                            <td className='align-middle whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-amber-900'>
+                                              {fmtVnd(price)}
+                                            </td>
+                                            <td className='align-middle whitespace-nowrap px-3 py-2 text-right tabular-nums text-gray-800'>
+                                              {typeof p.sales === 'number' ? p.sales.toLocaleString('vi-VN') : '—'}
+                                            </td>
+                                            <td className='align-middle px-3 py-2'>
+                                              <span className='inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium uppercase text-gray-800'>
+                                                {st}
+                                              </span>
+                                            </td>
+                                            <td className='align-middle px-3 py-2 text-center'>
+                                              {idOk ? (
+                                                <button
+                                                  type='button'
+                                                  onClick={() => openProduct(p)}
+                                                  className='text-sm font-semibold text-indigo-600 hover:underline'
+                                                >
+                                                  {t.colOpen}
+                                                </button>
+                                              ) : (
+                                                <span className='text-xs text-gray-400'>—</span>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        )
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  )
+                })
               )}
             </tbody>
           </table>

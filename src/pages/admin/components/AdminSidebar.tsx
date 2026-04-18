@@ -7,7 +7,7 @@ interface SidebarItem {
   labelEn: string
   to: string
   end?: boolean
-  icon: 'dashboard' | 'shops' | 'products' | 'reviews' | 'orders' | 'shipments' | 'providers' | 'categories' | 'vouchers' | 'disputes' | 'finance' | 'cms' | 'settings' | 'logs'
+  icon: 'dashboard' | 'shops' | 'products' | 'reviews' | 'orders' | 'shipments' | 'providers' | 'categories' | 'vouchers' | 'disputes' | 'cms' | 'settings' | 'logs'
 }
 
 const NAV_ITEMS: SidebarItem[] = [
@@ -17,8 +17,7 @@ const NAV_ITEMS: SidebarItem[] = [
   { labelVi: 'Danh mục', labelEn: 'Categories', to: '/admin/categories', icon: 'categories' },
   { labelVi: 'Đơn hàng', labelEn: 'Orders', to: '/admin/orders', icon: 'orders' },
   { labelVi: 'Vận chuyển', labelEn: 'Shipments', to: '/admin/shipments', icon: 'shipments' },
-  { labelVi: 'Quảng cáo', labelEn: 'Advertising', to: '/admin/marketing', icon: 'cms' },
-  { labelVi: 'Tài chính', labelEn: 'Finance', to: '/admin/finance', icon: 'finance' }
+  { labelVi: 'Quảng cáo', labelEn: 'Advertising', to: '/admin/marketing', icon: 'cms' }
 ]
 
 const iconStroke = 'currentColor'
@@ -112,15 +111,6 @@ const SidebarIcon: React.FC<{ variant: SidebarItem['icon']; isActive?: boolean }
           <path d='M4 6h16l-2 10H6L4 6z' />
           <path d='M9 11h6' />
           <path d='M12 11v5' />
-        </svg>
-      )
-    case 'finance':
-      return (
-        <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke={stroke} strokeWidth={strokeWidth} strokeLinecap='round'>
-          <path d='M4 19h16' />
-          <path d='M8 19V9' />
-          <path d='M12 19V5' />
-          <path d='M16 19v-7' />
         </svg>
       )
     case 'cms':

@@ -48,11 +48,14 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
       nameLabel: isVietnamese ? 'Tên danh mục' : 'Category name',
       namePlaceholder: isVietnamese ? 'Ví dụ: Thiết bị điện tử' : 'Example: Electronics',
       parentTitle: isVietnamese ? 'Chọn danh mục cha' : 'Choose a parent category',
+      parentNone: isVietnamese ? 'Không có — danh mục gốc' : 'None — root category',
       parentSubtitle: isVietnamese
-        ? 'Chọn danh mục cấp 1, sau đó chọn danh mục con (cấp 2) phù hợp.'
-        : 'Pick a level-1 category, then select the matching level-2 subcategory.',
+        ? 'Chọn từ danh sách: không có cha để tạo danh mục gốc, hoặc chọn cấp 1 rồi cấp 2 nếu cần.'
+        : 'Use the dropdowns: pick none for a root category, or choose level 1 then level 2 when needed.',
       parentSelected: isVietnamese ? 'Đã chọn danh mục con' : 'Subcategory selected',
       parentNotSelected: isVietnamese ? 'Chưa chọn danh mục con' : 'No subcategory selected',
+      parentBadgeRoot: isVietnamese ? 'Danh mục gốc' : 'Root category',
+      parentBadgeLevelOneParent: isVietnamese ? 'Cha: cấp 1 đã chọn' : 'Parent: level 1 selected',
       pathLabel: isVietnamese ? 'Đường dẫn' : 'Path',
       levelOneTitle: isVietnamese ? 'Danh mục cấp 1' : 'Level-1 categories',
       levelTwoTitle: isVietnamese ? 'Danh mục cấp 2' : 'Level-2 categories',
@@ -88,8 +91,9 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
       parentRequired: isVietnamese
         ? 'Vui lòng chọn danh mục cấp 2 làm danh mục cha.'
         : 'Please select a level-2 category as the parent.',
-      pathDefault: isVietnamese ? 'Chưa chọn danh mục' : 'No category selected',
+      pathRootNew: isVietnamese ? 'Danh mục gốc (không có danh mục cha)' : 'Root category (no parent)',
       pathRoot: isVietnamese ? 'Danh mục' : 'Category',
+      level2SelectPlaceholder: isVietnamese ? '— Chọn danh mục con —' : '— Select subcategory —',
     }),
     [isVietnamese]
   )
@@ -110,33 +114,29 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
   }, [parentOptions])
 
   React.useEffect(() => {
-    if (!parentOptions.length) {
+    if (!defaultParentId) {
       setSelectedLevelOneId(null)
       setSelectedLevelTwoId(null)
       setFormState((prev) => ({ ...prev, parentCategoryId: '' }))
-      return
     }
+  }, [defaultParentId])
 
-    if (defaultParentId) {
-      const matchedCategory = parentOptions.find((category) => category.categoryId === defaultParentId)
-      if (matchedCategory) {
-        if (matchedCategory.parentCategoryId) {
-          setSelectedLevelOneId(matchedCategory.parentCategoryId)
-          setSelectedLevelTwoId(matchedCategory.categoryId)
-          setFormState((prev) => ({ ...prev, parentCategoryId: matchedCategory.categoryId }))
-          return
-        }
-        setSelectedLevelOneId(matchedCategory.categoryId)
-        setSelectedLevelTwoId(null)
-        setFormState((prev) => ({ ...prev, parentCategoryId: '' }))
-        return
-      }
-    }
+  React.useEffect(() => {
+    if (!defaultParentId || !parentOptions.length) return
 
-    if (!selectedLevelOneId && levelOneCategories.length) {
-      setSelectedLevelOneId(levelOneCategories[0].categoryId)
+    const matchedCategory = parentOptions.find((category) => category.categoryId === defaultParentId)
+    if (!matchedCategory) return
+
+    if (matchedCategory.parentCategoryId) {
+      setSelectedLevelOneId(matchedCategory.parentCategoryId)
+      setSelectedLevelTwoId(matchedCategory.categoryId)
+      setFormState((prev) => ({ ...prev, parentCategoryId: matchedCategory.categoryId }))
+    } else {
+      setSelectedLevelOneId(matchedCategory.categoryId)
+      setSelectedLevelTwoId(null)
+      setFormState((prev) => ({ ...prev, parentCategoryId: '' }))
     }
-  }, [defaultParentId, parentOptions, levelOneCategories, selectedLevelOneId])
+  }, [defaultParentId, parentOptions])
 
   const subCategoriesQueryKey = selectedLevelOneId
     ? queryKeys.categories.children(selectedLevelOneId)
@@ -168,11 +168,21 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
 
   const selectionPath = selectedLevelTwo
     ? `${selectedLevelOne?.name ?? t.pathRoot} > ${selectedLevelTwo.name}`
-    : selectedLevelOne?.name ?? t.pathDefault
+    : selectedLevelOne
+      ? selectedLevelOne.name
+      : t.pathRootNew
 
   const levelTwoAvailable = levelTwoCategories.length > 0
   const showLeafWarning = Boolean(selectedLevelOneId && !selectedLevelTwoId && levelTwoAvailable)
   const hasHierarchy = levelOneCategories.length > 0
+
+  const parentStatusBadge = !selectedLevelOneId
+    ? t.parentBadgeRoot
+    : selectedLevelTwo
+      ? t.parentSelected
+      : levelTwoAvailable
+        ? t.parentNotSelected
+        : t.parentBadgeLevelOneParent
 
   React.useEffect(() => {
     if (!selectedLevelOneId || isSubCategoriesLoading) return
@@ -187,15 +197,17 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
 
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (payload: CreateCategoryRequest) => categoryService.createCategory(payload),
-    onSuccess: (response) => {
+    onSuccess: (createdCategory) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() })
       if (selectedLevelOneId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.categories.children(selectedLevelOneId) })
       }
-      setFeedback({ type: 'success', message: response.message || t.successMessage })
+      setFeedback({ type: 'success', message: t.successMessage })
       setFormState({ ...initialState, parentCategoryId: defaultParentId ?? '' })
       setFormErrors({})
-      onSuccess?.(response.data)
+      if (createdCategory) {
+        onSuccess?.(createdCategory)
+      }
     },
     onError: (error: unknown) => {
       setFeedback({ type: 'error', message: extractErrorMessage(error, t.errorFallback) })
@@ -219,7 +231,8 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
   }
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = event.target
+    const { name, value, type } = event.target
+    const checked = (event.target as HTMLInputElement).checked
     setFormState((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -228,18 +241,30 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
     setFeedback(null)
   }
 
-  const handleSelectLevelOne = (categoryId: string) => {
-    if (categoryId === selectedLevelOneId) return
-    setSelectedLevelOneId(categoryId)
-    setSelectedLevelTwoId(null)
-    setFormState((prev) => ({ ...prev, parentCategoryId: '' }))
+  const handleLevelOneSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value
+    if (!value) {
+      setSelectedLevelOneId(null)
+      setSelectedLevelTwoId(null)
+      setFormState((prev) => ({ ...prev, parentCategoryId: '' }))
+    } else {
+      setSelectedLevelOneId(value)
+      setSelectedLevelTwoId(null)
+      setFormState((prev) => ({ ...prev, parentCategoryId: '' }))
+    }
     setFormErrors((prev) => ({ ...prev, parentCategoryId: undefined }))
     setFeedback(null)
   }
 
-  const handleSelectLevelTwo = (categoryId: string) => {
-    setSelectedLevelTwoId(categoryId)
-    setFormState((prev) => ({ ...prev, parentCategoryId: categoryId }))
+  const handleLevelTwoSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value
+    if (!value) {
+      setSelectedLevelTwoId(null)
+      setFormState((prev) => ({ ...prev, parentCategoryId: '' }))
+    } else {
+      setSelectedLevelTwoId(value)
+      setFormState((prev) => ({ ...prev, parentCategoryId: value }))
+    }
     setFormErrors((prev) => ({ ...prev, parentCategoryId: undefined }))
     setFeedback(null)
   }
@@ -309,7 +334,7 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
               <p className='text-xs text-gray-500'>{t.parentSubtitle}</p>
             </div>
             <div className='rounded-2xl border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-semibold text-stone-700'>
-              {selectedLevelTwo ? t.parentSelected : t.parentNotSelected}
+              {parentStatusBadge}
             </div>
           </div>
 
@@ -317,49 +342,41 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
             {t.pathLabel}: <span className='font-semibold text-stone-900'>{selectionPath}</span>
           </div>
 
-          <div className='grid gap-4 lg:grid-cols-[220px_1fr]'>
-            <div className='space-y-2'>
-              <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{t.levelOneTitle}</p>
-              <div className='space-y-2'>
-                {levelOneCategories.length ? (
-                  levelOneCategories.map((category) => {
-                    const isActive = category.categoryId === selectedLevelOneId
-                    const initial = category.name.trim().charAt(0).toUpperCase() || 'C'
-                    return (
-                      <button
-                        type='button'
-                        key={category.categoryId}
-                        onClick={() => handleSelectLevelOne(category.categoryId)}
-                        className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition ${
-                          isActive
-                            ? 'border-amber-500 bg-amber-50/80 text-amber-900 shadow-sm'
-                            : 'border-gray-200 text-gray-700 hover:border-amber-200 hover:bg-amber-50/40'
-                        }`}
-                        disabled={isPending}
-                      >
-                        <span className='flex h-10 w-10 items-center justify-center rounded-2xl bg-stone-100 text-base font-semibold text-stone-700'>
-                          {initial}
-                        </span>
-                        <div>
-                          <p className='font-semibold leading-tight'>{category.name}</p>
-                          <p className='text-xs text-gray-500'>
-                            {category.subCategoriesCount} {t.subCountLabel}
-                          </p>
-                        </div>
-                      </button>
-                    )
-                  })
-                ) : (
-                  <div className='rounded-2xl border border-dashed border-gray-200 px-4 py-3 text-sm text-gray-500'>
-                    {t.levelOneEmpty}
-                  </div>
-                )}
-              </div>
+          <div className='space-y-4'>
+            <div className='space-y-1.5'>
+              <label htmlFor='parent-level-one' className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
+                {t.levelOneTitle}
+              </label>
+              {levelOneCategories.length ? (
+                <select
+                  id='parent-level-one'
+                  value={selectedLevelOneId ?? ''}
+                  onChange={handleLevelOneSelectChange}
+                  disabled={isPending}
+                  className='h-11 w-full max-w-full rounded-2xl border border-gray-200 bg-white px-3 pr-10 text-sm text-gray-900 shadow-sm focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500/30 disabled:opacity-60'
+                >
+                  <option value=''>{t.parentNone}</option>
+                  {levelOneCategories.map((category) => (
+                    <option key={category.categoryId} value={category.categoryId}>
+                      {category.name}
+                      {typeof category.subCategoriesCount === 'number'
+                        ? ` (${category.subCategoriesCount} ${t.subCountLabel})`
+                        : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className='rounded-2xl border border-dashed border-gray-200 px-4 py-3 text-sm text-gray-500'>
+                  {t.levelOneEmpty}
+                </div>
+              )}
             </div>
 
-            <div className='space-y-2'>
-              <div className='flex items-center justify-between'>
-                <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>{t.levelTwoTitle}</p>
+            <div className='space-y-1.5'>
+              <div className='flex flex-wrap items-center justify-between gap-2'>
+                <label htmlFor='parent-level-two' className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
+                  {t.levelTwoTitle}
+                </label>
                 {selectedLevelOne && (
                   <span className='text-xs text-gray-400'>
                     {t.levelTwoUnder} {selectedLevelOne.name}
@@ -367,59 +384,37 @@ export function CategoryCreateForm({ parentOptions = [], defaultParentId = null,
                 )}
               </div>
 
-              {isSubCategoriesLoading ? (
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className='h-24 animate-pulse rounded-2xl border border-dashed border-gray-200 bg-gray-50' />
-                  ))}
-                </div>
-              ) : levelTwoCategories.length ? (
-                <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
-                  {levelTwoCategories.map((subcategory) => {
-                    const isSelected = subcategory.categoryId === selectedLevelTwoId
-                    const initial = subcategory.name.trim().charAt(0).toUpperCase() || 'S'
-                    return (
-                      <button
-                        type='button'
-                        key={subcategory.categoryId}
-                        onClick={() => handleSelectLevelTwo(subcategory.categoryId)}
-                        className={`rounded-2xl border px-3 py-3 text-left transition ${
-                          isSelected
-                            ? 'border-amber-500 bg-amber-50/80 shadow-sm shadow-amber-100'
-                            : 'border-gray-200 hover:border-amber-200 hover:bg-amber-50/40'
-                        }`}
-                        disabled={isPending}
-                      >
-                        <div className='flex items-center gap-3'>
-                          <div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-100 to-white text-lg font-semibold text-amber-800'>
-                            {initial}
-                          </div>
-                          <div className='space-y-0.5'>
-                            <p className='text-sm font-semibold text-gray-900'>{subcategory.name}</p>
-                            <p className='text-xs text-gray-500'>
-                              {subcategory.description || t.levelTwoEmpty}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              ) : selectedLevelOne ? (
-                <div className='rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900'>
-                  {t.levelTwoMissing(selectedLevelOne.name)}
-                </div>
-              ) : (
-                <div className='rounded-2xl border border-dashed border-gray-200 px-4 py-3 text-sm text-gray-500'>
+              {!selectedLevelOneId ? (
+                <p className='rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-4 py-3 text-sm text-gray-500'>
                   {t.levelTwoNone}
+                </p>
+              ) : isSubCategoriesLoading ? (
+                <div className='h-11 animate-pulse rounded-2xl border border-dashed border-gray-200 bg-gray-100' />
+              ) : levelTwoCategories.length ? (
+                <select
+                  id='parent-level-two'
+                  value={selectedLevelTwoId ?? ''}
+                  onChange={handleLevelTwoSelectChange}
+                  disabled={isPending}
+                  className='h-11 w-full max-w-full rounded-2xl border border-gray-200 bg-white px-3 pr-10 text-sm text-gray-900 shadow-sm focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500/30 disabled:opacity-60'
+                >
+                  <option value=''>{t.level2SelectPlaceholder}</option>
+                  {levelTwoCategories.map((subcategory) => (
+                    <option key={subcategory.categoryId} value={subcategory.categoryId}>
+                      {subcategory.name}
+                      {subcategory.description ? ` — ${subcategory.description.slice(0, 48)}${subcategory.description.length > 48 ? '…' : ''}` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className='rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900'>
+                  {selectedLevelOne ? t.levelTwoMissing(selectedLevelOne.name) : ''}
                 </div>
               )}
 
               {isSubCategoriesError && (
                 <p className='text-xs text-rose-500'>
-                  {subCategoriesError instanceof Error
-                    ? subCategoriesError.message
-                    : t.subLoadError}
+                  {subCategoriesError instanceof Error ? subCategoriesError.message : t.subLoadError}
                 </p>
               )}
             </div>
