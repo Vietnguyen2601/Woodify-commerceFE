@@ -195,6 +195,12 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (walletId: string) => `/wallets/${walletId}`,
     TOPUP: '/wallets/topup',
     TRANSACTIONS: (walletId: string) => `/wallets/${walletId}/transactions`,
+    /** Seller — cùng ví Buyer theo account chủ shop (Payment service) */
+    SELLER_ACCOUNT: (accountId: string) =>
+      `/wallets/seller/account/${encodeURIComponent(accountId)}`,
+    SELLER_ACCOUNT_TRANSACTIONS: (accountId: string) =>
+      `/wallets/seller/account/${encodeURIComponent(accountId)}/transactions`,
+    SELLER_WITHDRAWALS: '/wallets/seller/withdrawals',
   },
 
   // ── Image Service ─────────────────────────────────────────────────────────
@@ -210,6 +216,7 @@ export const API_ENDPOINTS = {
   },
 
   // ── Shipment Service (5016) ────────────────────────────────────────────────
+  /** Nhà VC: GET/POST cùng `/shipment/providers` (list + create); BY_ID/UPDATE/DELETE = thao tác theo id */
   PROVIDER: {
     LIST: '/shipment/providers',
     BY_ID: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
@@ -332,4 +339,17 @@ export const ADMIN_API = {
       `/order/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
       `/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
     ] as const,
+  /**
+   * Seller withdrawal tickets — Payment/Wallet service (ServiceResult envelope).
+   * GET `/wallets/admin/withdrawals?status=&page=&pageSize=`
+   */
+  WITHDRAWALS: {
+    LIST: '/wallets/admin/withdrawals',
+    APPROVE: (ticketId: string) =>
+      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/approve`,
+    REJECT: (ticketId: string) =>
+      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/reject`,
+    MARK_PAID: (ticketId: string) =>
+      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/mark-paid`,
+  },
 } as const

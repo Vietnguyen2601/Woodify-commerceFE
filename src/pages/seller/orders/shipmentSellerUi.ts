@@ -3,11 +3,13 @@ import type { ShipmentDto } from '@/types'
 /** React Query key prefix for `GET .../shipments/by-shop/{shopId}` */
 export const SHIP_QUERY_KEY = 'seller-shop-shipments'
 
-/** Order statuses where creating a shipment is typically allowed (seller flow). */
+/** Cho phép tạo vận đơn (khi chưa có vận đơn đang chạy) — dùng trong panel + orchestrate sau UpdateStatus. */
 export const ORDER_STATUSES_ALLOW_CREATE_SHIPMENT = new Set([
   'CONFIRMED',
   'PROCESSING',
   'READY_TO_SHIP',
+  'SHIPPED',
+  'DELIVERED',
 ])
 
 const SHIPMENT_STRICT_TERMINAL = new Set(['DELIVERED', 'RETURNED', 'CANCELLED'])

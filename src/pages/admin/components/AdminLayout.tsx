@@ -17,7 +17,7 @@ export default function AdminLayout() {
     <div className='admin-surface min-h-screen text-neutral-900'>
       <div className='admin-layout-grid flex flex-col gap-0 pl-0 pr-0 pb-0 lg:flex-row lg:items-start'>
         <AdminSidebar />
-        <main className='admin-main flex-1 space-y-6'>
+        <main className='admin-main min-w-0 flex-1 space-y-6'>
           <AdminHeader />
 
           <section className='admin-workspace'>

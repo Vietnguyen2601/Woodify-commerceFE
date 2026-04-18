@@ -41,8 +41,14 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
     }
   }
 
-  const rating = product.rating || 4.8
-  const reviewCount = product.reviewCount || 234
+  const ratingText =
+    typeof product.rating === 'number' && !Number.isNaN(product.rating)
+      ? product.rating.toFixed(1)
+      : '—'
+  const reviewCountText =
+    typeof product.reviewCount === 'number' && !Number.isNaN(product.reviewCount)
+      ? String(product.reviewCount)
+      : '—'
 
   const sellerBlock = (
     <div className='production-card__seller'>
@@ -105,9 +111,9 @@ export default function ProductionCard({ product, onCardClick }: ProductionCardP
           <div className='production-card__rating'>
             <span className='production-card__rating-value'>
               <img src={StarIcon} alt='rating' className='production-card__rating-icon' style={{ width: '16px', height: '16px', display: 'inline-block', marginRight: '4px' }} />
-              {rating}
+              {ratingText}
             </span>
-            <span className='production-card__review-count'>({reviewCount})</span>
+            <span className='production-card__review-count'>({reviewCountText})</span>
             <span className='production-card__sold'>Đã bán {product.soldCount ?? 0}</span>
           </div>
         </div>

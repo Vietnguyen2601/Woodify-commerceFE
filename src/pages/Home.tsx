@@ -53,6 +53,7 @@ export default function Home() {
       price: p.price,
       originalPrice: undefined as number | undefined,
       rating: p.averageRating ?? 0,
+      reviewCount: p.reviewCount,
       soldCount: p.sales ?? 0,
       image:
         p.thumbnailUrl ??

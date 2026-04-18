@@ -8,6 +8,8 @@ interface ProductCardProps {
   price: number
   originalPrice?: number
   rating: number
+  /** Số đánh giá từ API (Product Service); không suy từ soldCount. */
+  reviewCount?: number
   soldCount: number
   image: string
   storeName?: string
@@ -57,6 +59,7 @@ export default function ProductCard({
   price, 
   originalPrice, 
   rating, 
+  reviewCount,
   soldCount, 
   image,
   storeName = "Nội thất Vũ Gia"
@@ -127,7 +130,7 @@ export default function ProductCard({
         
         {/* Rating & Sold Section */}
         <div className="flex items-center justify-between mt-1 pt-2 border-t border-[#f0f0f0]">
-          <StarRating rating={rating} ratingCount={ratingCount} />
+          <StarRating rating={rating} ratingCount={reviewCount} />
           <span className="font-['Arimo'] text-xs text-[#666]">Đã bán {soldCount}</span>
         </div>
       </div>

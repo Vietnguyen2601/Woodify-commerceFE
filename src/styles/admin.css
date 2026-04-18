@@ -792,6 +792,13 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* Finance withdrawal tickets — chips on light workspace */
+.admin-workspace__body .admin-chip.info {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(224, 242, 254, 0.65);
+  color: #0369a1;
+}
+
 .admin-timeline {
   display: flex;
   flex-direction: column;

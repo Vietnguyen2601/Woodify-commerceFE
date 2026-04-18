@@ -68,11 +68,12 @@ export default function SellerRegister() {
   })
 
   const { data: providersData, isLoading: providersLoading } = useQuery({
-    queryKey: ['providers'],
-    queryFn: () => providerService.getProviders({ page: 1, limit: 20 }),
+    queryKey: ['shipping-providers', 'list'],
+    queryFn: () => providerService.getAllProviders(),
+    staleTime: 5 * 60 * 1000,
   })
 
-  const providers = providersData?.providers ?? []
+  const providers = providersData ?? []
 
   const { mutate: createShop, isPending } = useMutation({
     mutationFn: async (payload: CreateShopPayload) => {
