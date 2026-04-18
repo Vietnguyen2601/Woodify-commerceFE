@@ -41,6 +41,71 @@ function coerceArray<T>(raw: unknown): T[] {
   return []
 }
 
+/** GET /shipment/providers trả `providers` + `pagination` (camelCase); map sang DTO tab admin. */
+function normalizeShipmentProviderRow(row: Record<string, unknown>): ShipmentProviderDto {
+  const providerId = String(row.providerId ?? row.ProviderId ?? '')
+  const providerName = String(row.name ?? row.providerName ?? row.ProviderName ?? '')
+  const contactPhone =
+    row.supportPhone != null && row.supportPhone !== ''
+      ? String(row.supportPhone)
+      : row.contactPhone != null
+        ? String(row.contactPhone)
+        : undefined
+  const contactEmail =
+    row.supportEmail != null && row.supportEmail !== ''
+      ? String(row.supportEmail)
+      : row.contactEmail != null
+        ? String(row.contactEmail)
+        : undefined
+  const isActive = row.isActive ?? row.IsActive
+  return {
+    providerId,
+    providerName,
+    contactPhone,
+    contactEmail,
+    isActive: typeof isActive === 'boolean' ? isActive : undefined,
+    createdDate:
+      row.createdAt != null
+        ? String(row.createdAt)
+        : row.createdDate != null
+          ? String(row.createdDate)
+          : undefined,
+  }
+}
+
+function parseShipmentProvidersPage(raw: unknown, page: number, limit: number): ProvidersPageDto | null {
+  if (raw === null || raw === undefined) return null
+  if (Array.isArray(raw)) {
+    const items = (raw as Record<string, unknown>[]).map((p) =>
+      normalizeShipmentProviderRow(p && typeof p === 'object' ? (p as Record<string, unknown>) : {}),
+    )
+    return { items, totalItems: items.length, pageNumber: page, pageSize: limit }
+  }
+  if (typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  if (Array.isArray(o.providers)) {
+    const items = (o.providers as Record<string, unknown>[]).map((p) => normalizeShipmentProviderRow(p))
+    const pag = o.pagination as { total?: number; page?: number; limit?: number } | undefined
+    const total = typeof pag?.total === 'number' ? pag.total : items.length
+    return {
+      items,
+      totalItems: total,
+      pageNumber: typeof pag?.page === 'number' ? pag.page : page,
+      pageSize: typeof pag?.limit === 'number' ? pag.limit : limit,
+    }
+  }
+  if (Array.isArray(o.items)) {
+    const items = (o.items as Record<string, unknown>[]).map((p) => normalizeShipmentProviderRow(p))
+    return {
+      items,
+      totalItems: typeof o.totalItems === 'number' ? o.totalItems : items.length,
+      pageNumber: typeof o.pageNumber === 'number' ? o.pageNumber : page,
+      pageSize: typeof o.pageSize === 'number' ? o.pageSize : limit,
+    }
+  }
+  return null
+}
+
 async function getFirstOk<T>(
   paths: readonly string[],
   config?: AxiosRequestConfig
@@ -507,26 +572,26 @@ export const adminService = {
       const raw = await getFirstOk<unknown>(ADMIN_API.SHIPMENT_PROVIDERS.LIST, {
         params: { page, limit },
       })
-      const items = coerceArray<ShipmentProviderDto>(raw)
-      if (items.length) {
+      const parsed = parseShipmentProvidersPage(raw, page, limit)
+      if (parsed) return parsed
+      const fallbackItems = coerceArray<ShipmentProviderDto>(raw)
+      if (fallbackItems.length) {
         return {
-          items,
-          totalItems: items.length,
+          items: fallbackItems,
+          totalItems: fallbackItems.length,
           pageNumber: page,
           pageSize: limit,
         }
       }
-      const obj = raw as Partial<ProvidersPageDto>
-      if (obj.items && Array.isArray(obj.items)) {
-        return {
-          items: obj.items,
-          totalItems: obj.totalItems ?? obj.items.length,
-          pageNumber: obj.pageNumber ?? page,
-          pageSize: obj.pageSize ?? limit,
-        }
-      }
     } catch {
-      /* providers optional if route missing */
+      /* try direct gateway path */
+    }
+    try {
+      const raw = await api.get<unknown>(API_ENDPOINTS.PROVIDER.LIST, { params: { page, limit } })
+      const parsed = parseShipmentProvidersPage(raw, page, limit)
+      if (parsed) return parsed
+    } catch {
+      /* optional */
     }
     return { items: [], totalItems: 0, pageNumber: page, pageSize: limit }
   },

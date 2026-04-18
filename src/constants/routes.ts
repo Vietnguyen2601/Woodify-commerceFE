@@ -59,6 +59,13 @@ export const ROUTES = {
   ADMIN_ORDERS: '/admin/orders',
   ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_MARKETING: '/admin/marketing',
+  ADMIN_FINANCE: '/admin/finance',
+} as const
+
+/** Liên kết ngoài (mạng xã hội, v.v.) — dùng với `<a target="_blank" rel="noopener noreferrer">` */
+export const EXTERNAL_LINKS = {
+  FACEBOOK_WOODIFY: 'https://www.facebook.com/profile.php?id=61586575153862',
+  TIKTOK_WOODIFY: 'https://www.tiktok.com/@woodifyteam?_r=1&_t=ZS-95dRsq7iTT6',
 } as const
 
 export type RouteKey = keyof typeof ROUTES

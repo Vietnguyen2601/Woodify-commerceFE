@@ -7,7 +7,7 @@ interface SidebarItem {
   labelEn: string
   to: string
   end?: boolean
-  icon: 'dashboard' | 'shops' | 'products' | 'reviews' | 'orders' | 'shipments' | 'providers' | 'categories' | 'vouchers' | 'disputes' | 'finance' | 'cms' | 'settings' | 'logs'
+  icon: 'dashboard' | 'shops' | 'products' | 'reviews' | 'orders' | 'shipments' | 'providers' | 'categories' | 'vouchers' | 'disputes' | 'cms' | 'finance' | 'settings' | 'logs'
 }
 
 const NAV_ITEMS: SidebarItem[] = [
@@ -114,21 +114,20 @@ const SidebarIcon: React.FC<{ variant: SidebarItem['icon']; isActive?: boolean }
           <path d='M12 11v5' />
         </svg>
       )
-    case 'finance':
-      return (
-        <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke={stroke} strokeWidth={strokeWidth} strokeLinecap='round'>
-          <path d='M4 19h16' />
-          <path d='M8 19V9' />
-          <path d='M12 19V5' />
-          <path d='M16 19v-7' />
-        </svg>
-      )
     case 'cms':
       return (
         <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke={stroke} strokeWidth={strokeWidth} strokeLinecap='round'>
           <path d='M4 5h16v6H4z' />
           <path d='M4 13h8v6H4z' />
           <path d='M14 13h6v6h-6z' />
+        </svg>
+      )
+    case 'finance':
+      return (
+        <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke={stroke} strokeWidth={strokeWidth} strokeLinecap='round' strokeLinejoin='round'>
+          <rect x='2' y='5' width='20' height='14' rx='2' />
+          <path d='M2 10h20' />
+          <path d='M16 14h.01' />
         </svg>
       )
     case 'settings':

@@ -4,12 +4,18 @@ import { orderService, shipmentService } from '@/services'
 import { useShopStore } from '@/store/shopStore'
 import type { SellerOrder, SellerOrderStatus, ShipmentDto } from '@/types'
 import ShipmentSellerPanel from './components/ShipmentSellerPanel'
+import SellerOrdersShippingHub from './components/SellerOrdersShippingHub'
 import {
   SHIP_QUERY_KEY,
   buildShipmentByOrderIdMap,
   shipmentStatusBadgeClass,
   shipmentStatusLabel,
 } from './shipmentSellerUi'
+import { runSellerOrderStatusUpdateWithShipment } from './orderShipmentOrchestration'
+import {
+  paymentDeliverySummaryVi,
+  showPaidBeforeDeliveredHint,
+} from './sellerOrderAxes'
 import {
   SELLER_MAIN_STAGE_SEQUENCE,
   SELLER_STAGE_LABEL_VI,
@@ -86,7 +92,8 @@ function statusBadgeClass(status: string): string {
   if (s === 'CONFIRMED' || s === 'PROCESSING' || s === 'READY_TO_SHIP')
     return 'border-sky-300 bg-sky-50 text-sky-900'
   if (s === 'SHIPPED') return 'border-violet-300 bg-violet-50 text-violet-900'
-  if (s === 'DELIVERED' || s === 'COMPLETED') return 'border-emerald-300 bg-emerald-50 text-emerald-900'
+  if (s === 'DELIVERED') return 'border-emerald-300 bg-emerald-50 text-emerald-900'
+  if (s === 'COMPLETED') return 'border-cyan-400/80 bg-cyan-50 text-cyan-950'
   if (s === 'CANCELLED') return 'border-stone-300 bg-stone-100 text-stone-700'
   if (s === 'REFUNDING' || s === 'REFUNDED') return 'border-orange-300 bg-orange-50 text-orange-900'
   return 'border-yellow-800/30 bg-white text-stone-800'
@@ -102,9 +109,14 @@ function getForwardActions(status: string): { label: string; next: SellerOrderSt
     case 'PROCESSING':
       return [{ label: 'S\u1eb5n s\u00e0ng giao h\u00e0ng', next: 'READY_TO_SHIP' }]
     case 'READY_TO_SHIP':
-      return [{ label: '\u0110\u00e3 giao cho \u0110VVC', next: 'SHIPPED' }]
+      return [
+        {
+          label: 'Giao cho \u0110VVC & t\u1ea1o v\u1eadn \u0111\u01a1n',
+          next: 'SHIPPED',
+        },
+      ]
     case 'SHIPPED':
-      return [{ label: '\u0110\u00e3 giao \u0111\u1ebfn kh\u00e1ch', next: 'DELIVERED' }]
+      return [{ label: '\u0110\u00e3 giao \u0111\u1ebfn kh\u00e1ch', next: 'COMPLETED' }]
     case 'DELIVERED':
       return [{ label: 'Ho\u00e0n t\u1ea5t \u0111\u01a1n', next: 'COMPLETED' }]
     default:
@@ -141,11 +153,13 @@ export default function AllOrders() {
     enabled: !!shop?.shopId,
   })
 
-  const { data: shopShipments = [] } = useQuery({
+  const { data: shopShipments = [], isLoading: shipmentsLoading } = useQuery({
     queryKey: [SHIP_QUERY_KEY, shop?.shopId],
     queryFn: () => shipmentService.listShipmentsByShop(shop!.shopId),
     enabled: !!shop?.shopId,
   })
+
+  const ordersAndShipmentsLoading = isLoading || shipmentsLoading
 
   const shipmentByOrderId = React.useMemo(
     () => buildShipmentByOrderIdMap(shopShipments),
@@ -159,13 +173,45 @@ export default function AllOrders() {
   }, [orders, selected?.orderId])
 
   const mutation = useMutation({
-    mutationFn: ({ orderId, status }: { orderId: string; status: SellerOrderStatus }) =>
-      orderService.updateShopOrderStatus(orderId, status),
-    onMutate: ({ orderId }) => setUpdatingId(orderId),
-    onSuccess: () => {
+    mutationFn: async ({
+      order,
+      status,
+    }: {
+      order: SellerOrder
+      status: SellerOrderStatus
+    }) =>
+      runSellerOrderStatusUpdateWithShipment({
+        shopId: shop!.shopId,
+        order,
+        nextStatus: status,
+      }),
+    onMutate: ({ order }) => setUpdatingId(order.orderId),
+    onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['seller-shop-orders', shop?.shopId] })
       void queryClient.invalidateQueries({ queryKey: [SHIP_QUERY_KEY, shop?.shopId] })
-      setBanner({ ok: true, msg: '\u0110\u00e3 c\u1eadp nh\u1eadt tr\u1ea1ng th\u00e1i \u0111\u01a1n h\u00e0ng.' })
+      const w = data?.shipmentWarning
+      if (w) {
+        setBanner({
+          ok: true,
+          msg: `Đã cập nhật đơn. Vận đơn: ${w}`,
+        })
+        return
+      }
+      if (data?.handover) {
+        setBanner({
+          ok: true,
+          msg: 'Đã chuyển sang Đang giao và tạo vận đơn trong cùng một lần bấm (Sẵn sàng giao → ĐVVC).',
+        })
+        return
+      }
+      if (data?.deliveredSync) {
+        setBanner({
+          ok: true,
+          msg: 'Đơn đã Hoàn tất (COMPLETED); vận đơn đã chuyển DELIVERED cùng lúc.',
+        })
+        return
+      }
+      setBanner({ ok: true, msg: 'Đã cập nhật trạng thái đơn hàng.' })
     },
     onError: (e: unknown) => {
       const msg =
@@ -214,7 +260,7 @@ export default function AllOrders() {
     })
   }, [orders, filter, search, shipmentByOrderId])
 
-  const runStatusUpdate = (orderId: string, status: SellerOrderStatus) => {
+  const runStatusUpdate = (order: SellerOrder, status: SellerOrderStatus) => {
     setBanner(null)
     if (status === 'CANCELLED') {
       const ok = window.confirm(
@@ -222,7 +268,7 @@ export default function AllOrders() {
       )
       if (!ok) return
     }
-    mutation.mutate({ orderId, status })
+    mutation.mutate({ order, status })
   }
 
   if (!shop?.shopId) return null
@@ -230,11 +276,11 @@ export default function AllOrders() {
   return (
     <div className='min-h-[60vh] font-["Arimo"] text-stone-900'>
       <header className='mb-6'>
-        <h1 className='text-xl font-bold text-stone-900'>{'Qu\u1ea3n l\u00fd \u0111\u01a1n h\u00e0ng'}</h1>
+        <h1 className='text-xl font-bold text-stone-900'>Quản lý đơn hàng & vận chuyển</h1>
         <p className='mt-1 text-sm text-stone-600'>
-          {
-            'L\u1ecdc theo 5 giai \u0111o\u1ea1n hi\u1ec3n th\u1ecb (Chu\u1ea9n b\u1ecb \u2192 B\u00e0n giao \u2192 \u0110ang giao \u2192 Ho\u00e0n t\u1ea5t / Ngo\u1ea1i l\u1ec7). Tr\u1ea1ng th\u00e1i API v\u1eabn hi\u1ec7n \u1edf chi ti\u1ebft t\u1eebng \u0111\u01a1n.'
-          }
+          Đơn (order.status) và vận đơn (shipment) chạy song song — không có một chuỗi 4 bước duy nhất. Hoàn tất
+          (COMPLETED) trên đơn thường do thanh toán, không gắn cứng sau trạng thái giao. Thanh tiến độ giai đoạn
+          bên dưới chỉ là gợi ý hiển thị; trong chi tiết đơn có hai dòng Thanh toán / Giao hàng.
         </p>
       </header>
 
@@ -251,7 +297,20 @@ export default function AllOrders() {
         </div>
       )}
 
+      <SellerOrdersShippingHub
+        isLoading={ordersAndShipmentsLoading}
+        isError={isError}
+        error={error}
+        onRefresh={() => {
+          void refetch()
+          void queryClient.invalidateQueries({ queryKey: [SHIP_QUERY_KEY, shop.shopId] })
+        }}
+      />
+
       <section className='mb-4 rounded-xl border border-yellow-800/20 bg-white p-4 shadow-sm'>
+        <div className='border-b border-yellow-800/10 pb-3 mb-4'>
+          <h2 className='text-sm font-bold uppercase tracking-wide text-stone-500'>Danh sách đơn theo giai đoạn</h2>
+        </div>
         <div className='flex flex-wrap gap-2'>
           {STAGE_FILTER_TABS.map((tab) => {
             const count =
@@ -366,7 +425,15 @@ export default function AllOrders() {
   )
 }
 
-function SellerStageProgressStrip({ stage }: { stage: SellerOrderStage }) {
+function SellerStageProgressStrip({
+  stage,
+  orderStatus,
+  shipment,
+}: {
+  stage: SellerOrderStage
+  orderStatus?: string | null
+  shipment?: ShipmentDto | null
+}) {
   if (stage === 'exception') {
     return (
       <div className='rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-center text-[11px] font-semibold text-orange-900'>
@@ -379,6 +446,8 @@ function SellerStageProgressStrip({ stage }: { stage: SellerOrderStage }) {
     )
   }
   const active = SELLER_MAIN_STAGE_SEQUENCE.indexOf(stage)
+  const summary =
+    orderStatus != null ? paymentDeliverySummaryVi(orderStatus, shipment ?? null) : null
   return (
     <div>
       <p className='mb-2 text-[10px] font-bold uppercase tracking-wide text-stone-500'>
@@ -398,6 +467,34 @@ function SellerStageProgressStrip({ stage }: { stage: SellerOrderStage }) {
           </div>
         ))}
       </div>
+      {summary && (
+        <div className='mt-3 space-y-1.5 border-t border-yellow-800/10 pt-3'>
+          <p className='text-[10px] font-bold uppercase tracking-wide text-stone-500'>
+            Hai trục (thanh toán &amp; giao hàng)
+          </p>
+          <p className='text-[10px] leading-snug text-stone-700'>{summary.payment}</p>
+          <p className='text-[10px] leading-snug text-stone-700'>{summary.delivery}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DualAxisPaymentDeliveryLines({
+  orderStatus,
+  shipment,
+}: {
+  orderStatus: string | null | undefined
+  shipment: ShipmentDto | null
+}) {
+  const summary = paymentDeliverySummaryVi(orderStatus, shipment)
+  return (
+    <div className='space-y-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left'>
+      <p className='text-[10px] font-bold uppercase tracking-wide text-stone-500'>
+        Hai trục (thanh toán &amp; giao hàng)
+      </p>
+      <p className='text-[10px] leading-snug text-stone-700'>{summary.payment}</p>
+      <p className='text-[10px] leading-snug text-stone-700'>{summary.delivery}</p>
     </div>
   )
 }
@@ -413,7 +510,7 @@ function OrderCard({
   shipment: ShipmentDto | null
   busy: boolean
   onOpenDetail: () => void
-  onStatusChange: (orderId: string, s: SellerOrderStatus) => void
+  onStatusChange: (order: SellerOrder, s: SellerOrderStatus) => void
 }) {
   const st = (order.status || '').toUpperCase()
   const stage = resolveSellerOrderStage(order.status, shipment)
@@ -506,6 +603,11 @@ function OrderCard({
                 <span className='text-stone-500'>Chưa tạo</span>
               )}
             </p>
+            {showPaidBeforeDeliveredHint(order.status, shipment) && (
+              <p className='mt-1 text-[10px] leading-snug text-cyan-900'>
+                COMPLETED có thể do thanh toán trước khi giao xong.
+              </p>
+            )}
           </div>
         </div>
 
@@ -523,7 +625,7 @@ function OrderCard({
                 key={a.next}
                 type='button'
                 disabled={busy}
-                onClick={() => onStatusChange(order.orderId, a.next)}
+                onClick={() => onStatusChange(order, a.next)}
                 className='rounded-lg bg-yellow-800 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-yellow-900 disabled:opacity-50'
               >
                 {a.label}
@@ -533,7 +635,7 @@ function OrderCard({
             <button
               type='button'
               disabled={busy}
-              onClick={() => onStatusChange(order.orderId, cancel.next)}
+              onClick={() => onStatusChange(order, cancel.next)}
               className='rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:opacity-50'
             >
               {cancel.label}
@@ -559,7 +661,7 @@ function OrderDetailDrawer({
   shipment: ShipmentDto | null
   onClose: () => void
   busy: boolean
-  onStatusChange: (orderId: string, s: SellerOrderStatus) => void
+  onStatusChange: (order: SellerOrder, s: SellerOrderStatus) => void
   onShipmentToast: (ok: boolean, msg: string) => void
 }) {
   const st = (order.status || '').toUpperCase()
@@ -605,8 +707,13 @@ function OrderDetailDrawer({
 
         <div className='flex-1 overflow-y-auto px-5 py-4'>
           <section className='mb-5 rounded-lg border border-yellow-800/15 bg-stone-50/80 px-3 py-3'>
-            <SellerStageProgressStrip stage={uiStage} />
+            <SellerStageProgressStrip stage={uiStage} orderStatus={order.status} shipment={shipment} />
           </section>
+          {showPaidBeforeDeliveredHint(order.status, shipment) && (
+            <p className='mb-3 rounded-lg border border-cyan-200/80 bg-cyan-50/80 px-3 py-2 text-[11px] leading-snug text-cyan-950'>
+              Đơn đã COMPLETED có thể khi hàng vẫn đang giao — đừng hiểu COMPLETED là “đã giao”.
+            </p>
+          )}
 
           <section className='mb-5'>
             <h3 className='text-xs font-bold uppercase text-stone-500'>
@@ -704,7 +811,7 @@ function OrderDetailDrawer({
                   key={a.next}
                   type='button'
                   disabled={busy}
-                  onClick={() => onStatusChange(order.orderId, a.next)}
+                  onClick={() => onStatusChange(order, a.next)}
                   className='flex-1 min-w-[140px] rounded-lg bg-yellow-800 py-2.5 text-center text-xs font-semibold text-white hover:bg-yellow-900 disabled:opacity-50'
                 >
                   {a.label}
@@ -714,7 +821,7 @@ function OrderDetailDrawer({
               <button
                 type='button'
                 disabled={busy}
-                onClick={() => onStatusChange(order.orderId, cancel.next)}
+                onClick={() => onStatusChange(order, cancel.next)}
                 className='rounded-lg border border-red-300 bg-white px-4 py-2.5 text-xs font-semibold text-red-800 hover:bg-red-50 disabled:opacity-50'
               >
                 {cancel.label}

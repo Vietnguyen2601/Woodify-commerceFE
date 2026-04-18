@@ -1,8 +1,8 @@
 import { categoryApi } from './api/categoryClient'
 import { API_ENDPOINTS } from '@/constants'
 import type {
+  CategoryDTO,
   CreateCategoryRequest,
-  CreateCategoryApiResponse,
   CategoryListApiResponse,
   CategorySearchApiResponse,
 } from '@/types'
@@ -37,9 +37,8 @@ export const categoryService = {
   /**
    * Create a new category. Root level categories must send parentCategoryId = null.
    */
-  createCategory: async (
-    payload: CreateCategoryRequest
-  ): Promise<CreateCategoryApiResponse> => {
+  /** Response is unwrapped by categoryClient (inner `data` only). */
+  createCategory: async (payload: CreateCategoryRequest): Promise<CategoryDTO> => {
     const normalizedPayload = {
       ...payload,
       parentCategoryId:
@@ -49,9 +48,6 @@ export const categoryService = {
       description: payload.description ?? null,
     }
 
-    return categoryApi.post<CreateCategoryApiResponse>(
-      API_ENDPOINTS.CATEGORIES.CREATE,
-      normalizedPayload
-    )
+    return categoryApi.post<CategoryDTO>(API_ENDPOINTS.CATEGORIES.CREATE, normalizedPayload)
   },
 }

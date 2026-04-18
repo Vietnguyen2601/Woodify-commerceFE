@@ -239,6 +239,7 @@ export default function ProductModeration() {
                   <th className='px-6 py-3 text-left'>Danh mục</th>
                   <th className='px-6 py-3 text-left'>Trạng thái</th>
                   <th className='px-6 py-3 text-left'>Kiểm duyệt</th>
+                  <th className='px-6 py-3 text-right'>Lượt bán</th>
                   <th className='px-6 py-3 text-left'>Ngày tạo</th>
                   <th className='px-6 py-3 text-center'>Hành động</th>
                 </tr>
@@ -265,59 +266,104 @@ export default function ProductModeration() {
             </h3>
           </header>
           <div className='overflow-x-auto'>
-            <table className='min-w-[1180px] w-full divide-y divide-gray-100 text-sm'>
+            <table className='min-w-[2200px] w-full divide-y divide-gray-100 text-sm'>
               <thead className='bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500'>
                 <tr>
-                  <th className='px-4 py-3 text-left'>Product ID</th>
-                  <th className='px-4 py-3 text-left'>Shop Name</th>
-                  <th className='px-4 py-3 text-left'>Category</th>
-                  <th className='px-4 py-3 text-left'>Name</th>
-                  <th className='px-4 py-3 text-left'>Status</th>
-                  <th className='px-4 py-3 text-left'>Moderation</th>
-                  <th className='px-4 py-3 text-left'>Published At</th>
-                  <th className='px-4 py-3 text-right'>Price</th>
-                  <th className='px-4 py-3 text-right'>Stock</th>
-                  <th className='px-4 py-3 text-left'>Wood Type</th>
+                  <th className='sticky left-0 z-10 bg-gray-50 px-3 py-3 text-left font-mono normal-case shadow-[1px_0_0_0_rgb(243_244_246)]'>
+                    thumbnailUrl
+                  </th>
+                  <th className='px-3 py-3 text-left font-mono normal-case'>shopName</th>
+                  <th className='px-3 py-3 text-left font-mono normal-case'>categoryName</th>
+                  <th className='min-w-[140px] px-3 py-3 text-left font-mono normal-case'>name</th>
+                  <th className='px-3 py-3 text-left font-mono normal-case'>globalSku</th>
+                  <th className='min-w-[200px] px-3 py-3 text-left font-mono normal-case'>description</th>
+                  <th className='px-3 py-3 text-left font-mono normal-case'>status</th>
+                  <th className='px-3 py-3 text-left font-mono normal-case'>moderationStatus</th>
+                  <th className='whitespace-nowrap px-3 py-3 text-left font-mono normal-case'>createdAt</th>
+                  <th className='whitespace-nowrap px-3 py-3 text-left font-mono normal-case'>publishedAt</th>
+                  <th className='px-3 py-3 text-right font-mono normal-case'>price</th>
+                  <th className='px-3 py-3 text-right font-mono normal-case'>stockQuantity</th>
+                  <th className='px-3 py-3 text-left font-mono normal-case'>woodType</th>
+                  <th className='px-3 py-3 text-right font-mono normal-case'>averageRating</th>
+                  <th className='px-3 py-3 text-right font-mono normal-case'>reviewCount</th>
+                  <th className='px-3 py-3 text-right font-mono normal-case'>sales</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-gray-100'>
                 {moderationPageItems.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className='px-6 py-8 text-center text-gray-500'>
+                    <td colSpan={16} className='px-6 py-8 text-center text-gray-500'>
                       {isVietnamese ? 'Không có sản phẩm phù hợp.' : 'No matching products found.'}
                     </td>
                   </tr>
                 ) : (
-                  moderationPageItems.map((product) => (
-                    <tr key={`moderation-${product.productId}`} className='text-gray-900 hover:bg-gray-50 transition'>
-                      <td className='px-4 py-3 font-mono text-xs text-gray-600'>{product.productId}</td>
-                      <td className='px-4 py-3 text-gray-700'>{''}</td>
-                      <td className='px-4 py-3 text-gray-700'>{product.categoryName || '—'}</td>
-                      <td className='px-4 py-3 font-medium text-gray-900'>{product.name || '—'}</td>
-                      <td className='px-4 py-3'>
-                        <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[product.status] ?? ''}`}>
-                          {STATUS_LABEL[product.status] ?? product.status}
-                        </span>
-                      </td>
-                      <td className='px-4 py-3'>
-                        <span
-                          className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${
-                            MODERATION_STATUS_STYLES[product.moderationStatus] ?? 'border border-gray-200 bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          {product.moderationStatus}
-                        </span>
-                      </td>
-                      <td className='px-4 py-3 text-xs text-gray-600'>
-                        {product.publishedAt ? new Date(product.publishedAt).toLocaleString('vi-VN') : '—'}
-                      </td>
-                      <td className='px-4 py-3 text-right font-medium text-gray-900'>
-                        {typeof product.price === 'number' ? product.price.toLocaleString('vi-VN') : '—'}
-                      </td>
-                      <td className='px-4 py-3 text-right text-gray-700'>{product.stockQuantity ?? '—'}</td>
-                      <td className='px-4 py-3 text-gray-700'>{product.woodType || '—'}</td>
-                    </tr>
-                  ))
+                  moderationPageItems.map((product) => {
+                    const locale = isVietnamese ? 'vi-VN' : 'en-US'
+                    const fmtDt = (iso: string | null | undefined) =>
+                      iso ? new Date(iso).toLocaleString(locale) : '—'
+                    return (
+                      <tr key={`moderation-${product.productId}`} className='group text-gray-900 transition hover:bg-gray-50'>
+                        <td className='sticky left-0 z-[1] bg-white px-3 py-2 shadow-[1px_0_0_0_rgb(243_244_246)] group-hover:bg-gray-50'>
+                          {product.thumbnailUrl ? (
+                            <img
+                              src={product.thumbnailUrl}
+                              alt=''
+                              className='h-12 w-12 rounded-lg border border-gray-200 object-cover'
+                            />
+                          ) : (
+                            <div className='flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-[10px] text-gray-400'>
+                              —
+                            </div>
+                          )}
+                        </td>
+                        <td className='px-3 py-3 text-gray-700'>{product.shopName?.trim() || '—'}</td>
+                        <td className='px-3 py-3 text-gray-700'>{product.categoryName || '—'}</td>
+                        <td className='max-w-[200px] px-3 py-3 font-medium text-gray-900'>
+                          <span className='line-clamp-2' title={product.name}>
+                            {product.name || '—'}
+                          </span>
+                        </td>
+                        <td className='px-3 py-3 font-mono text-xs text-gray-600'>{product.globalSku || '—'}</td>
+                        <td className='max-w-[240px] px-3 py-3 text-gray-600'>
+                          <span className='line-clamp-2 text-xs' title={product.description || undefined}>
+                            {product.description?.trim() || '—'}
+                          </span>
+                        </td>
+                        <td className='px-3 py-3'>
+                          <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[product.status] ?? ''}`}>
+                            {STATUS_LABEL[product.status] ?? product.status}
+                          </span>
+                        </td>
+                        <td className='px-3 py-3'>
+                          <span
+                            className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                              MODERATION_STATUS_STYLES[product.moderationStatus] ?? 'border border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          >
+                            {product.moderationStatus}
+                          </span>
+                        </td>
+                        <td className='whitespace-nowrap px-3 py-3 text-xs text-gray-600'>{fmtDt(product.createdAt)}</td>
+                        <td className='whitespace-nowrap px-3 py-3 text-xs text-gray-600'>{fmtDt(product.publishedAt)}</td>
+                        <td className='px-3 py-3 text-right font-medium text-gray-900'>
+                          {typeof product.price === 'number' ? product.price.toLocaleString(locale) : '—'}
+                        </td>
+                        <td className='px-3 py-3 text-right tabular-nums text-gray-700'>{product.stockQuantity ?? '—'}</td>
+                        <td className='px-3 py-3 text-gray-700'>{product.woodType || '—'}</td>
+                        <td className='px-3 py-3 text-right tabular-nums text-gray-700'>
+                          {product.averageRating != null && typeof product.averageRating === 'number'
+                            ? product.averageRating.toFixed(1)
+                            : '—'}
+                        </td>
+                        <td className='px-3 py-3 text-right tabular-nums text-gray-700'>
+                          {typeof product.reviewCount === 'number' ? product.reviewCount.toLocaleString(locale) : '—'}
+                        </td>
+                        <td className='px-3 py-3 text-right tabular-nums text-gray-800'>
+                          {typeof product.sales === 'number' ? product.sales.toLocaleString(locale) : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -433,6 +479,9 @@ function ProductRow({ product }: { product: ProductMaster }) {
             : product.moderationStatus === 'REJECTED' ? 'Từ chối'
             : 'Chờ xử lý'} {product.moderatedAt ? `(${moderatedAt})` : ''}
         </span>
+      </td>
+      <td className='px-6 py-4 text-right tabular-nums text-gray-800'>
+        {typeof product.sales === 'number' ? product.sales.toLocaleString('vi-VN') : '—'}
       </td>
       <td className='px-6 py-4 text-xs text-gray-500'>{createdAt}</td>
       <td className='px-6 py-4'>

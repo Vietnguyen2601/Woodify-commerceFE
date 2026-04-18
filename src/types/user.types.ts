@@ -75,3 +75,13 @@ export interface AuthState {
   tokens: AuthTokens | null
   isAuthenticated: boolean
 }
+
+/** PUT `/api/Accounts/UpdateAccount/{id}` — cập nhật hồ sơ khách hàng */
+export interface UpdateCustomerAccountPayload {
+  name: string
+  phoneNumber: string
+  address: string
+  /** ISO 8601, ví dụ `2026-04-18T06:23:20.613Z` */
+  dob: string
+  gender: string
+}

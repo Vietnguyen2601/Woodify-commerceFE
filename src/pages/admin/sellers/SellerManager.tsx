@@ -197,10 +197,10 @@ export default function SellerManager() {
     const active = shops.filter((s) => normalizeStatus(s.status) === 'ACTIVE').length
     const totalProducts = productRows.length
     return [
-      { label: t.totalShops, value: String(total), accent: 'text-blue-600', bg: 'bg-blue-50' },
-      { label: t.activeShops, value: String(active), accent: 'text-green-600', bg: 'bg-green-50' },
-      { label: t.totalProducts, value: String(totalProducts), accent: 'text-purple-600', bg: 'bg-purple-50' },
-      { label: t.avgRating, value: '—', accent: 'text-amber-600', bg: 'bg-amber-50', hint: t.avgRatingHint },
+      { label: t.totalShops, value: String(total), accent: 'text-blue-600', bg: 'bg-blue-50', icon: iconShop },
+      { label: t.activeShops, value: String(active), accent: 'text-green-600', bg: 'bg-green-50', icon: iconChecklist },
+      { label: t.totalProducts, value: String(totalProducts), accent: 'text-purple-600', bg: 'bg-purple-50', icon: iconPackage },
+      { label: t.avgRating, value: '—', accent: 'text-amber-600', bg: 'bg-amber-50', hint: t.avgRatingHint, icon: iconStar },
     ]
   }, [shops, productRows.length, t])
 
@@ -225,8 +225,8 @@ export default function SellerManager() {
                   <p className='text-[11px] text-gray-400 mt-1'>{metric.hint}</p>
                 )}
               </div>
-              <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${metric.bg}`}>
-                <span className={`text-lg font-bold ${metric.accent}`}>·</span>
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${metric.bg}`}>
+                <img src={metric.icon} alt='' className='h-6 w-6 object-contain opacity-90' aria-hidden />
               </span>
             </div>
           </div>

@@ -183,12 +183,24 @@ export const API_ENDPOINTS = {
     VOUCHERS: '/user/vouchers',
   },
 
+  /** Identity / Accounts — cùng pattern GET như Profile.tsx (`/Accounts/...`) */
+  ACCOUNT: {
+    GET_BY_ID: (id: string) => `/Accounts/GetAccountById/${encodeURIComponent(id)}`,
+    UPDATE: (id: string) => `/Accounts/UpdateAccount/${encodeURIComponent(id)}`,
+  },
+
   // ── Wallet Service ────────────────────────────────────────────────────────
   WALLET: {
     GET_BY_ACCOUNT_ID: (accountId: string) => `/wallets/account/${accountId}`,
     GET_BY_ID: (walletId: string) => `/wallets/${walletId}`,
     TOPUP: '/wallets/topup',
     TRANSACTIONS: (walletId: string) => `/wallets/${walletId}/transactions`,
+    /** Seller — cùng ví Buyer theo account chủ shop (Payment service) */
+    SELLER_ACCOUNT: (accountId: string) =>
+      `/wallets/seller/account/${encodeURIComponent(accountId)}`,
+    SELLER_ACCOUNT_TRANSACTIONS: (accountId: string) =>
+      `/wallets/seller/account/${encodeURIComponent(accountId)}/transactions`,
+    SELLER_WITHDRAWALS: '/wallets/seller/withdrawals',
   },
 
   // ── Image Service ─────────────────────────────────────────────────────────
@@ -204,6 +216,7 @@ export const API_ENDPOINTS = {
   },
 
   // ── Shipment Service (5016) ────────────────────────────────────────────────
+  /** Nhà VC: GET/POST cùng `/shipment/providers` (list + create); BY_ID/UPDATE/DELETE = thao tác theo id */
   PROVIDER: {
     LIST: '/shipment/providers',
     BY_ID: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
@@ -293,12 +306,8 @@ export const ADMIN_API = {
   },
   ORDERS: {
     /** P0 endpoints from API_GAPS — may not exist yet on backend; returns empty gracefully if unavailable */
-    ADMIN_ALL: [
-      '/orders/admin/all',
-      '/orders/admin/list',
-      '/order/admin/GetAllOrders',
-      '/Order/Admin/GetAllOrders',
-    ],
+    /** Không dùng /orders/admin/all và /Order/Admin/GetAllOrders (không có trên gateway). Còn lại nếu BE bật. */
+    ADMIN_ALL: ['/orders/admin/list', '/order/admin/GetAllOrders'],
     BY_SHOP: (shopId: string) => [
       `/order/Orders/Shop/${encodeURIComponent(shopId)}`,
       `/orders/Shop/${encodeURIComponent(shopId)}`,

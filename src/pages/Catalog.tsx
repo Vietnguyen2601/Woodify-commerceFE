@@ -14,6 +14,7 @@ import truckIcon from '@/assets/icons/essential/commerce/truck.svg'
 import refreshIcon from '@/assets/icons/essential/commerce/refresh.svg'
 import chevronRightIcon from '@/assets/icons/essential/interface/chevron-right.svg'
 import { productMasterService, shopService } from '@/services'
+import type { ProductMaster } from '@/types'
 import { ROUTES } from '@/constants'
 
 const priceFilters = [
@@ -64,15 +65,21 @@ export default function Catalog() {
   }, [shopsToUse])
 
   const catalogProducts = React.useMemo<CatalogProduct[]>(() => (
-    productsToUse.map((p: any) => ({
+    productsToUse.map((p: ProductMaster) => ({
       id: p.productId,
       title: p.name,
       description: p.description || '',
       price: p.price,
       originalPrice: undefined,
-      rating: undefined,
-      reviewCount: undefined,
-      soldCount: undefined,
+      rating:
+        typeof p.averageRating === 'number' && !Number.isNaN(p.averageRating)
+          ? p.averageRating
+          : undefined,
+      reviewCount:
+        typeof p.reviewCount === 'number' && !Number.isNaN(p.reviewCount)
+          ? p.reviewCount
+          : undefined,
+      soldCount: typeof p.sales === 'number' ? p.sales : undefined,
       location: undefined,
       discount: undefined,
       isFeatured: false,

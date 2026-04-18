@@ -21,6 +21,7 @@ import {
   formatCurrency
 } from '@/data/checkout-mock-data'
 import { paymentService, cartService, orderService } from '@/services'
+import type { CreateOrderResponse } from '@/services/payment.service'
 import type { CheckoutShippingPreviewOption } from '@/services/order.service'
 import type { CartItemDto } from '@/types'
 import { readStoredUser } from '@/features/auth/utils/storage'
@@ -714,7 +715,7 @@ export default function Checkout() {
   const getPaymentMethodLabel = (method: PaymentMethod): string => {
     const labels: Record<PaymentMethod, string> = {
       COD: 'Thanh toán khi nhận (COD)',
-      WALLET: 'Ví điện tử (Momo, ZaloPay)',
+      WALLET: 'Ví người dùng',
       PAYOS: 'Chuyển khoản ngân hàng (PayOS QR)'
     }
     return labels[method]

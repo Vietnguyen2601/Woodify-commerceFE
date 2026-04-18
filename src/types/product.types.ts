@@ -137,6 +137,8 @@ export interface ProductDetail {
   /** Trung bình sao review đang hiển thị; null nếu chưa có (Product Service) */
   averageRating?: number | null
   reviewCount?: number
+  /** Lượt bán tích lũy (BE: Sales / sales) */
+  sales?: number | null
 }
 
 export interface ProductMaster {
@@ -160,6 +162,8 @@ export interface ProductMaster {
   woodType: string
   averageRating?: number | null
   reviewCount?: number
+  /** Lượt bán tích lũy (BE: Sales / sales) */
+  sales?: number | null
 }
 
 export interface CreateProductMasterRequest {
