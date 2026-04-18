@@ -4,18 +4,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/services'
 import { APP_CONFIG } from '@/constants'
 import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
-import type { UserRole } from '@/types'
-
-function parseRoleFromToken(token: string): UserRole | undefined {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const role = (payload?.role as string)?.toLowerCase()
-    if (role === 'admin' || role === 'seller' || role === 'customer') return role
-  } catch {
-    // invalid token
-  }
-  return undefined
-}
+import {
+  resolveRoleFromLoginPayload,
+  resolveRoleNameFromLoginPayload,
+} from '@/features/auth/utils/resolveUserRole'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -117,13 +109,14 @@ export default function Login() {
           )
 
           if (isSuccessful && loginData.email) {
-            // Store only non-sensitive data in localStorage
-            const role = parseRoleFromToken(loginData.token) ?? 'customer'
+            const role = resolveRoleFromLoginPayload(loginData as Record<string, unknown>)
+            const roleName = resolveRoleNameFromLoginPayload(loginData as Record<string, unknown>)
 
             const normalizedUser: StoredUser = {
               email: loginData.email || email,
               username: loginData.username || loginData.email || email,
               role,
+              ...(roleName ? { roleName } : {}),
               accountId: loginData.accountId,
             }
 
