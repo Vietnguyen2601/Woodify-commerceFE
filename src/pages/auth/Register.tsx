@@ -4,6 +4,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/services'
 import { APP_CONFIG } from '@/constants'
 import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
+import {
+  resolveRoleFromLoginPayload,
+  resolveRoleNameFromLoginPayload,
+} from '@/features/auth/utils/resolveUserRole'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -133,7 +137,7 @@ export default function Register() {
   const isUsernameValid = trimmedUsername.length >= 3
   const isPhoneValid = PHONE_PATTERN.test(normalizedPhone)
 
-  function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!EMAIL_PATTERN.test(email)) {
       setEmailError('Email không hợp lệ')
@@ -141,30 +145,37 @@ export default function Register() {
     }
     setEmailError('')
     setIsSendingCode(true)
-    
-    // Fake wait: jump to step 2 after 1 second without waiting for API
-    window.setTimeout(() => {
-      setIsSendingCode(false)
+
+    try {
+      const { authService } = await import('@/services/auth.service')
+      await authService.sendOtp({ email: email.trim() })
       setEmailExists(false)
       setStep(2)
-    }, 1000)
-    
-    // Call API in background (don't wait for it)
-    import('@/services/auth.service').then(({ authService }) => {
-      authService.sendOtp({ email })
-        .catch((err) => {
-          const errorMessage = err?.message || 'Không gửi được mã xác minh. Vui lòng thử lại.'
-          console.error('Send OTP error:', errorMessage)
-          
-          if (errorMessage.toLowerCase().includes('exists')) {
-            setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
-            setEmailExists(true)
-            setStep(1)
-          } else {
-            console.warn('OTP sent but API failed. User can retry from OTP screen.')
-          }
-        })
-    })
+    } catch (err: any) {
+      const rawErrorMessage = String(
+        err?.message ||
+          err?.data?.message ||
+          err?.response?.data?.message ||
+          'Không gửi được mã xác minh. Vui lòng thử lại.'
+      )
+      const errorMessage = rawErrorMessage.toLowerCase()
+      const isExistingEmail =
+        errorMessage.includes('exists') ||
+        errorMessage.includes('already') ||
+        errorMessage.includes('đã tồn tại') ||
+        errorMessage.includes('được đăng ký') ||
+        (errorMessage.includes('email') && errorMessage.includes('đăng ký'))
+
+      if (isExistingEmail) {
+        setEmailError('Email đã đăng ký — Đăng nhập hoặc gửi lại mật khẩu')
+        setEmailExists(true)
+        setStep(1)
+      } else {
+        setEmailError('Không gửi được mã xác minh. Vui lòng thử lại.')
+      }
+    } finally {
+      setIsSendingCode(false)
+    }
   }
 
   function handleEmailChange(value: string) {
@@ -225,13 +236,19 @@ export default function Register() {
     })
   }
 
-  function handleResend() {
+  async function handleResend() {
     if (timer > 0 || resendCount >= MAX_RESEND) return
-    setResendCount((prev) => prev + 1)
-    setTimer(60)
-    setOtpDigits(Array(OTP_LENGTH).fill(''))
-    setOtpError('Mã mới đã được gửi. Vui lòng kiểm tra hộp thư.')
-    otpRefs.current[0]?.focus()
+    try {
+      const { authService } = await import('@/services/auth.service')
+      await authService.sendOtp({ email: email.trim() })
+      setResendCount((prev) => prev + 1)
+      setTimer(60)
+      setOtpDigits(Array(OTP_LENGTH).fill(''))
+      setOtpError('Mã mới đã được gửi. Vui lòng kiểm tra hộp thư.')
+      otpRefs.current[0]?.focus()
+    } catch {
+      setOtpError('Không thể gửi lại mã lúc này. Vui lòng thử lại sau.')
+    }
   }
 
   const formattedTimer = `00:${String(Math.max(timer, 0)).padStart(2, '0')}`
@@ -284,10 +301,14 @@ export default function Register() {
                 loginData?.email
             )
             if (isSuccessful && loginData?.email) {
+              const payload = loginData as Record<string, unknown>
+              const role = resolveRoleFromLoginPayload(payload)
+              const roleName = resolveRoleNameFromLoginPayload(payload)
               const normalizedUser: StoredUser = {
                 email: loginData.email || email,
                 username: loginData.username || loginData.fullName || trimmedUsername,
-                role: loginData.role || 'customer',
+                role,
+                ...(roleName ? { roleName } : {}),
                 accountId: loginData.accountId,
               }
               persistStoredUser(normalizedUser)
@@ -303,12 +324,15 @@ export default function Register() {
           const raw = registerRes as Record<string, unknown> & { user?: Record<string, unknown> }
           const profile = (raw?.user ?? raw) as Record<string, unknown> | null
           if (profile && (profile.email || profile.accountId)) {
+            const role = resolveRoleFromLoginPayload(profile as Record<string, unknown>)
+            const roleName = resolveRoleNameFromLoginPayload(profile as Record<string, unknown>)
             const normalizedUser: StoredUser = {
               email: String(profile.email || email),
               username: String(
                 profile.username || profile.fullName || trimmedUsername
               ),
-              role: (profile.role as StoredUser['role']) || 'customer',
+              role,
+              ...(roleName ? { roleName } : {}),
               accountId: (profile.accountId || profile.id) as string | undefined,
             }
             persistStoredUser(normalizedUser)
@@ -396,14 +420,17 @@ export default function Register() {
                 </form>
 
                 {emailExists && (
-                  <div className='auth-inline' style={{ marginTop: 16 }}>
-                    <span className='auth-subtitle'>Email đã đăng ký</span>
-                    <Link to='/login' className='auth-link'>
-                      Đăng nhập
-                    </Link>
-                    <Link to='/forgot-password' className='auth-link'>
-                      Gửi lại mật khẩu
-                    </Link>
+                  <div className='auth-exists-actions'>
+                    <span className='auth-subtitle'>Bạn có thể:</span>
+                    <div className='auth-inline'>
+                      <Link to='/login' className='auth-link'>
+                        Đăng nhập
+                      </Link>
+                      <span aria-hidden='true'>•</span>
+                      <Link to='/forgot-password' className='auth-link'>
+                        Gửi lại mật khẩu
+                      </Link>
+                    </div>
                   </div>
                 )}
 

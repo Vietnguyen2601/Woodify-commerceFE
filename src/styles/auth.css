@@ -222,6 +222,23 @@
   flex-wrap: nowrap;
 }
 
+.auth-exists-actions {
+  margin-top: 12px;
+}
+
+.auth-exists-actions .auth-subtitle {
+  margin-bottom: 6px;
+}
+
+.auth-exists-actions .auth-inline {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.auth-exists-actions .auth-inline span {
+  color: var(--text-secondary);
+}
+
 .auth-checkbox {
   display: flex;
   align-items: center;

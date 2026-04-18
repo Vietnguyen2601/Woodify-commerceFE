@@ -5,7 +5,10 @@ export interface StoredUser {
   email: string
   username: string
   fullName?: string
+  /** App role used for route guards (customer | seller | admin) */
   role?: UserRole
+  /** Backend display name when available (e.g. "Customer", "Admin") */
+  roleName?: string
   accountId?: string
 }
 
