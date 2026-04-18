@@ -23,6 +23,8 @@ export const ROUTES = {
   CHECKOUT: '/checkout',
   PAYMENT_SUCCESS: '/payment/success',
   PAYMENT_CANCEL: '/payment/cancel',
+  /** PayOS return URL for successful payments */
+  PAYMENT_CALLBACK_SUCCESS: '/payment/callback/success',
   /** PayOS / gateway return URL for cancelled wallet or checkout payments */
   PAYMENT_CALLBACK_CANCEL: '/payment/callback/cancel',
 
