@@ -7,6 +7,7 @@ import type {
   PaginatedResponse,
   SellerOrder,
   SellerOrderStatus,
+  TopSellingProduct,
 } from '@/types'
 
 export interface CheckoutShippingPreviewOption {
@@ -119,5 +120,15 @@ export const orderService = {
     body: CheckoutShippingPreviewRequest
   ): Promise<CheckoutShippingPreviewResult> => {
     return api.post<CheckoutShippingPreviewResult>(API_ENDPOINTS.ORDERS.SHIPPING_PREVIEW, body)
+  },
+
+  /**
+   * Top sản phẩm bán chạy — GET .../analytics/top-selling-products
+   */
+  getTopSellingProducts: async (shopId: string, limit = 5): Promise<TopSellingProduct[]> => {
+    const data = await api.get<TopSellingProduct[] | null>(API_ENDPOINTS.ORDERS.TOP_SELLING_PRODUCTS, {
+      params: { limit, shopId },
+    })
+    return Array.isArray(data) ? data : []
   },
 }

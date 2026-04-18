@@ -3,16 +3,23 @@ import React from 'react'
 interface FinanceTopBarProps {
   statusLabel?: string
   initials?: string
+  /** Tên shop hiển thị; mặc định placeholder */
+  storeName?: string
 }
 
-const STORE_NAME = 'Wood Craft Artisans'
+const DEFAULT_STORE_NAME = 'Wood Craft Artisans'
 
-export default function FinanceTopBar({ statusLabel = 'ACTIVE', initials = 'WC' }: FinanceTopBarProps) {
+export default function FinanceTopBar({
+  statusLabel = 'ACTIVE',
+  initials = 'WC',
+  storeName,
+}: FinanceTopBarProps) {
+  const title = storeName?.trim() || DEFAULT_STORE_NAME
   return (
     <div className='rounded-2xl border border-amber-900/20 bg-white px-3 py-2 shadow-sm'>
       <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
         <div>
-          <p className='text-sm font-semibold text-stone-900'>{STORE_NAME}</p>
+          <p className='text-sm font-semibold text-stone-900'>{title}</p>
           <span className='mt-1 inline-flex items-center rounded-full bg-amber-800 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white'>
             {statusLabel}
           </span>

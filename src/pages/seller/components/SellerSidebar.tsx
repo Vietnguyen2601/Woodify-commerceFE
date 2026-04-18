@@ -32,8 +32,7 @@ const NAV_GROUPS: SellerNavGroup[] = [
       { label: 'T\u1ea5t c\u1ea3', to: '/seller/orders' },
       { label: 'Giao h\u00e0ng lo\u1ea1t', to: '/seller/orders/bulk-shipping' },
       { label: 'B\u00e0n giao \u0111\u01a1n h\u00e0ng', to: '/seller/orders/handover' },
-      { label: 'Tr\u1ea3 h\u00e0ng / Ho\u00e0n ti\u1ec1n', to: '/seller/orders/returns' },
-      { label: 'C\u00e0i \u0111\u1eb7t v\u1eadn chuy\u1ec3n', to: '/seller/orders/shipping-settings', description: 'Thi\u1ebft l\u1eadp d\u1ecbch v\u1ee5' }
+      { label: 'Tr\u1ea3 h\u00e0ng / Ho\u00e0n ti\u1ec1n', to: '/seller/orders/returns' }
     ]
   },
   {
@@ -47,10 +46,7 @@ const NAV_GROUPS: SellerNavGroup[] = [
   {
     id: 'support',
     label: 'Feedback & H\u1ed7 Tr\u1ee3',
-    links: [
-      { label: 'Chat Management', to: '/seller/support/chat-management' },
-      { label: 'Shop Rating Management', to: '/seller/support/shop-rating' }
-    ]
+    links: [{ label: 'Shop Rating Management', to: '/seller/support/shop-rating' }]
   },
   {
     id: 'finance',
@@ -75,7 +71,8 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
       : 'border-white/5 text-stone-100/80 hover:border-white/20 hover:bg-white/5'
   ].join(' ')
 
-const isPathActive = (currentPath: string, targetPath?: string) => {
+/** Mở nhóm khi URL thuộc nhánh (prefix); khác với highlight NavLink — dùng `end` trên NavLink. */
+const isPathUnderGroup = (currentPath: string, targetPath?: string) => {
   if (!targetPath) return false
   if (targetPath === '/seller') return currentPath === '/seller'
   return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
@@ -96,7 +93,7 @@ export default function SellerSidebar() {
     setOpenGroups(prev => {
       const next = { ...prev }
       NAV_GROUPS.forEach(group => {
-        if (group.links?.some(link => isPathActive(location.pathname, link.to))) {
+        if (group.links?.some(link => isPathUnderGroup(location.pathname, link.to))) {
           next[group.id] = true
         }
       })
@@ -137,7 +134,7 @@ export default function SellerSidebar() {
                 <div className='mt-2 space-y-1'>
                   {group.links.map(link => (
                     link.to ? (
-                      <NavLink key={link.label} to={link.to} className={navLinkClass}>
+                      <NavLink key={link.to} to={link.to} end className={navLinkClass}>
                         <span className='font-medium'>{link.label}</span>
                         {link.chip && <small className='text-[11px] text-amber-200'>{link.chip}</small>}
                         {link.description && <small className='text-[11px] text-stone-300'>{link.description}</small>}

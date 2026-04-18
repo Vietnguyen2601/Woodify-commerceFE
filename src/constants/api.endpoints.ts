@@ -95,6 +95,8 @@ export const API_ENDPOINTS = {
     UPDATE_STATUS: '/order/Orders/UpdateStatus',
     /** POST body: { accountId, shopId, cartItemIds } — preview phí VC theo gói */
     SHIPPING_PREVIEW: '/order/Orders/checkout/shipping-preview',
+    /** GET — top sản phẩm bán chạy theo shop (seller dashboard) */
+    TOP_SELLING_PRODUCTS: '/order/Orders/analytics/top-selling-products',
   },
 
   // ── Payment Service (5015) ────────────────────────────────────────────────
@@ -132,6 +134,18 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id: string) => `/shop/Shops/GetShopById/${encodeURIComponent(id)}`,
     GET_BY_OWNER_ID: (ownerId: string) => `/shop/Shops/GetShopByOwnerId/${encodeURIComponent(ownerId)}`,
     UPDATE: (id: string) => `/shop/Shops/UpdateShopInfo/${encodeURIComponent(id)}`,
+    /** GET/PATCH — nhận thanh toán cho shop */
+    BANK_ACCOUNT: (shopId: string) =>
+      `/shop/Shops/${encodeURIComponent(shopId)}/bank-account`,
+    /** GET — xu hướng doanh thu (dashboard shop) */
+    REVENUE_TREND: (shopId: string, days: number) =>
+      `/shop/dashboard/${encodeURIComponent(shopId)}/revenue-trend?days=${encodeURIComponent(String(days))}`,
+    ANALYTICS_MONTHLY: (shopId: string, year: number) =>
+      `/shop/dashboard/${encodeURIComponent(shopId)}/analytics/monthly?year=${encodeURIComponent(String(year))}`,
+    ANALYTICS_QUARTERLY: (shopId: string, year: number) =>
+      `/shop/dashboard/${encodeURIComponent(shopId)}/analytics/quarterly?year=${encodeURIComponent(String(year))}`,
+    ANALYTICS_YEARLY: (shopId: string, startYear: number, endYear: number) =>
+      `/shop/dashboard/${encodeURIComponent(shopId)}/analytics/yearly?startYear=${encodeURIComponent(String(startYear))}&endYear=${encodeURIComponent(String(endYear))}`,
   },
 
   // Admin (legacy / generic — prefer ADMIN_API for gateway routes in ADMIN_API_SPEC.md)
@@ -181,18 +195,30 @@ export const API_ENDPOINTS = {
   IMAGES: {
     SAVE: '/product/images/save',
     SAVE_BULK: '/product/images/save-bulk',
+    LIST_BY_TYPE: (type: string) => `/product/images/type/${encodeURIComponent(type)}`,
     GET_BY_TYPE_AND_ID: (type: string, referenceId: string) =>
       `/product/images/${type.toLowerCase()}/${referenceId}`,
     GET_PRIMARY: (type: string, referenceId: string) =>
       `/product/images/${type.toLowerCase()}/${referenceId}/primary`,
+    DELETE: (imageId: string) => `/product/images/${encodeURIComponent(imageId)}`,
   },
 
   // ── Shipment Service (5016) ────────────────────────────────────────────────
   PROVIDER: {
     LIST: '/shipment/providers',
+    BY_ID: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
+    CREATE: '/shipment/providers',
+    UPDATE: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
+    DELETE: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}`,
   },
   SHIPMENT_SERVICES: {
     BY_SHOP: (shopId: string) => `/shipment/shops/${encodeURIComponent(shopId)}/services`,
+    LIST: '/shipment/services',
+    BY_ID: (serviceId: string) => `/shipment/services/${encodeURIComponent(serviceId)}`,
+    BY_PROVIDER: (providerId: string) => `/shipment/providers/${encodeURIComponent(providerId)}/services`,
+    UPDATE: (serviceId: string) => `/shipment/services/${encodeURIComponent(serviceId)}`,
+    DELETE: (serviceId: string) => `/shipment/services/${encodeURIComponent(serviceId)}`,
+    CREATE: '/shipment/services',
   },
   /** Shipment entity — SHIPMENT_SELLER_FLOW.md (gateway `/api/shipment/shipments/...`) */
   SHIPMENTS: {
@@ -298,4 +324,10 @@ export const ADMIN_API = {
       `/images/${encodeURIComponent(id)}`,
     ],
   },
+  /** Order service (5014) — GET top categories (gateway: /api/order/analytics/...) */
+  ANALYTICS_TOP_CATEGORIES: (topN: number) =>
+    [
+      `/order/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
+      `/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
+    ] as const,
 } as const

@@ -9,6 +9,8 @@ import { buildProductPathSegment } from '@/utils/productUrl'
 export const ROUTES = {
   // Public routes
   HOME: '/',
+  /** Khuyến mãi / quảng cáo — ảnh ADS từ API */
+  PROMOTIONS: '/promotions',
   CATALOG: '/catalog',
   /** `productName` nên truyền — URL dạng `/product/ten-sp--hex8` thay vì lộ UUID. */
   PRODUCT: (productId: string, productName?: string | null) =>

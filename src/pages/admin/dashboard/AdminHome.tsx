@@ -5,6 +5,7 @@ import { useAppLanguage } from '@/hooks'
 import { adminOrderUtils, adminService, queryKeys } from '@/services'
 import { ROUTES } from '@/constants'
 import { useAdminDashboardRealtime } from '@/realtime/useAdminDashboardRealtime'
+import AdminTopCategoriesChart from './AdminTopCategoriesChart'
 
 const iconStroke = 'currentColor'
 
@@ -406,13 +407,15 @@ export default function AdminHome() {
           <header className='admin-home__panel-head'>
             <div>
               <h2>{isVietnamese ? 'Biểu đồ 2' : 'Chart 2'}</h2>
-              <p>{isVietnamese ? 'Khu vực biểu đồ mở rộng' : 'Secondary chart area'}</p>
+              <p>
+                {isVietnamese
+                  ? 'Top danh mục theo lượt mua (GET /order/analytics/top-categories)'
+                  : 'Top categories by units sold (GET /order/analytics/top-categories)'}
+              </p>
             </div>
           </header>
-          <div className='flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-4'>
-            <div className='text-center text-sm text-gray-400'>
-              {isVietnamese ? 'Khu vực biểu đồ 2 (50%)' : 'Second chart area (50%)'}
-            </div>
+          <div className='rounded-xl border border-gray-100 bg-white p-4 shadow-sm'>
+            <AdminTopCategoriesChart isVietnamese={isVietnamese} />
           </div>
         </article>
       </section>

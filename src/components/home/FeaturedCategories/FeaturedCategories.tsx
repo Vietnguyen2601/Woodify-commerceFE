@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 
 const categoryList = [
   {
-    id: 'chairs',
-    name: 'Bàn Ghế',
+    id: 'living-room',
+    name: 'Phòng khách',
     icon: (
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <path d="M38 18V12C38 10.9391 37.5786 9.92172 36.8284 9.17157C36.0783 8.42143 35.0609 8 34 8H14C12.9391 8 11.9217 8.42143 11.1716 9.17157C10.4214 9.92172 10 10.9391 10 12V18" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -16,7 +16,7 @@ const categoryList = [
   },
   {
     id: 'decor',
-    name: 'Đồ Trang Trí',
+    name: 'Đồ trang trí',
     icon: (
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <path d="M22.034 5.628C22.1197 5.1692 22.3631 4.75483 22.7222 4.45663C23.0812 4.15844 23.5333 3.99521 24 3.99521C24.4667 3.99521 24.9188 4.15844 25.2778 4.45663C25.6369 4.75483 25.8803 5.1692 25.966 5.628L28.068 16.744C28.2173 17.5343 28.6014 18.2612 29.1701 18.8299C29.7388 19.3986 30.4657 19.7827 31.256 19.932L42.372 22.034C42.8308 22.1197 43.2452 22.3631 43.5434 22.7222C43.8416 23.0812 44.0048 23.5333 44.0048 24C44.0048 24.4667 43.8416 24.9188 43.5434 25.2778C43.2452 25.6369 42.8308 25.8803 42.372 25.966L31.256 28.068C30.4657 28.2173 29.7388 28.6014 29.1701 29.1701C28.6014 29.7388 28.2173 30.4657 28.068 31.256L25.966 42.372C25.8803 42.8308 25.6369 43.2452 25.2778 43.5434C24.9188 43.8416 24.4667 44.0048 24 44.0048C23.5333 44.0048 23.0812 43.8416 22.7222 43.5434C22.3631 43.2452 22.1197 42.8308 22.034 42.372L19.932 31.256C19.7827 30.4657 19.3986 29.7388 18.8299 29.1701C18.2612 28.6014 17.5343 28.2173 16.744 28.068L5.628 25.966C5.1692 25.8803 4.75483 25.6369 4.45663 25.2778C4.15844 24.9188 3.99521 24.4667 3.99521 24C3.99521 23.5333 4.15844 23.0812 4.45663 22.7222C4.75483 22.3631 5.1692 22.1197 5.628 22.034L16.744 19.932C17.5343 19.7827 18.2612 19.3986 18.8299 18.8299C19.3986 18.2612 19.7827 17.5343 19.932 16.744L22.034 5.628Z" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -27,8 +27,8 @@ const categoryList = [
     )
   },
   {
-    id: 'bed',
-    name: 'Giường',
+    id: 'bedroom',
+    name: 'Phòng ngủ',
     icon: (
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <path d="M4 8V40" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -39,22 +39,42 @@ const categoryList = [
     )
   },
   {
-    id: 'altar',
-    name: 'Đồ Thờ Cúng',
+    id: 'dining-room',
+    name: 'Phòng ăn',
     icon: (
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <path d="M24 6C25.3333 11.3333 28 15.6667 32 19C36 22.3333 38 26 38 30C38 33.713 36.525 37.274 33.8995 39.8995C31.274 42.525 27.713 44 24 44C20.287 44 16.726 42.525 14.1005 39.8995C11.475 37.274 10 33.713 10 30C10 27.8363 10.7018 25.731 12 24C12 25.3261 12.5268 26.5979 13.4645 27.5355C14.4021 28.4732 15.6739 29 17 29C18.3261 29 19.5979 28.4732 20.5355 27.5355C21.4732 26.5979 22 25.3261 22 24C22 20 19 18 19 14C19 11.3333 20.6667 8.66667 24 6Z" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M8 16H40" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 16V38" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M36 16V38" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8 24H40" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     )
   },
   {
-    id: 'cabinet',
-    name: 'Tủ',
+    id: 'office',
+    name: 'Văn phòng',
     icon: (
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <path d="M42 6H6C4.89543 6 4 6.89543 4 8V14C4 15.1046 4.89543 16 6 16H42C43.1046 16 44 15.1046 44 14V8C44 6.89543 43.1046 6 42 6Z" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M8 16V38C8 39.0609 8.42143 40.0783 9.17157 40.8284C9.92172 41.5786 10.9391 42 12 42H36C37.0609 42 38.0783 41.5786 38.8284 40.8284C39.5786 40.0783 40 39.0609 40 38V16" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M20 24H28" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )
+  },
+  {
+    id: 'outdoor',
+    name: 'Ngoài trời',
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="7" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M24 6V10" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M24 38V42" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6 24H10" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M38 24H42" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M11.3 11.3L14.1 14.1" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M33.9 33.9L36.7 36.7" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M33.9 14.1L36.7 11.3" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M11.3 36.7L14.1 33.9" stroke="#BE9C73" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     )
   }
