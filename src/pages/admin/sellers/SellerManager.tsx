@@ -5,6 +5,10 @@ import { useAppLanguage } from '@/hooks'
 import { ROUTES } from '@/constants'
 import { adminService, queryKeys } from '@/services'
 import type { AdminShopDto, ProductMasterDto, ShopStatus } from '@/types'
+import iconShop from '@/assets/icons/essential/commerce/shop.svg'
+import iconChecklist from '@/assets/icons/essential/commerce/checklist.svg'
+import iconPackage from '@/assets/icons/essential/commerce/package.svg'
+import iconStar from '@/assets/icons/essential/interface/star.svg'
 
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE: 'bg-green-100 text-green-700 border border-green-200',
