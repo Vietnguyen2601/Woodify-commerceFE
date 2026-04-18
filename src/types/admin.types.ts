@@ -2,6 +2,17 @@
  * Admin dashboard DTOs aligned with ADMIN_API_SPEC.md (gateway base: /api)
  */
 
+/** GET /order/analytics/top-categories?topN= — Order analytics */
+export interface TopCategoryAnalytics {
+  categoryId: string
+  name: string
+  description?: string | null
+  level?: number
+  totalItemsSold: number
+  totalSalesRevenue: number
+  publishedProductCount?: number
+}
+
 export type ShopStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING' | 'REJECTED'
 
 export interface AdminShopDto {
@@ -113,11 +124,20 @@ export interface ProductMasterDto {
   productId?: string
   id?: string
   productName?: string
+  /** Một số endpoint trả `name` thay cho productName */
+  name?: string
   description?: string
   globalSku?: string
   shopId?: string
   categoryId?: string
+  categoryName?: string
   basePrice?: number
+  /** Một số endpoint trả `price` riêng */
+  price?: number
+  thumbnailUrl?: string | null
+  status?: string
+  moderationStatus?: string
+  stockQuantity?: number
   createdDate?: string
   createdAt?: string
   isArchived?: boolean

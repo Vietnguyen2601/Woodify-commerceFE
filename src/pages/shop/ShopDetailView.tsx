@@ -275,6 +275,20 @@ export function ShopDetailView({
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
             <aside className="hidden w-56 shrink-0 lg:block">
               <div className={`sticky top-24 ${shopPanelChrome} p-5`}>
+
+              <label className="flex items-center gap-2 font-['Inter'] text-xs font-bold uppercase tracking-wide text-black/50">
+                  <AssetIcon src={searchIcon} width={14} height={14} className="opacity-65" />
+                  Tìm trong shop
+                </label>
+                <input
+                  type="search"
+                  placeholder="Tên sản phẩm…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 font-['Inter'] text-sm outline-none transition focus:border-[#BE9C73] focus:ring-2 focus:ring-[#BE9C73]/25"
+                />
+
+
                 <h3 className="m-0 flex items-center gap-2 font-['Inter'] text-sm font-bold text-[#1c1917]">
                   <AssetIcon src={filterIcon} width={18} height={18} className="opacity-80" />
                   Danh mục
@@ -307,17 +321,6 @@ export function ShopDetailView({
                   ))}
                 </div>
 
-                <label className="mt-6 flex items-center gap-2 font-['Inter'] text-xs font-bold uppercase tracking-wide text-black/50">
-                  <AssetIcon src={searchIcon} width={14} height={14} className="opacity-65" />
-                  Tìm trong shop
-                </label>
-                <input
-                  type="search"
-                  placeholder="Tên sản phẩm…"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 font-['Inter'] text-sm outline-none transition focus:border-[#BE9C73] focus:ring-2 focus:ring-[#BE9C73]/25"
-                />
 
                 <button
                   type="button"

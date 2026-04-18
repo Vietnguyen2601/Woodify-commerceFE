@@ -5,7 +5,7 @@ import HeroSection from '../components/home/HeroSection'
 import FeaturedCategories from '../components/home/FeaturedCategories'
 import ProductCard from '../components/home/ProductCard'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { productMasterService } from '@/services'
+import { imageService, productMasterService, queryKeys } from '@/services'
 import { ROUTES } from '@/constants'
 
 export default function Home() {
@@ -13,6 +13,33 @@ export default function Home() {
   const { user, isLoading: isAuthLoading } = useAuth()
 
   const showSellerInvite = !isAuthLoading && user?.role !== 'seller'
+
+  const { data: bannerRows = [] } = useQuery({
+    queryKey: queryKeys.home.banners(),
+    queryFn: () => imageService.listByType('BANNER'),
+    staleTime: 2 * 60 * 1000,
+  })
+
+  const bannerUrls = React.useMemo(() => {
+    return [...bannerRows]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((x) => (x.originalUrl != null ? String(x.originalUrl).trim() : ''))
+      .filter((u) => u.length > 0)
+  }, [bannerRows])
+
+  const slideCount = bannerUrls.length > 0 ? bannerUrls.length : 1
+
+  React.useEffect(() => {
+    setActiveSlide(0)
+  }, [bannerUrls.join('|')])
+
+  React.useEffect(() => {
+    if (slideCount <= 1) return
+    const interval = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slideCount)
+    }, 7000)
+    return () => window.clearInterval(interval)
+  }, [slideCount])
 
   const { data: publishedProducts = [], isLoading: isProductsLoading } = useQuery({
     queryKey: ['published-products', 'home-bestseller'],
@@ -34,21 +61,10 @@ export default function Home() {
     }))
   }, [publishedProducts])
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveSlide(prev => (prev + 1) % 5)
-    }, 7000)
-    return () => clearInterval(interval)
-  }, [])
-
   return (
     <>
       <div className="w-full max-w-[1200px] mx-auto min-h-screen bg-[#E3DCC8] shadow-[0_4px_20px_rgba(0,0,0,0.1)] relative overflow-x-hidden">
-        <HeroSection 
-          activeSlide={activeSlide}
-          totalSlides={5}
-          onSlideChange={setActiveSlide}
-        />
+        <HeroSection bannerUrls={bannerUrls} activeSlide={activeSlide} onSlideChange={setActiveSlide} />
 
         <main className="pt-0">
           <FeaturedCategories />

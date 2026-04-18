@@ -10,16 +10,20 @@ type ImageKind = 'BANNER' | 'ADS'
 
 const kindMeta: Record<ImageKind, { titleVi: string; titleEn: string; subtitleVi: string; subtitleEn: string }> = {
   BANNER: {
-    titleVi: 'Banner',
-    titleEn: 'Banner',
-    subtitleVi: 'Ảnh banner trang chủ (có sort order). Upload Cloudinary → lưu metadata vào DB.',
-    subtitleEn: 'Homepage banners (sorted). Upload to Cloudinary → save metadata to DB.',
+    titleVi: 'BANNER — Slider trang chủ',
+    titleEn: 'BANNER — Home hero slider',
+    subtitleVi:
+      '',
+    subtitleEn:
+      '',
   },
   ADS: {
-    titleVi: 'Quảng cáo',
-    titleEn: 'Ads',
-    subtitleVi: 'Ảnh quảng cáo (đồng thời dùng như banner/ads). Upload Cloudinary → lưu metadata vào DB.',
-    subtitleEn: 'Advertising images (also used as banners/ads). Upload to Cloudinary → save metadata to DB.',
+    titleVi: 'ADS — Ảnh quảng cáo',
+    titleEn: 'ADS — Advertising images',
+    subtitleVi:
+      'imageType = ADS. Cùng API nhưng type khác: GET /api/product/images/type/ADS. Dùng cho các vị trí marketing/quảng cáo (không thay thế slider BANNER trên trang chủ).',
+    subtitleEn:
+      'imageType = ADS. Same API pattern: GET /api/product/images/type/ADS. Use for ad placements elsewhere (not the home BANNER slider).',
   },
 }
 
@@ -41,6 +45,9 @@ export default function MarketingPlan() {
       sortOrder: isVietnamese ? 'Thứ tự' : 'Sort',
       created: isVietnamese ? 'Tạo lúc' : 'Created',
       refreshHint: isVietnamese ? 'Sau khi upload/xóa, danh sách sẽ tự refresh.' : 'List refreshes after upload/delete.',
+      typeLegend: isVietnamese
+        ? ''
+        : '',
     }),
     [isVietnamese]
   )
@@ -68,6 +75,8 @@ export default function MarketingPlan() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [...queryKeys.admin.banners()] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.home.banners() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.home.ads() })
     },
   })
 
@@ -77,6 +86,8 @@ export default function MarketingPlan() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [...queryKeys.admin.banners()] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.home.banners() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.home.ads() })
     },
   })
 
@@ -103,6 +114,21 @@ export default function MarketingPlan() {
     }
   }
 
+  /** Cùng pattern tab như ShipmentManager — nền sáng, chữ tối; active dùng accent #BE9C73 (không dùng admin-btn cam/chữ trắng). */
+  const typeTabClass = (active: boolean) =>
+    [
+      'inline-flex items-center justify-center',
+      'rounded-xl border px-4 py-2 text-sm font-semibold',
+      'transition-colors',
+      active
+        ? 'border-[#BE9C73] bg-[#BE9C73] text-white shadow-sm'
+        : 'border-gray-200 bg-white text-gray-800 hover:bg-gray-50',
+      'focus:outline-none focus:ring-2 focus:ring-[#BE9C73]/40 focus:ring-offset-2',
+    ].join(' ')
+
+  const uploadBtnClass =
+    'inline-flex items-center justify-center rounded-xl border border-[#BE9C73] bg-[#BE9C73] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#a88960] focus:outline-none focus:ring-2 focus:ring-[#BE9C73]/40 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+
   return (
     <div className='admin-view'>
       <header className='admin-view__header'>
@@ -110,20 +136,18 @@ export default function MarketingPlan() {
           <p className='admin-eyebrow'>{t.eyebrow}</p>
           <h2>{t.title}</h2>
           <span>{t.refreshHint}</span>
+          <p className='mt-2 max-w-3xl text-sm text-gray-600'>{t.typeLegend}</p>
         </div>
-        <div className='flex items-center gap-2'>
-          <button type='button' className='admin-btn outline' onClick={() => setActiveKind('BANNER')}>
-            {kindMeta.BANNER[isVietnamese ? 'titleVi' : 'titleEn']}
-          </button>
-          <button type='button' className='admin-btn outline' onClick={() => setActiveKind('ADS')}>
-            {kindMeta.ADS[isVietnamese ? 'titleVi' : 'titleEn']}
-          </button>
-          <button
-            type='button'
-            className='admin-btn primary'
-            onClick={onPickFiles}
-            disabled={uploadMutation.isPending}
-          >
+        <div className='flex flex-wrap items-center gap-3'>
+          <div className='flex flex-wrap gap-2 rounded-2xl border border-gray-100 bg-white p-2 shadow-sm'>
+            <button type='button' className={typeTabClass(activeKind === 'BANNER')} onClick={() => setActiveKind('BANNER')}>
+              BANNER
+            </button>
+            <button type='button' className={typeTabClass(activeKind === 'ADS')} onClick={() => setActiveKind('ADS')}>
+              ADS
+            </button>
+          </div>
+          <button type='button' className={uploadBtnClass} onClick={onPickFiles} disabled={uploadMutation.isPending}>
             {uploadMutation.isPending ? t.uploading : t.upload}
           </button>
           <input

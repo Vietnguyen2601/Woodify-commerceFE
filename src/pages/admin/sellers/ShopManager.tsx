@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAppLanguage } from '@/hooks'
 import { adminService, queryKeys } from '@/services'
 import type { AdminShopDto, ShopStatus } from '@/types'
+import { AdminShopProductsPanel } from './AdminShopProductsPanel'
 
 const fmtDateTime = (iso: string | undefined, locale: 'vi-VN' | 'en-US') => {
   if (!iso) return '—'
@@ -26,6 +27,7 @@ export default function ShopManager() {
   const [searchTerm, setSearchTerm] = React.useState('')
   const [filterStatus, setFilterStatus] = React.useState('')
   const [selectedShop, setSelectedShop] = React.useState<AdminShopDto | null>(null)
+  const [showShopProducts, setShowShopProducts] = React.useState(false)
   const [newStatus, setNewStatus] = React.useState<ShopStatus>('ACTIVE')
   const [suspendReason, setSuspendReason] = React.useState('')
 
@@ -55,7 +57,12 @@ export default function ShopManager() {
     reasonPlaceholder: isVietnamese ? 'Lý do tạm dừng (tuỳ chọn)' : 'Reason for suspension (optional)',
     update: isVietnamese ? 'Cập nhật' : 'Update',
     cancel: isVietnamese ? 'Hủy' : 'Cancel',
+    viewProducts: isVietnamese ? 'Xem sản phẩm' : 'View products',
   }
+
+  React.useEffect(() => {
+    setShowShopProducts(false)
+  }, [selectedShop?.shopId])
 
   const { data: shops = [], isLoading, error } = useQuery({
     queryKey: [queryKeys.ADMIN_SHOPS],
@@ -197,6 +204,7 @@ export default function ShopManager() {
                   </td>
                   <td className='px-6 py-4 text-sm'>
                     <button
+                      type='button'
                       onClick={() => {
                         setSelectedShop(shop)
                         setNewStatus((shop.status as ShopStatus) || 'ACTIVE')
@@ -240,6 +248,14 @@ export default function ShopManager() {
                 </p>
               </div>
             </div>
+
+            <button
+              type='button'
+              onClick={() => setShowShopProducts(true)}
+              className='mb-4 w-full rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 shadow-sm transition hover:bg-amber-100'
+            >
+              {t.viewProducts}
+            </button>
 
             <div className='mb-4 space-y-3'>
               <div>
@@ -287,6 +303,12 @@ export default function ShopManager() {
           </div>
         </div>
       )}
+
+      <AdminShopProductsPanel
+        shop={selectedShop}
+        open={showShopProducts}
+        onClose={() => setShowShopProducts(false)}
+      />
     </div>
   )
 }

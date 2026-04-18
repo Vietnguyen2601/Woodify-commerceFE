@@ -1,5 +1,10 @@
 /**
- * Order API — seller shop orders (`/order/Orders/Shop/{shopId}`)
+ * Order response schema (FE) — khớp payload GET:
+ * - `GET /order/Orders/Shop/{shopId}` → `SellerOrder[]`
+ * - `GET /order/Orders/Account?accountId=…` → `BuyerOrder[]`
+ *
+ * File định nghĩa TypeScript: `src/types/seller-order.types.ts` (export qua `src/types/index.ts`).
+ * Nên serialize JSON **camelCase** (`shopName`, `thumbnailUrl`) giống `productName`, `sellerSku`.
  */
 
 export type SellerOrderStatus =
@@ -28,6 +33,8 @@ export interface SellerOrderItem {
   createdAt: string
   productName: string
   productDescription: string
+  /** Ảnh đại diện dòng hàng (URL) — từ backend OrderItem */
+  thumbnailUrl?: string | null
   sellerSku: string
   versionName: string
   woodType: string
@@ -43,6 +50,8 @@ export interface SellerOrder {
   accountName: string
   accountEmail: string
   shopId: string
+  /** Tên shop (hiển thị cho buyer / xác nhận từ API) */
+  shopName?: string | null
   subtotalVnd: number
   totalAmountVnd: number
   voucherId: string | null
@@ -63,6 +72,8 @@ export interface BuyerOrder {
   accountName: string
   accountEmail: string
   shopId: string
+  /** Tên cửa hàng */
+  shopName?: string | null
   subtotalVnd: number
   totalAmountVnd: number
   voucherId: string | null

@@ -260,9 +260,17 @@ export function BuyerOrdersPanel({
                       {'Ng\u00e0y \u0111\u1eb7t: '}
                       {created}
                     </p>
+                    {order.shopName != null && String(order.shopName).trim() !== '' ? (
+                      <p
+                        className='mt-1 text-sm font-semibold text-[#6C5B50]'
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        {String(order.shopName).trim()}
+                      </p>
+                    ) : null}
                     <button
                       type='button'
-                      onClick={() => navigate(ROUTES.SHOP(order.shopId))}
+                      onClick={() => navigate(ROUTES.SHOP(order.shopId, order.shopName))}
                       className='mt-1 text-xs font-medium text-amber-800 underline-offset-2 hover:underline'
                       style={{ fontFamily: 'Arimo, sans-serif' }}
                     >
@@ -319,14 +327,30 @@ export function BuyerOrdersPanel({
                 )}
 
                 {firstItem && (
-                  <div className='mb-4 rounded-[10px] bg-gray-50 px-4 py-3'>
-                    <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                      {firstItem.productName}
-                    </p>
-                    <p className='text-sm text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
-                      {firstItem.versionName}
-                      {moreItems > 0 ? ' · +' + moreItems + ' s\u1ea3n ph\u1ea9m kh\u00e1c' : ''}
-                    </p>
+                  <div className='mb-4 flex gap-3 rounded-[10px] bg-gray-50 px-4 py-3'>
+                    {firstItem.thumbnailUrl != null && String(firstItem.thumbnailUrl).trim() !== '' ? (
+                      <img
+                        src={String(firstItem.thumbnailUrl).trim()}
+                        alt=''
+                        className='h-16 w-16 flex-shrink-0 rounded-lg border border-gray-200 object-cover'
+                      />
+                    ) : (
+                      <div
+                        className='flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white text-[10px] text-gray-400'
+                        aria-hidden
+                      >
+                        —
+                      </div>
+                    )}
+                    <div className='min-w-0 flex-1'>
+                      <p className='font-semibold text-gray-800' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                        {firstItem.productName}
+                      </p>
+                      <p className='text-sm text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
+                        {firstItem.versionName}
+                        {moreItems > 0 ? ' · +' + moreItems + ' s\u1ea3n ph\u1ea9m kh\u00e1c' : ''}
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -392,8 +416,23 @@ export function BuyerOrdersPanel({
                           key={it.orderItemId}
                           className='rounded-[10px] border border-gray-100 bg-stone-50/80 p-4'
                         >
-                          <div className='flex flex-col gap-2 sm:flex-row sm:justify-between'>
-                            <div className='min-w-0'>
+                          <div className='flex flex-col gap-3 sm:flex-row sm:justify-between'>
+                            <div className='flex min-w-0 gap-3'>
+                              {it.thumbnailUrl != null && String(it.thumbnailUrl).trim() !== '' ? (
+                                <img
+                                  src={String(it.thumbnailUrl).trim()}
+                                  alt=''
+                                  className='h-20 w-20 flex-shrink-0 rounded-lg border border-gray-200 object-cover'
+                                />
+                              ) : (
+                                <div
+                                  className='flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white text-xs text-gray-400'
+                                  aria-hidden
+                                >
+                                  —
+                                </div>
+                              )}
+                              <div className='min-w-0 flex-1'>
                               <p className='font-semibold text-gray-900' style={{ fontFamily: 'Arimo, sans-serif' }}>
                                 {it.productName}
                               </p>
@@ -419,6 +458,7 @@ export function BuyerOrdersPanel({
                                   {it.productDescription}
                                 </p>
                               ) : null}
+                              </div>
                             </div>
                             <div className='text-left sm:text-right'>
                               <p className='text-sm text-gray-600' style={{ fontFamily: 'Arimo, sans-serif' }}>
