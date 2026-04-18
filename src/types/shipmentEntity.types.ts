@@ -22,6 +22,8 @@ export interface ShipmentDto {
   shopId: string
   trackingNumber?: string | null
   providerServiceCode?: string | null
+  /** Mã nhà vận chuyển (thường trùng `providerId` từ Provider API). BE có thể gửi `provider_code`. */
+  providerCode?: string | null
   shippingProviderName?: string | null
   pickupAddress?: string | null
   deliveryAddress?: string | null

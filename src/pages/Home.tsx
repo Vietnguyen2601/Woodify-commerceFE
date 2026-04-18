@@ -53,7 +53,7 @@ export default function Home() {
       price: p.price,
       originalPrice: undefined as number | undefined,
       rating: p.averageRating ?? 0,
-      soldCount: 0,
+      soldCount: p.sales ?? 0,
       image:
         p.thumbnailUrl ??
         'https://api.builder.io/api/v1/image/assets/TEMP/2b187d7da259323f608b11efa987b977ee1bdd99?width=704',

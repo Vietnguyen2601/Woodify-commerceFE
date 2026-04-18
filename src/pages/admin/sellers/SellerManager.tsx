@@ -185,6 +185,7 @@ export default function SellerManager() {
       colSku: 'SKU',
       colCategory: isVietnamese ? 'Danh mục' : 'Category',
       colPrice: isVietnamese ? 'Giá' : 'Price',
+      colSales: isVietnamese ? 'Lượt bán' : 'Sales',
       colProdStatus: isVietnamese ? 'Trạng thái' : 'Status',
       colOpen: isVietnamese ? 'Xem' : 'Open',
       noImageShort: isVietnamese ? 'Không ảnh' : 'No img',
@@ -454,6 +455,7 @@ export default function SellerManager() {
                                         <th className='whitespace-nowrap px-3 py-2.5'>{t.colSku}</th>
                                         <th className='min-w-[8rem] px-3 py-2.5'>{t.colCategory}</th>
                                         <th className='whitespace-nowrap px-3 py-2.5 text-right'>{t.colPrice}</th>
+                                        <th className='whitespace-nowrap px-3 py-2.5 text-right tabular-nums'>{t.colSales}</th>
                                         <th className='whitespace-nowrap px-3 py-2.5'>{t.colProdStatus}</th>
                                         <th className='whitespace-nowrap px-3 py-2.5 text-center'>{t.colOpen}</th>
                                       </tr>
@@ -496,6 +498,9 @@ export default function SellerManager() {
                                             <td className='align-middle px-3 py-2 text-gray-700'>{cat}</td>
                                             <td className='align-middle whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-amber-900'>
                                               {fmtVnd(price)}
+                                            </td>
+                                            <td className='align-middle whitespace-nowrap px-3 py-2 text-right tabular-nums text-gray-800'>
+                                              {typeof p.sales === 'number' ? p.sales.toLocaleString('vi-VN') : '—'}
                                             </td>
                                             <td className='align-middle px-3 py-2'>
                                               <span className='inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium uppercase text-gray-800'>

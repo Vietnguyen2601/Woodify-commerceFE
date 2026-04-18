@@ -1,6 +1,6 @@
 import React from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { orderService, shipmentService } from '@/services'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { orderService, shipmentService, providerService } from '@/services'
 import type { SellerOrder, SellerOrderStatus, ShipmentDto } from '@/types'
 import {
   ORDER_STATUSES_ALLOW_CREATE_SHIPMENT,
@@ -35,6 +35,19 @@ function formatDt(iso: string | null | undefined): string {
   }
 }
 
+/** Ưu tiên tên từ API; không có thì tra `providerCode` → danh sách provider (providerId). */
+function resolveShippingProviderLabel(
+  shipment: ShipmentDto,
+  providers: { providerId: string; name: string }[],
+): string {
+  const direct = shipment.shippingProviderName?.trim()
+  if (direct) return direct
+  const code = shipment.providerCode?.trim()
+  if (!code) return '—'
+  const p = providers.find((x) => x.providerId === code)
+  return p?.name ?? code
+}
+
 type Props = {
   shopId: string
   order: SellerOrder
@@ -46,6 +59,17 @@ type Props = {
 
 export default function ShipmentSellerPanel({ shopId, order, shipment, compact, onToast }: Props) {
   const queryClient = useQueryClient()
+  const { data: providersData } = useQuery({
+    queryKey: ['shipping-providers', 'list'],
+    queryFn: () => providerService.getProviders({ page: 1, limit: 100 }),
+    staleTime: 5 * 60 * 1000,
+  })
+  const providers = providersData?.providers?.filter((p) => p.isActive !== false) ?? []
+  const providerDisplayName = React.useMemo(
+    () => (shipment ? resolveShippingProviderLabel(shipment, providers) : null),
+    [shipment, providers],
+  )
+
   const [reasonOpen, setReasonOpen] = React.useState<'failure' | 'cancel' | null>(null)
   const [reasonText, setReasonText] = React.useState('')
   const [pendingNext, setPendingNext] = React.useState<string | null>(null)
@@ -172,6 +196,10 @@ export default function ShipmentSellerPanel({ shopId, order, shipment, compact, 
               {shipmentStatusLabel(shipment.status)}
             </span>
           </div>
+          <p>
+            <span className='text-stone-500'>Nhà cung cấp:</span>{' '}
+            <span className='font-semibold text-stone-900'>{providerDisplayName ?? '—'}</span>
+          </p>
           {shipment.trackingNumber && (
             <p>
               <span className='text-stone-500'>Tracking:</span>{' '}
