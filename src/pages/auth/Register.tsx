@@ -409,14 +409,17 @@ export default function Register() {
                 </form>
 
                 {emailExists && (
-                  <div className='auth-inline' style={{ marginTop: 16 }}>
-                    <span className='auth-subtitle'>Email đã đăng ký</span>
-                    <Link to='/login' className='auth-link'>
-                      Đăng nhập
-                    </Link>
-                    <Link to='/forgot-password' className='auth-link'>
-                      Gửi lại mật khẩu
-                    </Link>
+                  <div className='auth-exists-actions'>
+                    <span className='auth-subtitle'>Bạn có thể:</span>
+                    <div className='auth-inline'>
+                      <Link to='/login' className='auth-link'>
+                        Đăng nhập
+                      </Link>
+                      <span aria-hidden='true'>•</span>
+                      <Link to='/forgot-password' className='auth-link'>
+                        Gửi lại mật khẩu
+                      </Link>
+                    </div>
                   </div>
                 )}
 
