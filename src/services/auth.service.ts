@@ -22,6 +22,11 @@ export interface LoginResponseData {
   username: string
   token: string
   refreshToken: string
+  /** Identity API may return PascalCase or camelCase */
+  roleName?: string
+  RoleName?: string
+  role?: string
+  Role?: string
 }
 
 export interface LoginResponse {

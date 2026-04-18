@@ -4,6 +4,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/services'
 import { APP_CONFIG } from '@/constants'
 import { persistStoredUser, type StoredUser } from '@/features/auth/utils/storage'
+import {
+  resolveRoleFromLoginPayload,
+  resolveRoleNameFromLoginPayload,
+} from '@/features/auth/utils/resolveUserRole'
 import woodifyLogo from '../../assets/logo/Woodify.jpg'
 import '../../styles/auth.css'
 
@@ -297,10 +301,14 @@ export default function Register() {
                 loginData?.email
             )
             if (isSuccessful && loginData?.email) {
+              const payload = loginData as Record<string, unknown>
+              const role = resolveRoleFromLoginPayload(payload)
+              const roleName = resolveRoleNameFromLoginPayload(payload)
               const normalizedUser: StoredUser = {
                 email: loginData.email || email,
                 username: loginData.username || loginData.fullName || trimmedUsername,
-                role: loginData.role || 'customer',
+                role,
+                ...(roleName ? { roleName } : {}),
                 accountId: loginData.accountId,
               }
               persistStoredUser(normalizedUser)
@@ -316,12 +324,15 @@ export default function Register() {
           const raw = registerRes as Record<string, unknown> & { user?: Record<string, unknown> }
           const profile = (raw?.user ?? raw) as Record<string, unknown> | null
           if (profile && (profile.email || profile.accountId)) {
+            const role = resolveRoleFromLoginPayload(profile as Record<string, unknown>)
+            const roleName = resolveRoleNameFromLoginPayload(profile as Record<string, unknown>)
             const normalizedUser: StoredUser = {
               email: String(profile.email || email),
               username: String(
                 profile.username || profile.fullName || trimmedUsername
               ),
-              role: (profile.role as StoredUser['role']) || 'customer',
+              role,
+              ...(roleName ? { roleName } : {}),
               accountId: (profile.accountId || profile.id) as string | undefined,
             }
             persistStoredUser(normalizedUser)
