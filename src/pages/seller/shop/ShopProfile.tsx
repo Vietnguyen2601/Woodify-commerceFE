@@ -37,10 +37,10 @@ export default function ShopProfile() {
 
   const { data: providersData, isLoading: providersLoading } = useQuery({
     queryKey: ['shipping-providers', 'list'],
-    queryFn: () => providerService.getAllProviders(),
+    queryFn: () => providerService.getProviders({ page: 1, limit: 100 }),
     staleTime: 5 * 60 * 1000,
   })
-  const providers: ShippingProvider[] = providersData?.filter((p) => p.isActive !== false) ?? []
+  const providers: ShippingProvider[] = providersData?.providers?.filter((p) => p.isActive !== false) ?? []
 
   const form = useForm<ShopProfileForm>({
     resolver: zodResolver(formSchema),

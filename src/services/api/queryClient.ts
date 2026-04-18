@@ -81,10 +81,6 @@ export const queryKeys = {
       [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'revenue-trend', shopId, days] as const,
     topSellingProducts: (shopId: string, limit: number) =>
       [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'top-selling-products', shopId, limit] as const,
-    wallet: (accountId: string) =>
-      [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'seller-wallet', accountId] as const,
-    walletTransactions: (accountId: string, page: number, pageSize: number) =>
-      [APP_CONFIG.QUERY_KEYS.SELLER_DASHBOARD, 'seller-wallet-tx', accountId, page, pageSize] as const,
   },
   
   // Admin

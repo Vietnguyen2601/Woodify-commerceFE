@@ -409,8 +409,8 @@ export default function AdminHome() {
               <h2>{isVietnamese ? 'Biểu đồ 2' : 'Chart 2'}</h2>
               <p>
                 {isVietnamese
-                  ? 'Top danh mục theo lượt mua '
-                  : 'Top categories by units sold '}
+                  ? 'Top danh mục theo lượt mua (GET /order/analytics/top-categories)'
+                  : 'Top categories by units sold (GET /order/analytics/top-categories)'}
               </p>
             </div>
           </header>

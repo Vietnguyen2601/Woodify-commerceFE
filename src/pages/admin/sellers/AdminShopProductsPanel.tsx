@@ -56,7 +56,7 @@ export function productMasterDtoToProductionCardProduct(
     shopId: shop.shopId,
     shopName: shop.name,
     hasFreeship: true,
-    soldCount: typeof p.sales === 'number' ? p.sales : 0,
+    soldCount: 0,
   }
 }
 

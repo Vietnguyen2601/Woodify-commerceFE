@@ -88,8 +88,6 @@ export default function ShipmentManager() {
       statusNext: isVietnamese ? 'Trạng thái tiếp theo' : 'Next status',
       reasonLabel: isVietnamese ? 'Lý do (khi FAILED/CANCELLED)' : 'Reason (for FAILED/CANCELLED)',
       close: isVietnamese ? 'Đóng' : 'Close',
-      actions: isVietnamese ? 'Thao tác' : 'Actions',
-      delete: isVietnamese ? 'Xóa' : 'Delete',
     }),
     [isVietnamese]
   )

@@ -363,6 +363,30 @@ export default function AllOrders() {
         </div>
       </section>
 
+      {isLoading && (
+        <div className='flex flex-col items-center justify-center gap-3 rounded-xl border border-yellow-800/20 bg-white py-20'>
+          <div className='h-9 w-9 animate-spin rounded-full border-4 border-yellow-800 border-t-transparent' />
+          <p className='text-sm text-stone-600'>{'Đang tải đơn hàng…'}</p>
+        </div>
+      )}
+
+      {isError && !isLoading && (
+        <div className='rounded-xl border border-red-200 bg-red-50 px-5 py-6 text-sm text-red-800'>
+          <p className='font-medium'>{'Không tải được danh sách đơn.'}</p>
+          <p className='mt-1 opacity-90'>
+            {(error as { message?: string })?.message ||
+              'Kiểm tra kết nối hoặc đăng nhập seller.'}
+          </p>
+          <button
+            type='button'
+            onClick={() => void refetch()}
+            className='mt-4 rounded-lg bg-red-700 px-4 py-2 text-xs font-semibold text-white'
+          >
+            {'Th\u1eed l\u1ea1i'}
+          </button>
+        </div>
+      )}
+
       {!isLoading && !isError && filtered.length === 0 && (
         <div className='rounded-xl border border-dashed border-yellow-800/30 bg-white px-6 py-16 text-center text-sm text-stone-600'>
           {orders.length === 0
@@ -412,17 +436,12 @@ function SellerStageProgressStrip({
 }) {
   if (stage === 'exception') {
     return (
-      <div className='space-y-2'>
-        <div className='rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-center text-[11px] font-semibold text-orange-900'>
-          {SELLER_STAGE_LABEL_VI.exception}
-          {' — '}
-          <span className='font-normal opacity-90'>
-            {'Ngoại lệ luồng chuẩn (hủy / hoàn / lỗi giao…)'}
-          </span>
-        </div>
-        {orderStatus != null && (
-          <DualAxisPaymentDeliveryLines orderStatus={orderStatus} shipment={shipment ?? null} />
-        )}
+      <div className='rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-center text-[11px] font-semibold text-orange-900'>
+        {SELLER_STAGE_LABEL_VI.exception}
+        {' — '}
+        <span className='font-normal opacity-90'>
+          {'Ngoại lệ luồng chuẩn (hủy / hoàn / lỗi giao…)'}
+        </span>
       </div>
     )
   }
@@ -432,7 +451,7 @@ function SellerStageProgressStrip({
   return (
     <div>
       <p className='mb-2 text-[10px] font-bold uppercase tracking-wide text-stone-500'>
-        {'Tiến độ gộp (view model — không phải contract API)'}
+        {'Tiến độ đơn (hiển thị)'}
       </p>
       <div className='grid grid-cols-4 gap-2'>
         {SELLER_MAIN_STAGE_SEQUENCE.map((s, i) => (
@@ -785,11 +804,6 @@ function OrderDetailDrawer({
 
         <div className='border-t border-yellow-800/15 bg-stone-50 px-5 py-4'>
           <p className='mb-2 text-[11px] font-semibold uppercase text-stone-500'>{'Cập nhật trạng thái'}</p>
-          {!locked && st === 'DELIVERED' && (
-            <p className='mb-3 text-xs text-stone-600'>
-              Đơn còn ở Đã giao — có thể bấm Hoàn tất đơn để chuyển COMPLETED (nếu chưa cập nhật từ thanh toán).
-            </p>
-          )}
           <div className='flex flex-wrap gap-2'>
             {!locked &&
               forward.map((a) => (

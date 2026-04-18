@@ -339,17 +339,4 @@ export const ADMIN_API = {
       `/order/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
       `/analytics/top-categories?topN=${encodeURIComponent(String(topN))}`,
     ] as const,
-  /**
-   * Seller withdrawal tickets — Payment/Wallet service (ServiceResult envelope).
-   * GET `/wallets/admin/withdrawals?status=&page=&pageSize=`
-   */
-  WITHDRAWALS: {
-    LIST: '/wallets/admin/withdrawals',
-    APPROVE: (ticketId: string) =>
-      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/approve`,
-    REJECT: (ticketId: string) =>
-      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/reject`,
-    MARK_PAID: (ticketId: string) =>
-      `/wallets/admin/withdrawals/${encodeURIComponent(ticketId)}/mark-paid`,
-  },
 } as const
